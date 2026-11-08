@@ -1,0 +1,7907 @@
+[
+  {
+    "id": 1,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "一般贸易进口报关需要提交哪些单证？",
+    "q_en": "What documents are required for a general trade import declaration?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 2,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "进口货物报关单上需要填写哪些项目？",
+    "q_en": "What items must be filled in on an import declaration form?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 3,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "报关单填错了可以修改吗？需要满足什么条件？",
+    "q_en": "Can a filed customs declaration be amended, and under what conditions?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 4,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "货物到港后多久内必须向海关申报？逾期会怎样？",
+    "q_en": "Within how long must goods be declared after arrival, and what happens if late?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 5,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "可以由报关企业代理报关吗？需要什么授权手续？",
+    "q_en": "May a customs broker declare on my behalf, and what authorization is needed?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 6,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "进口货物商品归类申报错误会有什么后果？",
+    "q_en": "What are the consequences of misclassifying goods in an import declaration?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 7,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "海关对申报内容有疑问时可以要求补充申报吗？",
+    "q_en": "May customs require a supplementary declaration when it has doubts?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 8,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "货物实际进出口前可以申请预归类吗？有效期多久？",
+    "q_en": "Can an advance classification ruling be requested before shipment, and how long is it valid?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 9,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "报关时提供的发票金额与真实成交价格不一致会如何处理？",
+    "q_en": "How is a discrepancy between the declared invoice value and the true transaction value handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 10,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "进口货物分批到港可以分批报关吗？",
+    "q_en": "May goods arriving in instalments be declared in separate batches?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 11,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "暂时进口货物报关适用什么程序？",
+    "q_en": "What procedure applies to declaring temporarily imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 12,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "报关时漏报运费和保险费会被如何认定？",
+    "q_en": "How is omission of freight and insurance from a declaration treated?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 13,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "知识产权权利人可以申请海关对进口货物采取保护措施吗？",
+    "q_en": "Can an IP rights holder request customs protection measures for imports?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 14,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "保税仓库货物出库报关的流程是什么？",
+    "q_en": "What is the declaration procedure for goods leaving a bonded warehouse?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 15,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "过境货物需要向海关申报吗？",
+    "q_en": "Must transit goods be declared to customs?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 16,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "跨境电商零售进口商品如何报关？",
+    "q_en": "How are cross-border e-commerce retail imports declared?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 17,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "报关单证需要保存多久？",
+    "q_en": "How long must customs declaration records be retained?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 18,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "进口货物收货人未按期申报，海关如何处置？",
+    "q_en": "How does customs handle a consignee who fails to declare on time?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 19,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "海关查验发现申报货物与实际不符，程序上如何处理？",
+    "q_en": "What is the procedure when inspection reveals goods differ from the declaration?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 20,
+    "category": "报关",
+    "subcategory": "申报义务",
+    "q_zh": "报关时商品编号填错但货物已放行，还能纠正吗？",
+    "q_en": "Can a misclassified commodity code be corrected after the goods have been released?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 21,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "低报进口货物成交价格逃避关税，海关会如何处罚？",
+    "q_en": "What penalties apply for under-declaring transaction value to evade duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 22,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "伪报货物名称进出口属于什么性质的行为？",
+    "q_en": "What is the nature of falsely declaring the description of imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 23,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "申报不实但未造成税款损失的，还会被处罚吗？",
+    "q_en": "Is a false declaration still punishable if no duty loss results?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 24,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "进口货物数量申报少于实际数量，如何处理？",
+    "q_en": "How is a declaration of fewer goods than actually imported handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 25,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "瞒报货物原产地的法律后果是什么？",
+    "q_en": "What are the legal consequences of concealing the origin of goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 26,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "申报价格明显低于同类货物，海关可以启动价格质疑吗？",
+    "q_en": "May customs raise a valuation doubt where the declared price is clearly below comparable goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 27,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "走私行为与违规行为的界限在哪里？",
+    "q_en": "Where is the line between smuggling and a regulatory violation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 28,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "一年内多次申报不实会被加重处罚吗？",
+    "q_en": "Are repeated false declarations within one year punished more severely?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 29,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "申报不实案件由哪个部门管辖？",
+    "q_en": "Which authority has jurisdiction over false declaration cases?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 30,
+    "category": "报关",
+    "subcategory": "申报不实",
+    "q_zh": "主动披露申报错误可以减免处罚吗？",
+    "q_en": "Can voluntary disclosure of a declaration error reduce penalties?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 31,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "海关审定完税价格时，成交价格需要满足哪些条件？",
+    "q_en": "What conditions must the transaction value satisfy for customs valuation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 32,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "进口货物的完税价格是否包含运费和保险费？",
+    "q_en": "Does the customs value of imports include freight and insurance?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 33,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "买卖双方存在特殊关系时，成交价格还能作为完税价格吗？",
+    "q_en": "Can the transaction value still be used where buyer and seller are related?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 34,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "相同货物成交价格法和类似货物成交价格法如何适用？",
+    "q_en": "How do the identical goods and similar goods valuation methods apply?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 35,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "海关可以使用计算价格法确定完税价格吗？",
+    "q_en": "May customs use the computed value method for customs valuation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 36,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "进口货物在境内转售的收益需要计入完税价格吗？",
+    "q_en": "Must proceeds from resale of imported goods be included in the customs value?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 37,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "买方承担的模具费用是否应计入完税价格？",
+    "q_en": "Should tooling costs borne by the buyer be included in the customs value?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 38,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "特许权使用费在什么情况下应计入完税价格？",
+    "q_en": "When should royalties and licence fees be included in the customs value?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 39,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "完税价格申报不实被海关重新估价的，税款如何补缴？",
+    "q_en": "How is duty recovered when customs revalues after a false valuation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 40,
+    "category": "关税",
+    "subcategory": "完税价格",
+    "q_zh": "进口货物的包装费用是否计入完税价格？",
+    "q_en": "Are packing costs included in the customs value?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 41,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "进出口货物应适用哪一天实施的税率？",
+    "q_en": "Which date's tariff rate applies to imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 42,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "最惠国税率、协定税率和普通税率分别适用什么情形？",
+    "q_en": "When do MFN, agreement and general rates apply?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 43,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "暂定税率和配额税率如何优先适用？",
+    "q_en": "How do provisional and tariff-quota rates take priority?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 44,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "反倾销税和反补贴税与普通关税如何叠加？",
+    "q_en": "How do anti-dumping and countervailing duties interact with ordinary customs duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 45,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "原产于与我国签订自贸协定的国家的货物适用什么税率？",
+    "q_en": "What rate applies to goods originating in countries with which a free trade agreement exists?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 46,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "进口货物适用税率发生调整的，以何时为准？",
+    "q_en": "When a tariff rate changes, which point in time governs?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 47,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "出口关税的征收范围包括哪些商品？",
+    "q_en": "Which goods are subject to export duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 48,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "进口环节增值税和消费税由谁征收？",
+    "q_en": "Who collects import VAT and consumption tax?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 49,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "船舶吨税与关税是什么关系？",
+    "q_en": "What is the relationship between tonnage dues and customs duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 50,
+    "category": "关税",
+    "subcategory": "税率适用",
+    "q_zh": "加工贸易进口料件内销时如何补征税款？",
+    "q_en": "How is duty recovered when processing trade materials are sold domestically?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "税率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 51,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "多缴的关税可以申请退还吗？期限是多长？",
+    "q_en": "Can overpaid customs duty be refunded, and within what period?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 52,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "少征或漏征的关税，海关追征的期限是多久？",
+    "q_en": "Within what period may customs recover underpaid duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 53,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "因纳税义务人违反规定造成少征税款的，追征期有何不同？",
+    "q_en": "How does the recovery period differ where the shortfall results from the declarant's violation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 54,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "海关发现多征税款应当如何处理？",
+    "q_en": "How should customs handle over-collected duty it discovers?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 55,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "申请退还关税需要提交什么材料？",
+    "q_en": "What materials are needed to apply for a duty refund?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 56,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "退运货物的已征税款可以退还吗？",
+    "q_en": "Can duty already paid be refunded for returned goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 57,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "进口货物因品质问题索赔后，税款可以调整吗？",
+    "q_en": "Can duty be adjusted after a quality claim on imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 58,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "海关补征税款是否需要加收滞纳金？",
+    "q_en": "Is late payment interest charged on duty recovered by customs?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 59,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "关税缓缴需要什么条件？",
+    "q_en": "What conditions apply to deferring duty payment?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 60,
+    "category": "关税",
+    "subcategory": "退还补征",
+    "q_zh": "纳税义务人对海关征税决定不服可以申请复议吗？",
+    "q_en": "May a duty payer seek review of a customs duty decision?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "退还",
+      "补征"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 61,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "什么叫实质性改变？如何判定？",
+    "q_en": "What is substantial transformation and how is it determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 62,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "税则归类改变标准在原产地认定中如何适用？",
+    "q_en": "How does the change-in-tariff-classification criterion apply to origin determination?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 63,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "区域价值成分标准如何计算？",
+    "q_en": "How is the regional value content criterion calculated?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 64,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "微小加工或处理是否赋予原产地资格？",
+    "q_en": "Do minimal operations or processing confer origin?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 65,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "简单组装能否使产品获得原产地资格？",
+    "q_en": "Can simple assembly confer origin on a product?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 66,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "累积规则在原产地认定中起什么作用？",
+    "q_en": "What role does the cumulation rule play in origin determination?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 67,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "直接运输规则对原产地资格有什么影响？",
+    "q_en": "What effect does the direct transport rule have on origin qualification?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 68,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "经过第三国转运的货物还能享受协定税率吗？",
+    "q_en": "Can goods transshipped through a third country still enjoy agreement rates?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 69,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "完全获得产品的原产地如何认定？",
+    "q_en": "How is the origin of wholly obtained products determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 70,
+    "category": "原产地",
+    "subcategory": "实质性改变",
+    "q_zh": "进口成分超过一定比例是否丧失原产地资格？",
+    "q_en": "Does exceeding a threshold of imported content disqualify origin?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 71,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "申请原产地证书需要提交什么材料？",
+    "q_en": "What materials are needed to apply for a certificate of origin?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 72,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "海关如何核查原产地证书的真实性？",
+    "q_en": "How does customs verify the authenticity of a certificate of origin?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 73,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "原产地证书丢失或损毁可以补发吗？",
+    "q_en": "Can a lost or damaged certificate of origin be reissued?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 74,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "原产地证书的有效期是多久？",
+    "q_en": "How long is a certificate of origin valid?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 75,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "原产地声明与证书的法律效力有何区别？",
+    "q_en": "What is the legal difference between an origin declaration and a certificate?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 76,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "出口货物原产地证书由哪个机构签发？",
+    "q_en": "Which body issues certificates of origin for exports?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 77,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "海关对原产地证书有疑问时可以请求境外核查吗？",
+    "q_en": "May customs request foreign verification when it doubts a certificate of origin?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 78,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "优惠原产地证书与一般原产地证书有何区别？",
+    "q_en": "What distinguishes a preferential certificate of origin from an ordinary one?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 79,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "原产地证书上的信息与实际货物不符会怎么处理？",
+    "q_en": "How is a mismatch between the certificate and the actual goods handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 80,
+    "category": "原产地",
+    "subcategory": "原产地证书",
+    "q_zh": "企业可以自行出具原产地声明吗？",
+    "q_en": "May an enterprise issue its own origin declaration?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 81,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口两用物项需要办理什么许可手续？",
+    "q_en": "What licence is required to export dual-use items?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 82,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "未经许可出口管制物项会承担什么法律责任？",
+    "q_en": "What legal liability arises from exporting controlled items without a licence?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 83,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口管制清单由哪个部门制定和调整？",
+    "q_en": "Which authority sets and adjusts the export control list?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 84,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "如何判断某项货物是否属于管制范围？",
+    "q_en": "How do I determine whether goods fall within the control scope?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 85,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口经营者对最终用户负有哪些核实义务？",
+    "q_en": "What end-user verification obligations does an exporter have?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 86,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "最终用户证明需要包含哪些内容？",
+    "q_en": "What must an end-user certificate contain?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 87,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "管制物项的出口许可申请流程是什么？",
+    "q_en": "What is the licence application process for controlled items?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 88,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口管制是否适用于技术出口？",
+    "q_en": "Does export control apply to technology exports?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 89,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "明知用于大规模杀伤性武器仍出口的后果是什么？",
+    "q_en": "What are the consequences of exporting while knowing the items are destined for WMD?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 90,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "转口、再出口管制物项需要许可吗？",
+    "q_en": "Is a licence required for transit or re-export of controlled items?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 91,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口管制是否适用于跨国公司内部调拨？",
+    "q_en": "Does export control apply to intra-group transfers within a multinational?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 92,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "违反出口管制的企业会被列入黑名单吗？",
+    "q_en": "Can enterprises violating export controls be placed on a watchlist?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 93,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "海关在出口环节如何查验管制物项？",
+    "q_en": "How does customs inspect controlled items at the export stage?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 94,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "未经许可出口可能用于军事目的的民用产品如何处理？",
+    "q_en": "How is unlicensed export of civil products potentially usable for military purposes handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 95,
+    "category": "出口管制",
+    "subcategory": "两用物项",
+    "q_zh": "出口管制的域外适用如何理解？",
+    "q_en": "How should extraterritorial application of export controls be understood?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "出口管制",
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 96,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "如《出口管制法》对管制物项规定了哪些许可类型？",
+    "q_en": "What licence types does export control law provide for controlled items?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 97,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "出口许可证的有效期和使用次数如何规定？",
+    "q_en": "How long is an export licence valid and how many times may it be used?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 98,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "许可申请被驳回后可以申请重新审查吗？",
+    "q_en": "May an applicant seek reconsideration after a licence denial?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 99,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "列入管控名单的企业会受哪些限制？",
+    "q_en": "What restrictions apply to enterprises on a control list?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 100,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "临时管制措施如何适用？",
+    "q_en": "How do interim control measures apply?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 101,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "出口管制清单与两用物项清单是什么关系？",
+    "q_en": "What is the relationship between the export control list and the dual-use list?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 102,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "海关对出口管制物项的归类有疑问如何处理？",
+    "q_en": "How are classification doubts on controlled export items resolved?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 103,
+    "category": "出口管制",
+    "subcategory": "管制清单",
+    "q_zh": "出口经营者如何建立内部合规制度？",
+    "q_en": "How should exporters establish internal compliance programmes?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 104,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口商品检验的流程是什么？",
+    "q_en": "What is the inspection process for imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 105,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "检验不合格的进口货物如何处理？",
+    "q_en": "How are imported goods that fail inspection handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 106,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口商品必须由指定机构检验吗？",
+    "q_en": "Must imported goods be inspected by a designated body?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 107,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口旧机电产品的检验要求有哪些？",
+    "q_en": "What inspection requirements apply to used mechanical and electrical products?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 108,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口食品需要办理哪些检验手续？",
+    "q_en": "What inspection procedures apply to imported food?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 109,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口化妆品需要进行哪些检验？",
+    "q_en": "What inspections are required for imported cosmetics?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 110,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口汽车如何办理检验手续？",
+    "q_en": "How are imported vehicles inspected?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 111,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口棉花检验的特殊要求是什么？",
+    "q_en": "What special requirements apply to cotton inspection?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 112,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口计量器具如何检验？",
+    "q_en": "How are imported measuring instruments inspected?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 113,
+    "category": "检验检疫",
+    "subcategory": "进口检验",
+    "q_zh": "进口可用作原料的固体废物有什么检验要求？",
+    "q_en": "What inspection requirements apply to imported solid waste usable as raw material?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "检验"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 114,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境动植物及其产品需要办理哪些检疫审批手续？",
+    "q_en": "What quarantine approval is required for importing animals, plants and their products?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 115,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境水果的检疫要求是什么？",
+    "q_en": "What are the quarantine requirements for imported fruit?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 116,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境种子的检疫审批流程是什么？",
+    "q_en": "What is the quarantine approval process for imported seeds?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 117,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境动物隔离检疫场的设立条件是什么？",
+    "q_en": "What are the conditions for establishing a quarantine station for imported animals?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 118,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境木质包装需要什么检疫处理？",
+    "q_en": "What quarantine treatment is required for imported wood packaging?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 119,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "携带宠物入境需要哪些检疫手续？",
+    "q_en": "What quarantine formalities apply to bringing pets into the country?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 120,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境水生动物的检疫监督如何进行？",
+    "q_en": "How is quarantine supervision of imported aquatic animals carried out?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 121,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "检疫处理不合格的进境货物如何处理？",
+    "q_en": "How are imported goods failing quarantine treatment handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 122,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "进境动植物检疫审批的有效期是多久？",
+    "q_en": "How long is quarantine approval for imported animals and plants valid?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 123,
+    "category": "检验检疫",
+    "subcategory": "动植物检疫",
+    "q_zh": "国境卫生检疫对入境交通工具的查验要求是什么？",
+    "q_en": "What inspection requirements apply to inbound transport under frontier health quarantine?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 124,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税货物的监管要求是什么？",
+    "q_en": "What are the supervision requirements for bonded goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 125,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "擅自处置保税货物会有什么法律后果？",
+    "q_en": "What are the legal consequences of disposing of bonded goods without authorization?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 126,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税仓库的设立条件有哪些？",
+    "q_en": "What are the conditions for establishing a bonded warehouse?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 127,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税货物内销时如何补税？",
+    "q_en": "How is duty recovered when bonded goods are sold domestically?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 128,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税货物加工后出口需要办理什么手续？",
+    "q_en": "What procedures apply to exporting bonded goods after processing?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 129,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税货物可以抵押或质押吗？",
+    "q_en": "May bonded goods be mortgaged or pledged?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 130,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税仓库货物盘点差异如何申报处理？",
+    "q_en": "How are inventory discrepancies at a bonded warehouse declared and handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 131,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税物流中心可以开展哪些业务？",
+    "q_en": "What business may a bonded logistics centre conduct?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 132,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "加工贸易保税料件的单耗如何核定？",
+    "q_en": "How is the unit consumption of bonded materials under processing trade determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 133,
+    "category": "保税",
+    "subcategory": "保税货物",
+    "q_zh": "保税货物的存储期限是多久？",
+    "q_en": "How long may bonded goods be stored?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 134,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "综合保税区内的企业可以开展哪些业务？",
+    "q_en": "What business may enterprises in a comprehensive bonded zone conduct?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 135,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "货物从保税区进入境内区外如何征税？",
+    "q_en": "How are goods taxed when moving from a bonded zone into the domestic market?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 136,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "保税区内企业间的货物转让需要报关吗？",
+    "q_en": "Must goods transferred between enterprises within a bonded zone be declared?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 137,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "自由贸易试验区与综合保税区有何不同？",
+    "q_en": "How do pilot free trade zones differ from comprehensive bonded zones?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 138,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "保税区内货物可以自由流转吗？",
+    "q_en": "May goods circulate freely within a bonded zone?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 139,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "区内企业进口自用设备可以免税吗？",
+    "q_en": "May enterprises in a bonded zone import capital equipment free of duty?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 140,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "保税区货物退运境外如何办理？",
+    "q_en": "How are bonded zone goods returned overseas handled?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 141,
+    "category": "保税",
+    "subcategory": "特殊监管区",
+    "q_zh": "海关特殊监管区域之间的货物结转如何办理？",
+    "q_en": "How are goods transferred between special customs supervision areas?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 142,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销调查的申请主体和立案条件是什么？",
+    "q_en": "Who may apply for an anti-dumping investigation and what are the initiation conditions?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 143,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "倾销幅度如何确定？",
+    "q_en": "How is the dumping margin determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 144,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "国内产业损害如何认定？",
+    "q_en": "How is injury to the domestic industry determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 145,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "倾销与损害之间的因果关系如何证明？",
+    "q_en": "How is causation between dumping and injury established?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 146,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销临时措施最长可以实施多久？",
+    "q_en": "How long may provisional anti-dumping measures last?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 147,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销税如何征收？由谁征收？",
+    "q_en": "How and by whom are anti-dumping duties collected?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 148,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "价格承诺在反倾销程序中的作用是什么？",
+    "q_en": "What role do price undertakings play in anti-dumping proceedings?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 149,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销调查期限是多长？",
+    "q_en": "How long does an anti-dumping investigation take?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 150,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销复审的启动条件是什么？",
+    "q_en": "What triggers an anti-dumping review?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 151,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "规避反倾销措施的行为如何认定？",
+    "q_en": "How is circumvention of anti-dumping measures determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 152,
+    "category": "贸易救济",
+    "subcategory": "反倾销",
+    "q_zh": "反倾销措施针对的倾销产品如何界定？",
+    "q_en": "How is the dumped product defined for anti-dumping measures?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 153,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "反补贴措施针对哪些补贴行为？",
+    "q_en": "Which subsidy practices are subject to countervailing measures?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 154,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "专向性补贴如何认定？",
+    "q_en": "How is a specific subsidy identified?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 155,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "补贴金额如何计算？",
+    "q_en": "How is the amount of subsidy calculated?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 156,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "反补贴临时措施的实施条件是什么？",
+    "q_en": "What conditions apply to provisional countervailing measures?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 157,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "反补贴税与反倾销税可以同时征收吗？",
+    "q_en": "May countervailing and anti-dumping duties be imposed simultaneously?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 158,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "禁止性补贴包括哪些类型？",
+    "q_en": "What types of subsidy are prohibited?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 159,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "可诉补贴与不可诉补贴如何区分？",
+    "q_en": "How are actionable and non-actionable subsidies distinguished?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 160,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "反补贴调查中的磋商程序如何进行？",
+    "q_en": "How do consultations proceed in a countervailing investigation?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 161,
+    "category": "贸易救济",
+    "subcategory": "反补贴",
+    "q_zh": "发展中国家在反补贴措施上享有特殊待遇吗？",
+    "q_en": "Do developing countries receive special treatment in countervailing measures?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "补贴"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 162,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "货物贸易跨境收付汇需要办理哪些手续？",
+    "q_en": "What procedures apply to cross-border payment for trade in goods?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 163,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "外汇管理局如何监管货物贸易外汇收支？",
+    "q_en": "How does the foreign exchange administration supervise trade payments?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 164,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "进口付汇需要提交哪些单据？",
+    "q_en": "What documents are required for import payment?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 165,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "出口收汇期限有何规定？",
+    "q_en": "Are there rules on the deadline for receiving export proceeds?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 166,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "企业外汇分类管理等级如何划分？",
+    "q_en": "How are enterprises classified under the foreign exchange classification system?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 167,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "跨境人民币结算与外币结算有何不同？",
+    "q_en": "How does cross-border RMB settlement differ from foreign currency settlement?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 168,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "服务贸易项下付汇需要什么材料？",
+    "q_en": "What materials are needed for payments under trade in services?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 169,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "资本项目外汇收支与经常项目有何区别？",
+    "q_en": "How do capital account transactions differ from current account ones?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 170,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "个人年度购汇额度是多少？",
+    "q_en": "What is the annual foreign exchange purchase quota for individuals?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 171,
+    "category": "外汇",
+    "subcategory": "跨境收付",
+    "q_zh": "违反外汇管理规定会受到什么处罚？",
+    "q_en": "What penalties apply to violations of foreign exchange rules?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "外汇"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 172,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "海关事务担保的方式有哪些？",
+    "q_en": "What forms of customs security are accepted?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 173,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "担保金额如何确定？",
+    "q_en": "How is the amount of security determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 174,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "哪些情形下可以申请担保放行？",
+    "q_en": "In what circumstances may goods be released against security?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 175,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "保证金和保函有何区别？",
+    "q_en": "What is the difference between a cash deposit and a guarantee letter?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 176,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "担保期限届满后如何处理？",
+    "q_en": "What happens when the security period expires?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 177,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "担保人可以变更吗？",
+    "q_en": "May the guarantor be changed?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 178,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "税收保全措施的适用条件是什么？",
+    "q_en": "What conditions apply to tax preservation measures?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 179,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "担保物权实现的程序是什么？",
+    "q_en": "What is the procedure for enforcing security?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 180,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "关税保证保险可以作为担保方式吗？",
+    "q_en": "May duty guarantee insurance serve as security?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 181,
+    "category": "担保",
+    "subcategory": "海关事务担保",
+    "q_zh": "担保放行后未按期补办手续的后果是什么？",
+    "q_en": "What are the consequences of failing to complete formalities after release against security?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 182,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "根据 CISG，国际货物销售合同何时成立？",
+    "q_en": "Under the CISG, when is a contract of sale concluded?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 183,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 下要约与承诺的规则是什么？",
+    "q_en": "What rules govern offer and acceptance under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 184,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "逾期承诺是否有效？",
+    "q_en": "Is a late acceptance effective?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 185,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "对要约作出实质性变更的回复构成反要约吗？",
+    "q_en": "Does a reply materially altering an offer constitute a counter-offer?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 186,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 是否适用于营业地在不同国家的当事人之间的合同？",
+    "q_en": "Does the CISG apply to contracts between parties with places of business in different States?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 187,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "当事人可以排除 CISG 的适用吗？",
+    "q_en": "May the parties exclude the application of the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 188,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 不适用的销售有哪些？",
+    "q_en": "Which sales are excluded from the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 189,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 是否适用于服务合同？",
+    "q_en": "Does the CISG apply to service contracts?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 190,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 对合同形式有要求吗？",
+    "q_en": "Does the CISG impose formal requirements on contracts?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 191,
+    "category": "国际货物买卖",
+    "subcategory": "合同成立",
+    "q_zh": "CISG 下货物风险何时转移？",
+    "q_en": "When does risk pass under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "concluded"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 192,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "根据 CISG，货物不符合同时买方有哪些救济？",
+    "q_en": "Under the CISG, what remedies does the buyer have for non-conforming goods?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 193,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "买方检验货物和通知不符的义务是什么？",
+    "q_en": "What are the buyer's obligations to examine goods and give notice of non-conformity?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 194,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "根本违约与一般违约的区别在哪？",
+    "q_en": "What distinguishes a fundamental breach from an ordinary breach?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 195,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "CISG 下卖方可以补救交货不符吗？",
+    "q_en": "May the seller cure a non-conforming delivery under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 196,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "买方要求实际履行的条件是什么？",
+    "q_en": "What conditions apply to the buyer's right to require performance?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 197,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "CISG 下的损害赔偿如何计算？",
+    "q_en": "How are damages calculated under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 198,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "减价权在 CISG 中如何行使？",
+    "q_en": "How is the right to reduce the price exercised under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 199,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "货物风险转移后出现损坏由谁承担？",
+    "q_en": "Who bears loss after risk has passed?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 200,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "CISG 下的免责事由包括哪些？",
+    "q_en": "What exemptions from liability exist under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 201,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "买方解除合同的条件是什么？",
+    "q_en": "What conditions allow the buyer to avoid the contract?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 202,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "CISG 下的预期违约如何救济？",
+    "q_en": "What remedies exist for anticipatory breach under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 203,
+    "category": "国际货物买卖",
+    "subcategory": "货物相符",
+    "q_zh": "卖方交付替代货物的条件是什么？",
+    "q_en": "What conditions apply to delivery of substitute goods?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conform"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 204,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "GATT 1994 的国民待遇原则对进口产品的国内税有什么要求？",
+    "q_en": "What does GATT 1994 national treatment require for internal taxes on imports?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "national treatment",
+      "internal"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 205,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "最惠国待遇原则如何适用于关税措施？",
+    "q_en": "How does MFN treatment apply to tariff measures?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "advantage",
+      "favourable"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 206,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "关税约束义务对成员国的税率调整有何限制？",
+    "q_en": "How does tariff binding constrain members' rate changes?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "bound",
+      "schedule"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 207,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "数量限制在 GATT 下一般是否允许？有哪些例外？",
+    "q_en": "Are quantitative restrictions generally permitted under GATT, and what exceptions exist?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "quantitative"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 208,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "一般例外条款包括哪些情形？",
+    "q_en": "What situations fall under the general exceptions clause?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 209,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "安全例外条款的适用范围是什么？",
+    "q_en": "What is the scope of the security exceptions clause?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "security"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 210,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "技术法规与标准的区别是什么？",
+    "q_en": "What is the difference between technical regulations and standards?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 211,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "TBT 协定对成员国技术法规的制定有何要求？",
+    "q_en": "What does the TBT Agreement require of members' technical regulations?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 212,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "SPS 协定下卫生检疫措施的合法性如何判断？",
+    "q_en": "How is the legitimacy of sanitary measures assessed under the SPS Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "quarantine"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 213,
+    "category": "WTO",
+    "subcategory": "基本原则",
+    "q_zh": "透明度原则要求成员国公布哪些贸易措施？",
+    "q_en": "What trade measures must members publish under the transparency principle?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "publish"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 214,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "《贸易便利化协定》对成员国通关程序有哪些要求？",
+    "q_en": "What does the Trade Facilitation Agreement require of members' clearance procedures?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 215,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "预裁定制度在贸易便利化协定中如何规定？",
+    "q_en": "How does the TFA provide for advance rulings?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 216,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "单一窗口建设属于贸易便利化的哪项义务？",
+    "q_en": "Under which TFA obligation does single window fall?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 217,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "海关合作与信息交换的规定是什么？",
+    "q_en": "What are the provisions on customs cooperation and information exchange?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 218,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "过境自由原则对成员国的要求是什么？",
+    "q_en": "What does the freedom of transit principle require of members?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "transit"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 219,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "贸易便利化协定的特殊与差别待遇如何体现？",
+    "q_en": "How does special and differential treatment appear in the TFA?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 220,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "海关估价协定规定的估价方法有哪几种？",
+    "q_en": "What valuation methods does the Customs Valuation Agreement provide?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 221,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "进口许可程序协定对许可程序有何约束？",
+    "q_en": "How does the Import Licensing Agreement constrain licensing procedures?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "licens"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 222,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "原产地规则协定对成员国的要求是什么？",
+    "q_en": "What does the Rules of Origin Agreement require of members?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "origin"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 223,
+    "category": "WTO",
+    "subcategory": "具体协定",
+    "q_zh": "反倾销协定对调查程序有何要求？",
+    "q_en": "What does the Anti-Dumping Agreement require of investigation procedures?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "dumping"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 224,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "日本の関税法における輸入許可の手続きはどのようなものですか。",
+    "q_en": "What is the import permit procedure under Japan's Customs Act?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 225,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "関税法上の課税価格はどのように決定されますか。",
+    "q_en": "How is the dutiable value determined under Japan's Customs Act?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 226,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "関税の納期限はいつですか。",
+    "q_en": "When is the deadline for paying customs duty in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 227,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "関税の更正と賦課決定の違いは何ですか。",
+    "q_en": "What is the difference between correction and assessment of duty in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 228,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "保税地域にはどのような種類がありますか。",
+    "q_en": "What types of bonded area exist under Japanese customs law?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 229,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "関税の減免制度にはどのようなものがありますか。",
+    "q_en": "What duty reduction and exemption regimes exist in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 230,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "輸入貨物の検査はどのように行われますか。",
+    "q_en": "How is the inspection of imported goods conducted in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 231,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "関税定率法における原産地規則はどのように定められていますか。",
+    "q_en": "How are rules of origin provided under Japan's Customs Tariff Act?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 232,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "不服申立ての手続きはどうなっていますか。",
+    "q_en": "What is the procedure for filing an objection in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 233,
+    "category": "日本",
+    "subcategory": "关税",
+    "q_zh": "密輸に対する罰則はどのようになっていますか。",
+    "q_en": "What penalties apply to smuggling under Japanese law?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 234,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "外国為替及び外国貿易法に基づく輸出規制の仕組みは？",
+    "q_en": "What is the export control framework under Japan's Foreign Exchange and Foreign Trade Act?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 235,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "輸出貿易管理令に基づく許可が必要な貨物は？",
+    "q_en": "Which goods require a licence under Japan's Export Trade Control Order?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 236,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "包括許可制度とはどのようなものですか。",
+    "q_en": "What is Japan's bulk licence system?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 237,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "最終需要者確認の義務はどのように定められていますか。",
+    "q_en": "How are end-user confirmation obligations provided in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 238,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "輸出管理の対象となる技術は？",
+    "q_en": "Which technologies are subject to Japanese export control?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 239,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "キャッチオール規制とは何ですか。",
+    "q_en": "What is Japan's catch-all control?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 240,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "対内直接投資の審査手続きは？",
+    "q_en": "What is the review procedure for inward direct investment in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 241,
+    "category": "日本",
+    "subcategory": "外為法",
+    "q_zh": "外為法違反の罰則は？",
+    "q_en": "What penalties apply for violating Japan's Foreign Exchange Act?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "輸出"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 242,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "Under the Australian Customs Act 1901, what are the requirements for entering goods for home consumption?",
+    "q_en": "Under the Australian Customs Act 1901, what are the requirements for entering goods for home consumption?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 243,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What is an import declaration under the Australian Customs Act 1901?",
+    "q_en": "What is an import declaration under the Australian Customs Act 1901?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 244,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "How is the customs value of imported goods determined in Australia?",
+    "q_en": "How is the customs value of imported goods determined in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 245,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What licences or permissions are required to move goods into a warehouse in Australia?",
+    "q_en": "What licences or permissions are required to move goods into a warehouse in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 246,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What are the powers of customs officers to examine goods in Australia?",
+    "q_en": "What are the powers of customs officers to examine goods in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 247,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "How does Australia's Customs Act deal with goods that are prohibited imports?",
+    "q_en": "How does Australia's Customs Act deal with goods that are prohibited imports?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 248,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What duty concessions are available under Australian customs law?",
+    "q_en": "What duty concessions are available under Australian customs law?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 249,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What is the procedure for appealing a customs decision in Australia?",
+    "q_en": "What is the procedure for appealing a customs decision in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 250,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "How are transit goods treated under the Australian Customs Act?",
+    "q_en": "How are transit goods treated under the Australian Customs Act?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 251,
+    "category": "澳洲",
+    "subcategory": "海关",
+    "q_zh": "What are the record-keeping obligations for importers in Australia?",
+    "q_en": "What are the record-keeping obligations for importers in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "Customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 252,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "Under the Australian Export Control Act 2020, what permits are required to export prescribed goods?",
+    "q_en": "Under the Australian Export Control Act 2020, what permits are required to export prescribed goods?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 253,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "What are the export control rules for agricultural products in Australia?",
+    "q_en": "What are the export control rules for agricultural products in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 254,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "Who issues export permits under Australian export control law?",
+    "q_en": "Who issues export permits under Australian export control law?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 255,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "What are the fit and proper person requirements for export licence holders in Australia?",
+    "q_en": "What are the fit and proper person requirements for export licence holders in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 256,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "What are the inspection and audit powers under Australia's export control legislation?",
+    "q_en": "What are the inspection and audit powers under Australia's export control legislation?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 257,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "What sanctions apply for unlicensed exports under Australian law?",
+    "q_en": "What sanctions apply for unlicensed exports under Australian law?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "licens"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 258,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "How does Australia regulate the export of live animals?",
+    "q_en": "How does Australia regulate the export of live animals?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 259,
+    "category": "澳洲",
+    "subcategory": "出口管制",
+    "q_zh": "What are the requirements for exporting food under Australian export control law?",
+    "q_en": "What are the requirements for exporting food under Australian export control law?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 260,
+    "category": "跨法域比较",
+    "subcategory": "报关",
+    "q_zh": "中国海关法和美国 CFR 对报关代理人资格的要求有什么不同？",
+    "q_en": "How do Chinese customs law and the US CFR differ on customs broker licensing?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 261,
+    "category": "跨法域比较",
+    "subcategory": "关税",
+    "q_zh": "中国、美国与 WTO 对完税价格中运费保险费的处理规则有何差异？",
+    "q_en": "How do China, the US and the WTO differ on treatment of freight and insurance in customs valuation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 262,
+    "category": "跨法域比较",
+    "subcategory": "原产地",
+    "q_zh": "中国原产地条例与 WTO 原产地规则协定在实质性改变标准上有何差异？",
+    "q_en": "How do China's origin regulations and the WTO ROO Agreement differ on substantial transformation?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 263,
+    "category": "跨法域比较",
+    "subcategory": "出口管制",
+    "q_zh": "中国出口管制法和美国 EAR 在许可要求上的主要差异是什么？",
+    "q_en": "What are the main differences between China's Export Control Law and the US EAR licensing regime?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 264,
+    "category": "跨法域比较",
+    "subcategory": "检验检疫",
+    "q_zh": "中国和澳洲对进境动植物产品的检疫审批要求有何不同？",
+    "q_en": "How do China and Australia differ on quarantine approval for imported animal and plant products?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 265,
+    "category": "跨法域比较",
+    "subcategory": "贸易救济",
+    "q_zh": "中国反倾销条例与 WTO 反倾销协定在倾销认定上的差异是什么？",
+    "q_en": "How does China's anti-dumping regulation differ from the WTO Anti-Dumping Agreement on dumping determination?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 266,
+    "category": "跨法域比较",
+    "subcategory": "国际货物买卖",
+    "q_zh": "CISG 与国内法在货物瑕疵担保责任上有何区别？",
+    "q_en": "How does the CISG differ from domestic law on liability for defective goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 267,
+    "category": "跨法域比较",
+    "subcategory": "关税",
+    "q_zh": "日本的課税価格認定与中国的完税价格审定规则有何不同？",
+    "q_en": "How does Japan's dutiable value determination differ from China's customs valuation rules?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "wto",
+      "uncitral"
+    ],
+    "must_mention": [
+      "差异"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 268,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "离婚时夫妻共同财产如何分割？",
+    "q_en": "How is marital property divided in a divorce?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 269,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "故意杀人罪的量刑标准是什么？",
+    "q_en": "What is the sentencing standard for intentional homicide?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 270,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "有限责任公司章程的必备条款有哪些？",
+    "q_en": "What are the mandatory clauses of a limited liability company's articles?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 271,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "劳动合同解除需要提前多久通知？",
+    "q_en": "How much advance notice is required to terminate an employment contract?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 272,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "发明专利申请的实质审查流程是什么？",
+    "q_en": "What is the substantive examination process for an invention patent?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 273,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "房屋租赁合同纠纷应当向哪个法院起诉？",
+    "q_en": "Which court has jurisdiction over a residential lease dispute?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 274,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "遗产继承的法定顺序是什么？",
+    "q_en": "What is the statutory order of inheritance?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 275,
+    "category": "边界拒答",
+    "subcategory": "超出语料范围",
+    "q_zh": "交通事故责任如何认定？",
+    "q_en": "How is liability determined in a traffic accident?",
+    "jurisdiction": [],
+    "must_mention": [],
+    "expect": "refuse"
+  },
+  {
+    "id": 276,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "我们从越南进口一批纺织品，经香港转口，最终运到上海。整个链条涉及哪些海关手续和原产地认定问题？",
+    "q_en": "We import textiles from Vietnam, transshipped through Hong Kong to Shanghai. What customs procedures and origin issues arise?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 277,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "一批货物在海运途中受损，进口时已投保。报关时完税价格怎么申报？损失部分能否减征关税？",
+    "q_en": "Goods were damaged in transit and insured. How should the value be declared, and can duty be reduced for the damaged portion?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 278,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "我们打算以加工贸易方式进口原材料，成品全部出口。需要办什么手续？如果部分内销又该怎么补税？",
+    "q_en": "We plan to import raw materials under processing trade with all output exported. What procedures apply, and how is duty paid on domestic sales?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 279,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "海外客户要求我们出具原产地声明而不是原产地证书。这两种方式在法律效力和操作上有什么区别？",
+    "q_en": "An overseas customer asks for an origin declaration rather than a certificate. How do they differ legally and operationally?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 280,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "进口货物被海关扣留查验，产生了仓储费用。这笔费用由谁承担？扣留期限有规定吗？",
+    "q_en": "Imported goods were detained for inspection, incurring storage costs. Who bears these costs, and are there limits on detention?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 281,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "我们出口的一批设备被境外客户转卖给第三国，这属于再出口吗？需要履行什么义务？",
+    "q_en": "Equipment we exported was resold by the overseas customer to a third country. Is this a re-export, and what obligations apply?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 282,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "进口货物的成交价格因买方与卖方是关联企业而被海关质疑，我们应如何应对？",
+    "q_en": "Customs has questioned our transaction value because buyer and seller are related. How should we respond?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 283,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "跨境电商保税进口模式下，商品从保税仓发货给消费者，涉及哪些海关和税收环节？",
+    "q_en": "Under the cross-border e-commerce bonded import model, what customs and tax steps apply when goods ship from a bonded warehouse to consumers?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 284,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "同一批货物同时涉及反倾销税和进口环节增值税，税款计算顺序是什么？",
+    "q_en": "A consignment is subject to both anti-dumping duty and import VAT. In what order are the amounts calculated?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 285,
+    "category": "综合场景",
+    "subcategory": "业务流程",
+    "q_zh": "我们想申请海关高级认证企业资格，需要满足哪些条件？认证后能享受什么便利？",
+    "q_en": "We want to apply for Authorised Economic Operator status. What conditions apply, and what benefits does it bring?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 286,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物报关需要提交哪些单证？",
+    "q_en": "What documents are required for an export declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 287,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物的申报期限是如何规定的？",
+    "q_en": "What is the deadline for declaring export goods?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 288,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口退税的申请条件是什么？",
+    "q_en": "What conditions apply to applying for export tax refund?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 289,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物退关如何处理？",
+    "q_en": "How is an export cancellation handled?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 290,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口加工区货物出口的报关流程是什么？",
+    "q_en": "What is the declaration procedure for goods exported from an export processing zone?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 291,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物的报关单与进口报关单有何不同？",
+    "q_en": "How does an export declaration differ from an import declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 292,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物退税申报需要哪些凭证？",
+    "q_en": "What vouchers are needed for an export tax refund claim?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 293,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口收汇核销制度现在如何实施？",
+    "q_en": "How is the export proceeds verification system implemented today?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 294,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物的原产地证在报关时起什么作用？",
+    "q_en": "What role does the certificate of origin play in export declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 295,
+    "category": "出口",
+    "subcategory": "报关退税",
+    "q_zh": "出口货物被境外退运，已退税的如何处理？",
+    "q_en": "How is a refund already granted handled when exported goods are returned?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "出口"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 296,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "海关稽查的启动条件和程序是什么？",
+    "q_en": "What triggers a customs audit and what is the procedure?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 297,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "海关稽查的期限范围是多久？",
+    "q_en": "What period may a customs audit cover?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 298,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "企业在海关稽查中负有哪些配合义务？",
+    "q_en": "What cooperation obligations do enterprises have during a customs audit?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 299,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "海关可以查阅企业账簿吗？",
+    "q_en": "May customs inspect enterprise accounting records?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 300,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "高级认证企业的认证标准是什么？",
+    "q_en": "What are the criteria for Authorised Enterprise accreditation?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 301,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "失信企业会被采取哪些惩戒措施？",
+    "q_en": "What punitive measures apply to discredited enterprises?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 302,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "企业信用等级如何修复？",
+    "q_en": "How can an enterprise's credit rating be restored?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 303,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "AEO 互认对企业有什么实际好处？",
+    "q_en": "What practical benefits does AEO mutual recognition bring?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 304,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "海关对企业分类管理的依据是什么？",
+    "q_en": "On what basis does customs classify enterprises?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 305,
+    "category": "稽查信用",
+    "subcategory": "海关稽查",
+    "q_zh": "企业主动披露违规可以减轻处罚吗？",
+    "q_en": "Can voluntary disclosure reduce penalties for an enterprise?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "海关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 306,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "关税的纳税义务人是谁？",
+    "q_en": "Who is liable to pay customs duty?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 307,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "关税的纳税期限是多少天？",
+    "q_en": "How many days are allowed for duty payment?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 308,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "逾期缴纳税款会加收多少滞纳金？",
+    "q_en": "What late payment surcharge applies to overdue duty?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 309,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "纳税义务人可以提供担保延期缴税吗？",
+    "q_en": "May a duty payer provide security to defer payment?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 310,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "海关可以采取哪些税收保全措施？",
+    "q_en": "What tax preservation measures may customs take?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 311,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "强制执行措施包括哪些？",
+    "q_en": "What enforcement measures are available?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 312,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "纳税义务人对税款有异议怎么办？",
+    "q_en": "What can a duty payer do if it disputes the duty assessed?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 313,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "关税的纳税地点在哪里？",
+    "q_en": "Where is duty paid?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 314,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "进口环节海关代征税包括哪些？",
+    "q_en": "What taxes does customs collect on behalf of others at import?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 315,
+    "category": "关税",
+    "subcategory": "税收征管",
+    "q_zh": "减免税货物在监管期内转让需要补税吗？",
+    "q_en": "Is duty payable when duty-exempt goods are transferred within the supervision period?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "纳"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 316,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "商品归类的基本原则是什么？",
+    "q_en": "What are the basic principles of tariff classification?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 317,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "税则号列如何确定？",
+    "q_en": "How is the tariff heading determined?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 318,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "归类总规则包括哪几条？",
+    "q_en": "What are the General Rules for the Interpretation of the HS?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 319,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "成套货物如何归类？",
+    "q_en": "How are goods put up in sets classified?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 320,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "功能机组如何归类？",
+    "q_en": "How are functional units classified?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 321,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "未完成品或拆散件如何归类？",
+    "q_en": "How are incomplete or unassembled goods classified?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 322,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "对归类有争议可以申请预裁定吗？",
+    "q_en": "May an advance ruling be requested for a classification dispute?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 323,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "归类错误的补税期限如何确定？",
+    "q_en": "How is the recovery period determined for a classification error?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 324,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "海关化验结果与申报归类不符如何处理？",
+    "q_en": "How is a mismatch between laboratory results and the declared classification handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 325,
+    "category": "商品归类",
+    "subcategory": "税则归类",
+    "q_zh": "商标或品牌对商品归类有影响吗？",
+    "q_en": "Does brand or trademark affect classification?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 326,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "提前申报模式适用于哪些情形？",
+    "q_en": "To which situations does advance declaration apply?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 327,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "两步申报的具体流程是什么？",
+    "q_en": "What is the two-step declaration process?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 328,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "汇总征税的适用条件是什么？",
+    "q_en": "What conditions apply to consolidated duty payment?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 329,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "关税保证保险与保证金有何区别？",
+    "q_en": "How does duty guarantee insurance differ from a cash deposit?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 330,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "单一窗口可以办理哪些业务？",
+    "q_en": "What services can be handled through the single window?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 331,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "原产地证书自助打印需要什么条件？",
+    "q_en": "What conditions are needed for self-printing certificates of origin?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 332,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "海关预裁定申请的有效期和适用范围是什么？",
+    "q_en": "What are the validity and scope of a customs advance ruling?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 333,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "经核准出口商制度是什么？",
+    "q_en": "What is the approved exporter system?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 334,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "集中申报与逐票申报的区别是什么？",
+    "q_en": "How does consolidated declaration differ from per-shipment declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 335,
+    "category": "贸易便利化",
+    "subcategory": "通关模式",
+    "q_zh": "免除查验没有问题外贸企业吊装移位仓储费用政策是什么？",
+    "q_en": "What is the policy on waiving handling and storage fees for compliant enterprises?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 336,
+    "category": "US报关",
+    "subcategory": "英文场景",
+    "q_zh": "What is the process for filing an entry summary with US Customs?",
+    "q_en": "What is the process for filing an entry summary with US Customs?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 337,
+    "category": "US报关",
+    "subcategory": "英文场景",
+    "q_zh": "What is the difference between a formal and an informal entry in the United States?",
+    "q_en": "What is the difference between a formal and an informal entry in the United States?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 338,
+    "category": "US报关",
+    "subcategory": "英文场景",
+    "q_zh": "What is Customs Bonded Warehouse procedure in the US?",
+    "q_en": "What is Customs Bonded Warehouse procedure in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 339,
+    "category": "US报关",
+    "subcategory": "英文场景",
+    "q_zh": "What are the recordkeeping requirements under 19 CFR Part 163?",
+    "q_en": "What are the recordkeeping requirements under 19 CFR Part 163?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 340,
+    "category": "US关税",
+    "subcategory": "英文场景",
+    "q_zh": "How does US Customs determine the transaction value of imported merchandise?",
+    "q_en": "How does US Customs determine the transaction value of imported merchandise?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 341,
+    "category": "US关税",
+    "subcategory": "英文场景",
+    "q_zh": "What is the Merchandise Processing Fee in US customs?",
+    "q_en": "What is the Merchandise Processing Fee in US customs?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 342,
+    "category": "US关税",
+    "subcategory": "英文场景",
+    "q_zh": "How does the US apply the Harmonized Tariff Schedule?",
+    "q_en": "How does the US apply the Harmonized Tariff Schedule?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 343,
+    "category": "US关税",
+    "subcategory": "英文场景",
+    "q_zh": "What is the protest procedure for US customs decisions?",
+    "q_en": "What is the protest procedure for US customs decisions?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 344,
+    "category": "US原产地",
+    "subcategory": "英文场景",
+    "q_zh": "What are the US rules of origin for preferential tariff treatment?",
+    "q_en": "What are the US rules of origin for preferential tariff treatment?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "origin"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 345,
+    "category": "US原产地",
+    "subcategory": "英文场景",
+    "q_zh": "How does US Customs determine country of origin marking requirements?",
+    "q_en": "How does US Customs determine country of origin marking requirements?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "origin"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 346,
+    "category": "US出口管制",
+    "subcategory": "英文场景",
+    "q_zh": "What is the Commerce Control List under the EAR?",
+    "q_en": "What is the Commerce Control List under the EAR?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 347,
+    "category": "US出口管制",
+    "subcategory": "英文场景",
+    "q_zh": "What is an export licence exception under the EAR?",
+    "q_en": "What is an export licence exception under the EAR?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 348,
+    "category": "US出口管制",
+    "subcategory": "英文场景",
+    "q_zh": "What are the deemed export rules under the EAR?",
+    "q_en": "What are the deemed export rules under the EAR?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 349,
+    "category": "US出口管制",
+    "subcategory": "英文场景",
+    "q_zh": "Who is a US person for export control purposes?",
+    "q_en": "Who is a US person for export control purposes?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 350,
+    "category": "US出口管制",
+    "subcategory": "英文场景",
+    "q_zh": "What is the Entity List and what effect does listing have?",
+    "q_en": "What is the Entity List and what effect does listing have?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 351,
+    "category": "US保税",
+    "subcategory": "英文场景",
+    "q_zh": "What are the requirements for a US foreign trade zone?",
+    "q_en": "What are the requirements for a US foreign trade zone?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [],
+    "expect": "answer"
+  },
+  {
+    "id": 352,
+    "category": "US保税",
+    "subcategory": "英文场景",
+    "q_zh": "How are goods admitted to a US bonded warehouse?",
+    "q_en": "How are goods admitted to a US bonded warehouse?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "bond"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 353,
+    "category": "US担保",
+    "subcategory": "英文场景",
+    "q_zh": "What forms of customs bond are accepted by US Customs?",
+    "q_en": "What forms of customs bond are accepted by US Customs?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 354,
+    "category": "US担保",
+    "subcategory": "英文场景",
+    "q_zh": "What is the difference between a single entry and a continuous bond in the US?",
+    "q_en": "What is the difference between a single entry and a continuous bond in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 355,
+    "category": "WTO",
+    "subcategory": "英文场景",
+    "q_zh": "What are the transparency obligations under the TBT Agreement?",
+    "q_en": "What are the transparency obligations under the TBT Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "publish"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 356,
+    "category": "WTO",
+    "subcategory": "英文场景",
+    "q_zh": "How does the SPS Agreement require risk assessment?",
+    "q_en": "How does the SPS Agreement require risk assessment?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "risk"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 357,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の輸入通関手続きの流れを教えてください。",
+    "q_en": "What is the flow of import customs clearance procedures in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 358,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の関税の税率種類にはどのようなものがありますか。",
+    "q_en": "What types of customs duty rates exist in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 359,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の特恵関税制度とは何ですか。",
+    "q_en": "What is Japan's preferential tariff system?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 360,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の輸入禁止品目にはどのようなものがありますか。",
+    "q_en": "Which items are prohibited from import into Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 361,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の税関検査はどのように行われますか。",
+    "q_en": "How are Japanese customs examinations conducted?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 362,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の関税評価における加算要素は何ですか。",
+    "q_en": "What additions are made in Japanese customs valuation?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 363,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の輸入貨物の原産地証明はどう取得しますか。",
+    "q_en": "How does one obtain a certificate of origin for imports into Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 364,
+    "category": "日本",
+    "subcategory": "通关实务",
+    "q_zh": "日本の保税蔵置場の利用条件は？",
+    "q_en": "What are the conditions for using a bonded storage area in Japan?",
+    "jurisdiction": [
+      "jp"
+    ],
+    "must_mention": [
+      "関税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 365,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "How do I import goods into the United States for the first time? What are the key steps?",
+    "q_en": "How do I import goods into the United States for the first time? What are the key steps?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "entry"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 366,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "What happens if imported goods are not declared within the required time in the US?",
+    "q_en": "What happens if imported goods are not declared within the required time in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "entry"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 367,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does US Customs handle detained or seized merchandise?",
+    "q_en": "How does US Customs handle detained or seized merchandise?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "seizure"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 368,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the prior notice requirement for imported food in the US?",
+    "q_en": "What is the prior notice requirement for imported food in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "notice"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 369,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "How are antidumping and countervailing duties collected in the US?",
+    "q_en": "How are antidumping and countervailing duties collected in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "duty"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 370,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the role of a customs broker in the United States?",
+    "q_en": "What is the role of a customs broker in the United States?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "broker"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 371,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the US Importer Security Filing requirement work?",
+    "q_en": "How does the US Importer Security Filing requirement work?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "filing"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 372,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "What are the penalties for fraudulent customs declarations in the US?",
+    "q_en": "What are the penalties for fraudulent customs declarations in the US?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "penalty"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 373,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does US Customs value related-party transactions?",
+    "q_en": "How does US Customs value related-party transactions?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 374,
+    "category": "US综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the US customs ruling request procedure?",
+    "q_en": "What is the US customs ruling request procedure?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "ruling"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 375,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "How do I lodge an import declaration in Australia?",
+    "q_en": "How do I lodge an import declaration in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "declaration"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 376,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "What duties and taxes apply to imports into Australia?",
+    "q_en": "What duties and taxes apply to imports into Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "duty"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 377,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is a customs broker licence in Australia and who needs one?",
+    "q_en": "What is a customs broker licence in Australia and who needs one?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "broker"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 378,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does Australia's Customs Act treat goods temporarily imported?",
+    "q_en": "How does Australia's Customs Act treat goods temporarily imported?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "temporary"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 379,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "What are Australia's rules for importing food and agricultural products?",
+    "q_en": "What are Australia's rules for importing food and agricultural products?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "food"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 380,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does Australia regulate exports of controlled goods?",
+    "q_en": "How does Australia regulate exports of controlled goods?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "goods"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 381,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "What record keeping is required for Australian customs purposes?",
+    "q_en": "What record keeping is required for Australian customs purposes?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 382,
+    "category": "AU综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the Australian Trusted Trader programme?",
+    "q_en": "What is the Australian Trusted Trader programme?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "trader"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 383,
+    "category": "WTO综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the WTO dispute settlement process work for trade disputes?",
+    "q_en": "How does the WTO dispute settlement process work for trade disputes?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "dispute"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 384,
+    "category": "WTO综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the role of the WTO Committee on Trade Facilitation?",
+    "q_en": "What is the role of the WTO Committee on Trade Facilitation?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "committee"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 385,
+    "category": "WTO综合",
+    "subcategory": "英文实务",
+    "q_zh": "How are tariff quotas administered under WTO rules?",
+    "q_en": "How are tariff quotas administered under WTO rules?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "quota"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 386,
+    "category": "WTO综合",
+    "subcategory": "英文实务",
+    "q_zh": "What disciplines apply to export subsidies under the SCM Agreement?",
+    "q_en": "What disciplines apply to export subsidies under the SCM Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "subsid"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 387,
+    "category": "WTO综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the WTO Agreement on Agriculture treat market access?",
+    "q_en": "How does the WTO Agreement on Agriculture treat market access?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "agricultur"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 388,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "Under the CISG, what is the place of delivery when the contract does not specify it?",
+    "q_en": "Under the CISG, what is the place of delivery when the contract does not specify it?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "delivery"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 389,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the CISG deal with a contract for goods to be manufactured?",
+    "q_en": "How does the CISG deal with a contract for goods to be manufactured?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "manufactur"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 390,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the CISG rule on interest on overdue payments?",
+    "q_en": "What is the CISG rule on interest on overdue payments?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "interest"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 391,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the CISG treat a party's right to suspend performance?",
+    "q_en": "How does the CISG treat a party's right to suspend performance?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "suspend"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 392,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the preservation duty of the buyer on rejected goods under the CISG?",
+    "q_en": "What is the preservation duty of the buyer on rejected goods under the CISG?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "preserv"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 393,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "How does the CISG address mitigation of loss?",
+    "q_en": "How does the CISG address mitigation of loss?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "mitigat"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 394,
+    "category": "CISG综合",
+    "subcategory": "英文实务",
+    "q_zh": "What is the CISG rule on avoidance for non-payment?",
+    "q_en": "What is the CISG rule on avoidance for non-payment?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "avoid"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 395,
+    "category": "关税",
+    "subcategory": "实务追问",
+    "q_zh": "纳税义务人可以通过什么方式查询自己应缴的关税？",
+    "q_en": "How can a duty payer check the duty payable?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 396,
+    "category": "关税",
+    "subcategory": "实务追问",
+    "q_zh": "海关作出的完税价格审定决定是否必须书面通知？",
+    "q_en": "Must customs notify its valuation decision in writing?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 397,
+    "category": "关税",
+    "subcategory": "实务追问",
+    "q_zh": "进口货物的汇率应当按哪一天的汇率折算？",
+    "q_en": "Which exchange rate date applies to imported goods?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "汇率"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 398,
+    "category": "报关",
+    "subcategory": "实务追问",
+    "q_zh": "报关企业接受委托后可以转委托吗？",
+    "q_en": "May a customs broker sub-delegate its engagement?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "报关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 399,
+    "category": "报关",
+    "subcategory": "实务追问",
+    "q_zh": "无纸化报关需要满足什么条件？",
+    "q_en": "What conditions are needed for paperless declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "报关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 400,
+    "category": "报关",
+    "subcategory": "实务追问",
+    "q_zh": "报关单的申报日期如何确定？",
+    "q_en": "How is the declaration date determined?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "报关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 401,
+    "category": "原产地",
+    "subcategory": "实务追问",
+    "q_zh": "原产地证书上的第三方发票如何填报？",
+    "q_en": "How is a third-party invoice reflected on a certificate of origin?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 402,
+    "category": "原产地",
+    "subcategory": "实务追问",
+    "q_zh": "从保税区出口的货物原产地如何认定？",
+    "q_en": "How is origin determined for goods exported from a bonded zone?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 403,
+    "category": "出口管制",
+    "subcategory": "实务追问",
+    "q_zh": "出口管制许可申请需要多长时间审批？",
+    "q_en": "How long does export control licence approval take?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 404,
+    "category": "出口管制",
+    "subcategory": "实务追问",
+    "q_zh": "列入管制清单的物项出口到任何国家都需要许可吗？",
+    "q_en": "Do listed controlled items require a licence for export to any country?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "许可"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 405,
+    "category": "检验检疫",
+    "subcategory": "实务追问",
+    "q_zh": "进口食品的境外生产企业必须注册吗？",
+    "q_en": "Must overseas manufacturers of imported food be registered?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "注册"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 406,
+    "category": "检验检疫",
+    "subcategory": "实务追问",
+    "q_zh": "进口预包装食品标签有什么要求？",
+    "q_en": "What labelling requirements apply to imported prepackaged food?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "标签"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 407,
+    "category": "反倾销",
+    "subcategory": "实务追问",
+    "q_zh": "反倾销调查中利害关系方有哪些权利？",
+    "q_en": "What rights do interested parties have in an anti-dumping investigation?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "利害关系"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 408,
+    "category": "反倾销",
+    "subcategory": "实务追问",
+    "q_zh": "反倾销税追溯征收的条件是什么？",
+    "q_en": "What conditions allow retroactive collection of anti-dumping duty?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "追溯"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 409,
+    "category": "外汇",
+    "subcategory": "实务追问",
+    "q_zh": "跨境贸易人民币结算试点企业的条件是什么？",
+    "q_en": "What conditions apply to enterprises settling cross-border trade in RMB?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "人民币"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 410,
+    "category": "外汇",
+    "subcategory": "实务追问",
+    "q_zh": "出口收入存放境外的条件是什么？",
+    "q_en": "What conditions apply to retaining export proceeds abroad?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "境外"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 411,
+    "category": "担保",
+    "subcategory": "实务追问",
+    "q_zh": "担保财产被查封后海关如何处理？",
+    "q_en": "How does customs handle security assets that are seized?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "担保"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 412,
+    "category": "保税",
+    "subcategory": "实务追问",
+    "q_zh": "保税维修业务的适用范围是什么？",
+    "q_en": "What is the scope of bonded repair business?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 413,
+    "category": "保税",
+    "subcategory": "实务追问",
+    "q_zh": "保税展示交易的监管要求是什么？",
+    "q_en": "What supervision requirements apply to bonded exhibition and trading?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 414,
+    "category": "商品归类",
+    "subcategory": "实务追问",
+    "q_zh": "预裁定决定在全国范围内有效吗？",
+    "q_en": "Is an advance ruling valid nationwide?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "裁定"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 415,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我方从德国进口数控机床，合同价格 FOB 汉堡，海运至上海。报关时完税价格应如何申报？运费保险费是否必须计入？",
+    "q_en": "We import CNC machines from Germany on FOB Hamburg terms, shipped to Shanghai. How should the customs value be declared, and must freight and insurance be included?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 416,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "客户在信用证中要求提交原产地证书，但货物经第三国转运。这份证书还能用于享受协定税率吗？",
+    "q_en": "The L/C requires a certificate of origin, but goods transit a third country. Can that certificate still support agreement rate treatment?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 417,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我司拟出口一批可用于无人机的陀螺仪，客户在东南亚。如何判断是否需要办理两用物项出口许可？",
+    "q_en": "We plan to export gyroscopes usable in drones to a Southeast Asian customer. How do we determine whether a dual-use export licence is required?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr",
+      "jp"
+    ],
+    "must_mention": [
+      "两用物项"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 418,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "进口的一批冻肉在口岸查验时发现检疫不合格，海关要求退运。已缴的关税能退吗？滞港费用谁承担？",
+    "q_en": "A frozen meat consignment fails quarantine inspection at the port and customs orders return. Can duty already paid be refunded, and who bears the demurrage?",
+    "jurisdiction": [
+      "cn-laws",
+      "au"
+    ],
+    "must_mention": [
+      "检疫"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 419,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我们把进口的免税设备租给关联企业使用，监管期未满。这样操作合规吗？需要补税吗？",
+    "q_en": "We leased duty-exempt imported equipment to an affiliate before the supervision period expired. Is this compliant, and is duty payable?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "免税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 420,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "境外供应商报的成交价格明显低于同期同类货物，海关启动价格质疑程序。我们需要准备哪些证明材料？",
+    "q_en": "The overseas supplier's price is clearly below comparable goods, and customs has initiated a valuation doubt. What evidence should we prepare?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "完税价格"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 421,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我司以加工贸易方式进口的料件因订单取消需要内销，如何计算应补缴的税款并办理手续？",
+    "q_en": "Materials imported under processing trade must be sold domestically due to a cancelled order. How is the duty calculated and what formalities apply?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "内销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 422,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "一批货物同时被认定构成走私和违反外汇管理规定，两个部门的处罚可以并罚吗？",
+    "q_en": "A consignment is found to involve both smuggling and a foreign exchange violation. May both authorities impose penalties?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "走私"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 423,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "客户要求我们承担进口国的反倾销税，这笔税在合同价格条款中如何约定才有效？",
+    "q_en": "The customer asks us to bear anti-dumping duty in the importing country. How should this be addressed in the price clause?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "反倾销"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 424,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我们出口的设备在境外使用后需要返修再出口，进出境时适用什么监管方式？",
+    "q_en": "Equipment we exported needs repair abroad and re-export. What supervision mode applies on exit and re-entry?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "修理"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 425,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "进口货物因运输延误错过了关税配额年度，还能享受配额内税率吗？",
+    "q_en": "Imported goods missed the tariff quota year due to transport delay. Can the in-quota rate still apply?",
+    "jurisdiction": [
+      "cn-laws",
+      "wto"
+    ],
+    "must_mention": [
+      "配额"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 426,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "海关认定我们的商品归类错误并要求补税三年，这个追溯期有法律依据吗？",
+    "q_en": "Customs found our classification wrong and demands three years of back duty. Is there a legal basis for that lookback period?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "归类"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 427,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我们从韩国进口化妆品，成品需在境内分装后销售。分装是否改变原产地？",
+    "q_en": "We import cosmetics from Korea and repackage them domestically before sale. Does repackaging change the origin?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 428,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "企业被列入出口管制管控名单后，已签合同能否继续履行？在途货物如何处理？",
+    "q_en": "After being placed on an export control list, may existing contracts still be performed, and how are goods in transit handled?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "管控名单"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 429,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "进口货物在保税仓存储超过一年，是否会被强制处理？如何申请延期？",
+    "q_en": "Imported goods have been stored in a bonded warehouse for over a year. Will they be compulsorily disposed of, and how can an extension be sought?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "保税"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 430,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我司代理客户报关，客户提供的发票被证实伪造。报关企业需要承担什么责任？",
+    "q_en": "We declared on behalf of a client whose invoice proved to be forged. What liability does the customs broker bear?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "报关"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 431,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "进口二手设备被认定为固体废物，海关要求退运。退运前的仓储和处置费用由谁承担？",
+    "q_en": "Used equipment was classified as solid waste and customs ordered return. Who bears storage and disposal costs before return?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "固体废物"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 432,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "跨境电子商务零售进口商品的单次交易限值和年度限值是多少？超限值如何征税？",
+    "q_en": "What are the per-transaction and annual limits for cross-border e-commerce retail imports, and how are excess amounts taxed?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "跨境"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 433,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我们想申请成为经核准出口商自行出具原产地声明，需要满足哪些条件？",
+    "q_en": "We want to become an approved exporter issuing our own origin declarations. What conditions must be met?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 434,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "进口货物的买卖合同适用 CISG，但双方约定适用中国法。CISG 还能适用吗？",
+    "q_en": "The sale contract falls under the CISG, but the parties chose Chinese law. Does the CISG still apply?",
+    "jurisdiction": [
+      "uncitral",
+      "cn-laws"
+    ],
+    "must_mention": [
+      "contract"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 435,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "卖方在 CISG 下交付的货物有轻微瑕疵，买方能否直接宣告合同无效？",
+    "q_en": "Under the CISG the seller delivered goods with a minor defect. May the buyer simply avoid the contract?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "contract"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 436,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我方作为买方在 CISG 下发现货物不符，但已超过两年未通知卖方。还能主张权利吗？",
+    "q_en": "As buyer under the CISG we discovered non-conformity but gave no notice for over two years. Can we still claim?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "export"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 437,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "同一批进口货物被两个部门分别认定为固体废物和禁止进口货物，应适用哪个规定？",
+    "q_en": "The same imported goods were classified by two authorities as solid waste and as prohibited imports. Which rule applies?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "固体废物"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 438,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我司进口的货物在运输途中因承运人过失灭失，已投保一切险。报关前货物不存在了，还需要申报吗？",
+    "q_en": "Imported goods were lost in transit through the carrier's fault and were fully insured. Must they still be declared even though they no longer exist?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "申报"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 439,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "客户在境外要求我们把出口货物的原产地标为中国，但实际生产在越南。这样申报有什么风险？",
+    "q_en": "The customer asks us to mark origin as China though production is in Vietnam. What are the risks of such a declaration?",
+    "jurisdiction": [
+      "cn-laws"
+    ],
+    "must_mention": [
+      "原产地"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 440,
+    "category": "场景",
+    "subcategory": "单证审核",
+    "q_zh": "我们出口的技术资料包含受管制的软件代码，通过邮件发送。这属于出口管制范围吗？",
+    "q_en": "The technical materials we export contain controlled software code, sent by email. Does this fall within export control?",
+    "jurisdiction": [
+      "cn-laws",
+      "ecfr"
+    ],
+    "must_mention": [
+      "出口管制"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 441,
+    "category": "US定义",
+    "subcategory": "美国深度",
+    "q_zh": "What does 19 CFR Part 101 define as the customs territory of the United States?",
+    "q_en": "What does 19 CFR Part 101 define as the customs territory of the United States?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "customs territory"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 442,
+    "category": "US定义",
+    "subcategory": "美国深度",
+    "q_zh": "How does 19 CFR Part 101 define the term business day for customs purposes?",
+    "q_en": "How does 19 CFR Part 101 define the term business day for customs purposes?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "business day"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 443,
+    "category": "US报关代理",
+    "subcategory": "美国深度",
+    "q_zh": "What are the licence requirements for a customs broker under 19 CFR Part 111?",
+    "q_en": "What are the licence requirements for a customs broker under 19 CFR Part 111?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "licen"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 444,
+    "category": "US报关代理",
+    "subcategory": "美国深度",
+    "q_zh": "What examination must a customs broker pass under 19 CFR Part 111?",
+    "q_en": "What examination must a customs broker pass under 19 CFR Part 111?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "examination"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 445,
+    "category": "US报关代理",
+    "subcategory": "美国深度",
+    "q_zh": "What are the duties of a customs broker to its client under 19 CFR Part 111?",
+    "q_en": "What are the duties of a customs broker to its client under 19 CFR Part 111?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "duty"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 446,
+    "category": "US报关代理",
+    "subcategory": "美国深度",
+    "q_zh": "How can a customs broker licence be revoked or suspended?",
+    "q_en": "How can a customs broker licence be revoked or suspended?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "revok"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 447,
+    "category": "US报关代理",
+    "subcategory": "美国深度",
+    "q_zh": "What recordkeeping is required of customs brokers under 19 CFR Part 111?",
+    "q_en": "What recordkeeping is required of customs brokers under 19 CFR Part 111?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 448,
+    "category": "US担保",
+    "subcategory": "美国深度",
+    "q_zh": "What is the minimum bond amount required under 19 CFR Part 113?",
+    "q_en": "What is the minimum bond amount required under 19 CFR Part 113?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "bond"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 449,
+    "category": "US担保",
+    "subcategory": "美国深度",
+    "q_zh": "What are the conditions of a customs bond under 19 CFR Part 113?",
+    "q_en": "What are the conditions of a customs bond under 19 CFR Part 113?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "bond"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 450,
+    "category": "US担保",
+    "subcategory": "美国深度",
+    "q_zh": "What happens if a bond is breached under 19 CFR Part 113?",
+    "q_en": "What happens if a bond is breached under 19 CFR Part 113?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "breach"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 451,
+    "category": "US原产地",
+    "subcategory": "美国深度",
+    "q_zh": "What are the country of origin marking requirements under 19 CFR Part 134?",
+    "q_en": "What are the country of origin marking requirements under 19 CFR Part 134?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "marking"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 452,
+    "category": "US原产地",
+    "subcategory": "美国深度",
+    "q_zh": "What goods are exempt from country of origin marking requirements?",
+    "q_en": "What goods are exempt from country of origin marking requirements?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "exempt"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 453,
+    "category": "US原产地",
+    "subcategory": "美国深度",
+    "q_zh": "What is the ultimate purchaser rule in 19 CFR Part 134?",
+    "q_en": "What is the ultimate purchaser rule in 19 CFR Part 134?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "purchaser"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 454,
+    "category": "US报关",
+    "subcategory": "美国深度",
+    "q_zh": "What is required to make entry of merchandise under 19 CFR Part 141?",
+    "q_en": "What is required to make entry of merchandise under 19 CFR Part 141?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "entry"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 455,
+    "category": "US报关",
+    "subcategory": "美国深度",
+    "q_zh": "What are the time limits for entry under 19 CFR Part 141?",
+    "q_en": "What are the time limits for entry under 19 CFR Part 141?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "time"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 456,
+    "category": "US报关",
+    "subcategory": "美国深度",
+    "q_zh": "What is the entry process for imported goods under 19 CFR Part 142?",
+    "q_en": "What is the entry process for imported goods under 19 CFR Part 142?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "entry"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 457,
+    "category": "US报关",
+    "subcategory": "美国深度",
+    "q_zh": "What is a special entry procedure under 19 CFR Part 143?",
+    "q_en": "What is a special entry procedure under 19 CFR Part 143?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "entry"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 458,
+    "category": "US保税",
+    "subcategory": "美国深度",
+    "q_zh": "What is a warehouse entry under 19 CFR Part 144?",
+    "q_en": "What is a warehouse entry under 19 CFR Part 144?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "warehouse"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 459,
+    "category": "US保税",
+    "subcategory": "美国深度",
+    "q_zh": "How are goods withdrawn from a bonded warehouse under 19 CFR Part 144?",
+    "q_en": "How are goods withdrawn from a bonded warehouse under 19 CFR Part 144?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "withdraw"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 460,
+    "category": "US安全申报",
+    "subcategory": "美国深度",
+    "q_zh": "What is the Importer Security Filing requirement under 19 CFR Part 149?",
+    "q_en": "What is the Importer Security Filing requirement under 19 CFR Part 149?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "filing"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 461,
+    "category": "US安全申报",
+    "subcategory": "美国深度",
+    "q_zh": "What data elements must be included in an Importer Security Filing?",
+    "q_en": "What data elements must be included in an Importer Security Filing?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "data"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 462,
+    "category": "US查验",
+    "subcategory": "美国深度",
+    "q_zh": "How does customs examine and sample merchandise under 19 CFR Part 151?",
+    "q_en": "How does customs examine and sample merchandise under 19 CFR Part 151?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "examin"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 463,
+    "category": "US估值",
+    "subcategory": "美国深度",
+    "q_zh": "How is merchandise appraised under 19 CFR Part 152?",
+    "q_en": "How is merchandise appraised under 19 CFR Part 152?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "apprais"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 464,
+    "category": "US估值",
+    "subcategory": "美国深度",
+    "q_zh": "What are the alternative valuation methods under 19 CFR Part 152?",
+    "q_en": "What are the alternative valuation methods under 19 CFR Part 152?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 465,
+    "category": "US清算",
+    "subcategory": "美国深度",
+    "q_zh": "How are duties liquidated under 19 CFR Part 159?",
+    "q_en": "How are duties liquidated under 19 CFR Part 159?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "liquidat"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 466,
+    "category": "US清算",
+    "subcategory": "美国深度",
+    "q_zh": "What is the protest period after liquidation?",
+    "q_en": "What is the protest period after liquidation?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "protest"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 467,
+    "category": "US减免",
+    "subcategory": "美国深度",
+    "q_zh": "When is duty relief available for damaged merchandise under 19 CFR Part 158?",
+    "q_en": "When is duty relief available for damaged merchandise under 19 CFR Part 158?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "relief"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 468,
+    "category": "US执法",
+    "subcategory": "美国深度",
+    "q_zh": "What search and seizure powers does customs have under 19 CFR Part 162?",
+    "q_en": "What search and seizure powers does customs have under 19 CFR Part 162?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "seizure"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 469,
+    "category": "US执法",
+    "subcategory": "美国深度",
+    "q_zh": "What are the recordkeeping requirements under 19 CFR Part 163?",
+    "q_en": "What are the recordkeeping requirements under 19 CFR Part 163?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 470,
+    "category": "US执法",
+    "subcategory": "美国深度",
+    "q_zh": "How long must importers retain records under 19 CFR Part 163?",
+    "q_en": "How long must importers retain records under 19 CFR Part 163?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "retain"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 471,
+    "category": "US贸易救济",
+    "subcategory": "美国深度",
+    "q_zh": "What is the evasion investigation process under 19 CFR Part 165?",
+    "q_en": "What is the evasion investigation process under 19 CFR Part 165?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "evasion"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 472,
+    "category": "US贸易救济",
+    "subcategory": "美国深度",
+    "q_zh": "How is an allegation of duty evasion filed under 19 CFR Part 165?",
+    "q_en": "How is an allegation of duty evasion filed under 19 CFR Part 165?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "allegation"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 473,
+    "category": "US处罚",
+    "subcategory": "美国深度",
+    "q_zh": "What are liquidated damages under 19 CFR Part 172?",
+    "q_en": "What are liquidated damages under 19 CFR Part 172?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "damages"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 474,
+    "category": "US处罚",
+    "subcategory": "美国深度",
+    "q_zh": "How can liquidated damages be mitigated or remitted?",
+    "q_en": "How can liquidated damages be mitigated or remitted?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "mitigat"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 475,
+    "category": "US保税",
+    "subcategory": "美国深度",
+    "q_zh": "What rules apply to container stations under 19 CFR Part 19?",
+    "q_en": "What rules apply to container stations under 19 CFR Part 19?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "container"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 476,
+    "category": "US转运",
+    "subcategory": "美国深度",
+    "q_zh": "What is transportation in bond under 19 CFR Part 18?",
+    "q_en": "What is transportation in bond under 19 CFR Part 18?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "bond"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 477,
+    "category": "US财务",
+    "subcategory": "美国深度",
+    "q_zh": "What accounting procedures apply to customs under 19 CFR Part 24?",
+    "q_en": "What accounting procedures apply to customs under 19 CFR Part 24?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "account"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 478,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "What is the scope of the Export Administration Regulations in 15 CFR Part 730?",
+    "q_en": "What is the scope of the Export Administration Regulations in 15 CFR Part 730?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "scope"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 479,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "What is the general prohibition in 15 CFR Part 736?",
+    "q_en": "What is the general prohibition in 15 CFR Part 736?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "prohibit"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 480,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "How is the Commerce Country Chart used under 15 CFR Part 738?",
+    "q_en": "How is the Commerce Country Chart used under 15 CFR Part 738?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "country chart"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 481,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "What are the end-use and end-user controls in 15 CFR Part 744?",
+    "q_en": "What are the end-use and end-user controls in 15 CFR Part 744?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "end-user"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 482,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "What embargoes and other special controls apply under 15 CFR Part 746?",
+    "q_en": "What embargoes and other special controls apply under 15 CFR Part 746?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "embargo"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 483,
+    "category": "US出口管制",
+    "subcategory": "美国深度",
+    "q_zh": "What are the recordkeeping and enforcement provisions in 15 CFR Part 764?",
+    "q_en": "What are the recordkeeping and enforcement provisions in 15 CFR Part 764?",
+    "jurisdiction": [
+      "ecfr"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 484,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "What is the meaning of 'entry for home consumption' in the Australian Customs Act 1901?",
+    "q_en": "What is the meaning of 'entry for home consumption' in the Australian Customs Act 1901?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "home consumption"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 485,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "What is an information report under the Australian Customs Act?",
+    "q_en": "What is an information report under the Australian Customs Act?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "information"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 486,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "How are goods valued for duty purposes in Australia?",
+    "q_en": "How are goods valued for duty purposes in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 487,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "What is a Tariff Concession Order in Australia?",
+    "q_en": "What is a Tariff Concession Order in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "concession"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 488,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "What is the Australian Customs Tariff Act and how does it set rates?",
+    "q_en": "What is the Australian Customs Tariff Act and how does it set rates?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "tariff"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 489,
+    "category": "AU报关",
+    "subcategory": "澳洲深度",
+    "q_zh": "How does Australia treat goods imported for temporary use?",
+    "q_en": "How does Australia treat goods imported for temporary use?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "temporary"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 490,
+    "category": "AU保税",
+    "subcategory": "澳洲深度",
+    "q_zh": "What are the requirements for a licensed warehouse in Australia?",
+    "q_en": "What are the requirements for a licensed warehouse in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "warehouse"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 491,
+    "category": "AU保税",
+    "subcategory": "澳洲深度",
+    "q_zh": "How are goods moved under bond within Australia?",
+    "q_en": "How are goods moved under bond within Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "bond"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 492,
+    "category": "AU执法",
+    "subcategory": "澳洲深度",
+    "q_zh": "What are the seizure and forfeiture provisions of the Australian Customs Act?",
+    "q_en": "What are the seizure and forfeiture provisions of the Australian Customs Act?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "seizure"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 493,
+    "category": "AU执法",
+    "subcategory": "澳洲深度",
+    "q_zh": "What penalties apply for false declarations under the Australian Customs Act?",
+    "q_en": "What penalties apply for false declarations under the Australian Customs Act?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "penalt"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 494,
+    "category": "AU出口",
+    "subcategory": "澳洲深度",
+    "q_zh": "What goods are prescribed for export control under the Australian Export Control Act 2020?",
+    "q_en": "What goods are prescribed for export control under the Australian Export Control Act 2020?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "prescribed"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 495,
+    "category": "AU出口",
+    "subcategory": "澳洲深度",
+    "q_zh": "What is an export permit and who can apply in Australia?",
+    "q_en": "What is an export permit and who can apply in Australia?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "permit"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 496,
+    "category": "AU出口",
+    "subcategory": "澳洲深度",
+    "q_zh": "What are the conditions for holding an Australian export licence?",
+    "q_en": "What are the conditions for holding an Australian export licence?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "licence"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 497,
+    "category": "AU出口",
+    "subcategory": "澳洲深度",
+    "q_zh": "How does Australia regulate the export of live animals?",
+    "q_en": "How does Australia regulate the export of live animals?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "live animal"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 498,
+    "category": "AU出口",
+    "subcategory": "澳洲深度",
+    "q_zh": "What enforcement powers exist under the Australian Export Control Act?",
+    "q_en": "What enforcement powers exist under the Australian Export Control Act?",
+    "jurisdiction": [
+      "au"
+    ],
+    "must_mention": [
+      "enforce"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 499,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the most-favoured-nation obligation in Article I of GATT 1994?",
+    "q_en": "What is the most-favoured-nation obligation in Article I of GATT 1994?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "Article I"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 500,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article III of GATT 1994 require on national treatment?",
+    "q_en": "What does Article III of GATT 1994 require on national treatment?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "Article III"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 501,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the tariff binding obligation in Article II of GATT 1994?",
+    "q_en": "What is the tariff binding obligation in Article II of GATT 1994?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "binding"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 502,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What are the general exceptions in Article XX of GATT 1994?",
+    "q_en": "What are the general exceptions in Article XX of GATT 1994?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "Article XX"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 503,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the security exception in Article XXI of GATT 1994?",
+    "q_en": "What is the security exception in Article XXI of GATT 1994?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "Article XXI"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 504,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article XI of GATT 1994 say about quantitative restrictions?",
+    "q_en": "What does Article XI of GATT 1994 say about quantitative restrictions?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "quantitative"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 505,
+    "category": "WTO GATT",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the freedom of transit rule in Article V of GATT 1994?",
+    "q_en": "What is the freedom of transit rule in Article V of GATT 1994?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "transit"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 506,
+    "category": "WTO TFA",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article 1 of the Trade Facilitation Agreement require on publication?",
+    "q_en": "What does Article 1 of the Trade Facilitation Agreement require on publication?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "publication"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 507,
+    "category": "WTO TFA",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article 3 of the TFA require on advance rulings?",
+    "q_en": "What does Article 3 of the TFA require on advance rulings?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "advance ruling"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 508,
+    "category": "WTO TFA",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article 7 of the TFA require on release and clearance?",
+    "q_en": "What does Article 7 of the TFA require on release and clearance?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "clearance"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 509,
+    "category": "WTO TFA",
+    "subcategory": "WTO深度",
+    "q_zh": "What does Article 11 of the TFA cover on transit?",
+    "q_en": "What does Article 11 of the TFA cover on transit?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "transit"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 510,
+    "category": "WTO SPS",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the requirement for scientific justification under the SPS Agreement?",
+    "q_en": "What is the requirement for scientific justification under the SPS Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "scientific"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 511,
+    "category": "WTO SPS",
+    "subcategory": "WTO深度",
+    "q_zh": "How does the SPS Agreement treat international standards?",
+    "q_en": "How does the SPS Agreement treat international standards?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "standard"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 512,
+    "category": "WTO TBT",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the code of good practice under the TBT Agreement?",
+    "q_en": "What is the code of good practice under the TBT Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "code of good practice"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 513,
+    "category": "WTO TBT",
+    "subcategory": "WTO深度",
+    "q_zh": "What does the TBT Agreement require on conformity assessment?",
+    "q_en": "What does the TBT Agreement require on conformity assessment?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "conformity"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 514,
+    "category": "WTO AD",
+    "subcategory": "WTO深度",
+    "q_zh": "How is dumping defined in the Anti-Dumping Agreement?",
+    "q_en": "How is dumping defined in the Anti-Dumping Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "dumping"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 515,
+    "category": "WTO AD",
+    "subcategory": "WTO深度",
+    "q_zh": "What are the procedural requirements for an anti-dumping investigation?",
+    "q_en": "What are the procedural requirements for an anti-dumping investigation?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "investigation"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 516,
+    "category": "WTO CV",
+    "subcategory": "WTO深度",
+    "q_zh": "What are the six valuation methods under the Customs Valuation Agreement?",
+    "q_en": "What are the six valuation methods under the Customs Valuation Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "method"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 517,
+    "category": "WTO CV",
+    "subcategory": "WTO深度",
+    "q_zh": "What is transaction value under the Customs Valuation Agreement?",
+    "q_en": "What is transaction value under the Customs Valuation Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "transaction value"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 518,
+    "category": "WTO RO",
+    "subcategory": "WTO深度",
+    "q_zh": "What disciplines apply to rules of origin under the ROO Agreement?",
+    "q_en": "What disciplines apply to rules of origin under the ROO Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "origin"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 519,
+    "category": "WTO LIC",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the difference between automatic and non-automatic licensing?",
+    "q_en": "What is the difference between automatic and non-automatic licensing?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "automatic"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 520,
+    "category": "WTO SCM",
+    "subcategory": "WTO深度",
+    "q_zh": "What are prohibited subsidies under the SCM Agreement?",
+    "q_en": "What are prohibited subsidies under the SCM Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "prohibited"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 521,
+    "category": "WTO SCM",
+    "subcategory": "WTO深度",
+    "q_zh": "What is the de minimis threshold under the SCM Agreement?",
+    "q_en": "What is the de minimis threshold under the SCM Agreement?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "de minimis"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 522,
+    "category": "WTO TRIMS",
+    "subcategory": "WTO深度",
+    "q_zh": "What investment measures are prohibited under TRIMS?",
+    "q_en": "What investment measures are prohibited under TRIMS?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "investment"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 523,
+    "category": "WTO Agri",
+    "subcategory": "WTO深度",
+    "q_zh": "How does the Agreement on Agriculture treat market access?",
+    "q_en": "How does the Agreement on Agriculture treat market access?",
+    "jurisdiction": [
+      "wto"
+    ],
+    "must_mention": [
+      "market access"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 524,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 1 条规定了什么？",
+    "q_en": "What does Article 1 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "place of business"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 525,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 2 条规定了什么？",
+    "q_en": "What does Article 2 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "personal, family"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 526,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 6 条规定了什么？",
+    "q_en": "What does Article 6 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "party autonomy"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 527,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 11 条规定了什么？",
+    "q_en": "What does Article 11 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "writing"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 528,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 14 条规定了什么？",
+    "q_en": "What does Article 14 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "offer"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 529,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 18 条规定了什么？",
+    "q_en": "What does Article 18 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "acceptance"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 530,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 19 条规定了什么？",
+    "q_en": "What does Article 19 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "materially"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 531,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 21 条规定了什么？",
+    "q_en": "What does Article 21 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "late acceptance"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 532,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 25 条规定了什么？",
+    "q_en": "What does Article 25 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "fundamental breach"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 533,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 31 条规定了什么？",
+    "q_en": "What does Article 31 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "delivery"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 534,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 33 条规定了什么？",
+    "q_en": "What does Article 33 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "time for delivery"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 535,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 35 条规定了什么？",
+    "q_en": "What does Article 35 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "conformity"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 536,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 38 条规定了什么？",
+    "q_en": "What does Article 38 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "examine"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 537,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 39 条规定了什么？",
+    "q_en": "What does Article 39 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "notice"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 538,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 45 条规定了什么？",
+    "q_en": "What does Article 45 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "remedies"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 539,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 46 条规定了什么？",
+    "q_en": "What does Article 46 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "performance"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 540,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 49 条规定了什么？",
+    "q_en": "What does Article 49 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "avoid"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 541,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 50 条规定了什么？",
+    "q_en": "What does Article 50 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "reduce the price"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 542,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 74 条规定了什么？",
+    "q_en": "What does Article 74 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "damages"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 543,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 77 条规定了什么？",
+    "q_en": "What does Article 77 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "mitigate"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 544,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 78 条规定了什么？",
+    "q_en": "What does Article 78 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "interest"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 545,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 79 条规定了什么？",
+    "q_en": "What does Article 79 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "impediment"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 546,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 81 条规定了什么？",
+    "q_en": "What does Article 81 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "restitution"
+    ],
+    "expect": "answer"
+  },
+  {
+    "id": 547,
+    "category": "CISG深度",
+    "subcategory": "条文",
+    "q_zh": "CISG 第 88 条规定了什么？",
+    "q_en": "What does Article 88 of the CISG provide?",
+    "jurisdiction": [
+      "uncitral"
+    ],
+    "must_mention": [
+      "preserve"
+    ],
+    "expect": "answer"
+  }
+]

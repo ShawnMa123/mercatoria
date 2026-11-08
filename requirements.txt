@@ -1,0 +1,11 @@
+# mercatoria 运行时依赖
+# 安装：.venv/Scripts/python.exe -m pip install -r requirements.txt
+
+# PDF 解析（CISG 等只有 PDF 的源）
+pymupdf~=1.24
+
+# 网页抓取与解析
+lxml~=5.2
+
+# 契约模型
+pydantic~=2.7
