@@ -1,11 +1,18 @@
-# mercatoria 运行时依赖
-# 安装：.venv/Scripts/python.exe -m pip install -r requirements.txt
+# mercatoria runtime dependencies
+# Install: .venv/Scripts/python.exe -m pip install -r requirements.txt
+#
+# Comments are ASCII-only on purpose: pip decodes this file with the locale
+# codec, and a GBK Windows console raises UnicodeDecodeError on CJK comments.
+#
+# Note: the eval tooling (tools/eval_*.py, tools/run_eval.py) is pure
+# standard library and needs none of these. They are only for the corpus
+# fetch scripts.
 
-# PDF 解析（CISG 等只有 PDF 的源）
+# PDF text extraction (CISG and other PDF-only sources)
 pymupdf~=1.24
 
-# 网页抓取与解析
+# HTML parsing for the web fetchers
 lxml~=5.2
 
-# 契约模型
+# Data models
 pydantic~=2.7

@@ -28,12 +28,17 @@ if [ "${1:-}" = "--check" ]; then
     missing=0
     for spec in "ecfr/title-19:44" "ecfr/title-15:8" "wto:10" "au:3" "jp:4" "uncitral:1"; do
         dir="${spec%%:*}"; want="${spec##*:}"
-        got=$(find "$CORPUS/$dir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+        got=$(find "$CORPUS/$dir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
+        got=${got:-0}
         status="OK"
-        [ "$got" -lt "$want" ] && { status="缺 $((want - got)) 个"; missing=1; }
+        if [ "$got" -lt "$want" ]; then
+            status="缺 $((want - got)) 个"
+            missing=1
+        fi
         printf "  %-16s %3s/%-3s %s\n" "$dir" "$got" "$want" "$status"
     done
-    cn=$(find "$CORPUS/cn" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+    cn=$(find "$CORPUS/cn" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
+    cn=${cn:-0}
     printf "  %-16s %3s      %s\n" "cn" "$cn" "（需自行从 LawRefBook 获取）"
     exit "$missing"
 fi
