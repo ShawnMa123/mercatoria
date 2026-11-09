@@ -22,9 +22,7 @@ import time
 import urllib.request
 import uuid
 from pathlib import Path
-
-BASE_HOST = "localhost"
-BASE_PORT = 9380
+from urllib.parse import urlsplit
 
 CORPUS_ROOT = Path(__file__).resolve().parent.parent / "corpus"
 # 中文法规的原始出处。仓库不随附这批文件（见 corpus/README），
@@ -35,11 +33,21 @@ LAWS_ROOT = Path(os.environ.get("LAWREFBOOK_ROOT", ""))
 CN_EXCLUDE_DIRS = {"案例", ".git", ".venv", "node_modules"}
 
 
-from ragflow_config import api_key  # noqa: E402
+from ragflow_config import api_key, base_url  # noqa: E402
+
+_base = urlsplit(base_url())
+BASE_SCHEME = _base.scheme or "http"
+BASE_HOST = _base.hostname or "localhost"
+BASE_PORT = _base.port or (443 if BASE_SCHEME == "https" else 80)
+
+
+def _connection(timeout: int):
+    cls = http.client.HTTPSConnection if BASE_SCHEME == "https" else http.client.HTTPConnection
+    return cls(BASE_HOST, BASE_PORT, timeout=timeout)
 
 
 def api(method: str, path: str, key: str, body: dict | None = None, timeout: int = 300):
-    conn = http.client.HTTPConnection(BASE_HOST, BASE_PORT, timeout=timeout)
+    conn = _connection(timeout)
     headers = {"Authorization": "Bearer " + key}
     data = None
     if body is not None:
@@ -67,7 +75,7 @@ def upload_batch(dataset_id: str, paths: list[Path], key: str) -> dict:
         body += p.read_bytes() + b"\r\n"
     body += ("--%s--\r\n" % boundary).encode()
 
-    conn = http.client.HTTPConnection(BASE_HOST, BASE_PORT, timeout=600)
+    conn = _connection(600)
     conn.request(
         "POST",
         f"/api/v1/datasets/{dataset_id}/documents",

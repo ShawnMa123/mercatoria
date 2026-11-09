@@ -14,9 +14,9 @@ import sys
 import time
 import urllib.request
 
-from ragflow_config import api_key  # noqa: E402
+from ragflow_config import api_key, base_url  # noqa: E402
 
-BASE = "http://localhost:9380"
+BASE = base_url()
 
 
 def get(path: str, key: str, timeout: int = 120):

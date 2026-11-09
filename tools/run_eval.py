@@ -31,9 +31,9 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-from ragflow_config import api_key  # noqa: E402
+from ragflow_config import api_key, base_url  # noqa: E402
 
-BASE = "http://localhost:9380"
+BASE = base_url()
 CASES_FILE = Path(__file__).resolve().parent.parent / "corpus" / "eval" / "test_cases.json"
 OUT_DIR = CASES_FILE.parent
 
