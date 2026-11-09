@@ -1,7 +1,7 @@
 """评测工具链的共享配置：RAGFlow 地址与 API Key。
 
 为什么单独抽出来：
-    原来 6 个脚本各自硬编码了 KEY_FILE = Path(r"C:\\MWB\\Code\\...\\ragflow-cheatsheet.md")，
+    原来 6 个脚本各自硬编码了一个本地 cheatsheet 文件路径，
     那个文件里存着明文 API Key。仓库要公开，路径和密钥都不能进版本控制。
 
 取值优先级：
