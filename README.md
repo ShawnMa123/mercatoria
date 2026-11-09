@@ -8,12 +8,13 @@
 
 ## 这是什么，不是什么
 
-**是**：`queries + filters → chunks` 的检索服务。
+**是**：`queries + filters → chunks` 的检索服务；额外的 `/ask` 是可选便利层，
+直接返回「带引用的答案 + 匹配信息」，也可以关掉让 Agent 自己生成。
 
 **不是**：
 - ❌ RAG 库 —— 检索策略（切分/向量/rerank）是本仓库的自由
-- ❌ 问答系统 —— 生成答案、判断合规是 `smart-edit` 里 Agent 3 的 `answer` 节点
-- ❌ 法律意见 —— 本服务返回「可被引用的原文片段」，不是「结论」
+- ❌ 合规判断/法律意见 —— 返回「可被引用的原文片段」和基于片段的答案，不是「能做/不能做」的结论
+- ❌ 必须依赖 `smart-edit` 的 `answer` 节点 —— `/ask` 可选用，Agent 仍可直接消费 `/retrieve`
 
 **另一个区分**：通用文档检索引擎只回答「我找到了什么」，
 `mercatoria` 还要回答「我**不**覆盖什么」（`corpus.jurisdictions` / `corpus.status`）。
@@ -62,10 +63,12 @@ chunk_id = sha256(doc_id + "\x1f" + article_id + "\x1f" + normalize(text))[:16]
 
 ```text
 mercatoria/
+├── mercatoria/           轻量检索/问答服务（API、索引、分片）
 ├── tools/                评测与导入工具链
 ├── scripts/              环境重建脚本
-├── corpus/               仅保留抓取脚本与说明（语料本身不入库）
+├── corpus/               抓取脚本、manifest 与说明（语料本身不入库）
 │   ├── README.md         语料来源与规模
+│   ├── manifest.json     稳定 doc_id + 法域/时效/业务类型
 │   └── fetch_*.py        从原始来源抓取
 ├── docs/                 设计文档（本地保留，不公开）
 ├── ragflow-src/          RAGFlow 源码副本（本地保留，不公开）
@@ -73,7 +76,7 @@ mercatoria/
 ```
 
 > [!IMPORTANT]
-> **本仓库只包含工具链代码，不包含语料与第三方源码。**
+> **本仓库包含工具链与服务代码，不包含语料与第三方源码。**
 >
 > | 目录 | 是否入库 | 原因 | 如何重建 |
 > |---|---|---|---|
@@ -103,6 +106,82 @@ python tools/eval_retrieval.py --kb <kb_id> --tag baseline
 > [!NOTE]
 > API Key 通过环境变量或 `.env` 提供，不再硬编码在脚本里。
 > `.env` 已在 `.gitignore` 中。
+
+## 轻量 API 服务（推荐运行时）
+
+RAGFlow 保留为评测基线；运行时使用本仓库的 `mercatoria` 包：
+一个 Python 进程 + SQLite 索引 + NumPy 暴力向量检索。embedding 与
+answer 都走 OpenAI-compatible 外部网关，不在本地加载模型，不需要 GPU。
+
+```bash
+# 安装（numpy / fastapi / uvicorn）
+.venv/Scripts/pip install -e .
+
+# 1. 生成稳定 doc_id + 法规元数据
+python -m mercatoria --config config.example.json manifest
+
+# 2. 建索引（--limit 用于冒烟；全量约 7.5k chunk）
+python -m mercatoria --config config.example.json rebuild --limit 2
+python -m mercatoria --config config.example.json rebuild
+
+# 3. 启动 API（无前端；FastAPI 的 /docs 仅作调试）
+python -m mercatoria --config config.example.json serve --port 8080
+```
+
+```bash
+# 纯检索：返回 chunks + matched_terms / matched_fields + diagnostics
+curl -s localhost:8080/v1/retrieve \
+  -H 'Content-Type: application/json' \
+  -d '{"queries":["完税价格由哪些项目组成"],"top_k":5,
+       "fields":{"business_type":"customs","country":"CN"}}'
+
+# 检索 + 可选答案：answer.enabled=false 时只返回匹配信息
+curl -s localhost:8080/v1/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"完税价格由哪些项目组成？","top_k":5}'
+```
+
+索引默认写到 `data/index/`，`current.txt` 指向活动版本；重建成功后才切换。
+改分片参数必须重建，改 `vector_weight/top_k` 不需要。当前默认
+`vector_weight=0.8`（本地 539 条：Hit@5 **0.8126**、Hit@10 **0.8794**、
+MRR **0.6890**；RAGFlow v2 基线为 0.783 / 0.859 / 0.656。59 条分层样本上
+0.5→0.8136、0.7→0.8983、0.8→0.9153 Hit@5。这是本地 BM25+cosine 的标定，
+不能直接套用 RAGFlow 的 0.5。正式使用前建议用自己的用例再扫一遍）。embedding 按
+`(model, text)` 缓存到 `data/embedding-cache.db`，重建时只算变化过的 chunk。
+完整配置见 `config.example.json`。
+
+| 端点 | 用途 |
+|---|---|
+| `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
+| `POST /ask`（别名 `/v1/ask`） | 检索 + 可选答案 + citations；`answer.enabled=false` 只返回检索 |
+| `GET /v1/config` / `PUT /v1/config` | 查看/更新检索、生成、分片配置 |
+| `POST /v1/admin/rebuild` | 后台重建索引；`background=false` 同步冒烟 |
+| `GET /v1/admin/rebuild/{job_id}` | 重建进度 |
+| `POST /v1/admin/activate/{version}` | 切换活动索引 |
+| `GET /health` | 活动索引、chunk 数、文档数 |
+
+```bash
+# 单元/接口测试（离线，不调外部网关）
+python -m unittest discover -s tests -v
+```
+
+Agent 也可以不走 HTTP，直接进程内调用：
+
+```python
+from mercatoria import load_config, open_current, Retriever
+
+cfg = load_config("config.example.json")
+retriever = Retriever(open_current(cfg.resolved_index_dir()), cfg)
+result = retriever.retrieve(["完税价格由哪些项目组成"], top_k=5)
+```
+
+> [!NOTE]
+> 跨语言检索仍是已知短板：中文问 WTO/CISG 等英文语料时，向量召回可能不足。
+> 服务保留了纯检索接口，后续可在 `retrieve` 前加语言路由/查询翻译，不影响本层契约。
+
+> [!IMPORTANT]
+> 调分片会改变 chunk 边界与 `chunk_id`。下游引用请同时保存
+> `article_id` + `index.version`；`chunk_id` 只代表某次索引里的段落。
 
 ## 评测
 
