@@ -3,8 +3,9 @@
 ## 导入
 
 ```bash
-# 建 laws 解析器知识库（一次性）
-python tools/create_kb.py
+# 建 laws 解析器知识库（一次性）。
+# 仓库不提供建库脚本：在 RAGFlow 界面新建知识库，解析方法选 `laws`；
+# import_to_ragflow.py 会校验目标库的 parser_id，不匹配会拒绝导入。
 
 # 导入语料（先 dry-run 看清单）
 python tools/import_to_ragflow.py --kb <kb_id> --dry-run
@@ -15,6 +16,24 @@ python tools/check_import.py --kb <kb_id> --wait
 ```
 
 ## 评测
+
+## 本地服务（推荐）
+
+```bash
+# 先建索引（见根 README），然后直接跑本地检索评测
+python tools/eval_local.py --config config.example.json --limit 50
+python tools/eval_local.py --config config.example.json --tag local-final
+
+# 参数扫描（不需要重建索引）
+for w in 0.3 0.5 0.7; do
+  python tools/eval_local.py --limit 50 --vec-weight $w --tag w$w
+done
+```
+
+`eval_retrieval.py` 保留为 RAGFlow 基线；`eval_local.py` 走
+`mercatoria.retrieve`，复用同一批用例和 strict/loose 判据。
+
+## RAGFlow 基线
 
 ```bash
 # 生成用例
