@@ -4,9 +4,9 @@
 # Comments are ASCII-only on purpose: pip decodes this file with the locale
 # codec, and a GBK Windows console raises UnicodeDecodeError on CJK comments.
 #
-# Note: the eval tooling (tools/eval_*.py, tools/run_eval.py) is pure
-# standard library and needs none of these. They are only for the corpus
-# fetch scripts.
+# Note: the RAGFlow eval tooling (tools/eval_retrieval.py,
+# tools/run_eval.py) is pure standard library. The local service and
+# tools/eval_local.py need the numpy/fastapi/uvicorn extras below.
 
 # PDF text extraction (CISG and other PDF-only sources)
 pymupdf~=1.24
@@ -16,3 +16,11 @@ lxml~=5.2
 
 # Data models
 pydantic~=2.7
+
+# Lightweight retrieval/answer service (no GPU, no RAGFlow runtime)
+numpy>=1.26
+fastapi>=0.110
+uvicorn>=0.29
+
+# HTTP test client for FastAPI tests
+httpx>=0.27

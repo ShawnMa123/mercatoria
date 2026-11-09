@@ -1,0 +1,45 @@
+{
+  "corpus_dir": "corpus",
+  "index_dir": "data/index",
+  "manifest_path": "corpus/manifest.json",
+  "chunking": {
+    "unit": "article",
+    "max_chars": 2048,
+    "min_chars": 0,
+    "overlap": 120,
+    "include_heading": true,
+    "strip_comments": true,
+    "drop_preamble": true,
+    "drop_sections": true,
+    "max_chunks_per_article": 0
+  },
+  "embedding": {
+    "base": "http://localhost:3425/v1",
+    "model": "my-team-2k/qwen3.7-text-embedding",
+    "api_key": "",
+    "batch_size": 16,
+    "max_batch": 20,
+    "concurrency": 4,
+    "timeout": 120,
+    "dim": 1024,
+    "retries": 3,
+    "cache_path": "data/embedding-cache.db"
+  },
+  "retrieval": {
+    "top_k": 5,
+    "vector_weight": 0.8,
+    "bm25_k1": 1.5,
+    "bm25_b": 0.75,
+    "similarity_threshold": 0.0
+  },
+  "answer": {
+    "enabled": true,
+    "base": "http://localhost:3425/v1",
+    "model": "local-wb/cn:deepseek-v4.1-flash",
+    "api_key": "",
+    "max_tokens": 8192,
+    "temperature": 0.0,
+    "timeout": 180,
+    "max_context_chunks": 12
+  }
+}

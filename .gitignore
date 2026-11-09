@@ -230,6 +230,7 @@ structtest/
 
 # 评测中间结果（可重跑生成）
 corpus/eval/retrieval_*.json
+corpus/eval/local_*.json
 corpus/eval/dualpath_*.json
 corpus/eval/sweep_*.json
 corpus/eval/cases_part*.json
@@ -256,3 +257,7 @@ docs/
 
 # 4) 本地凭证
 .env
+
+# 5) 本地索引与运行配置（可重建）
+data/
+config.json
