@@ -172,6 +172,22 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(dup_job["result"]["indexed"], 0)
         self.assertTrue(dup_job["result"]["documents"][0]["duplicate"])
 
+    def test_delete_document_rebuilds_without_it(self) -> None:
+        resp = self.client.post(
+            "/v1/documents",
+            files=[("files", ("delete-me.md", b"## Test\n\nfirst article\n", "text/markdown"))],
+            data={"jurisdiction": "CN"},
+        )
+        job = self._wait_job(resp.json()["job_id"])
+        self.assertEqual(job["status"], "done")
+        doc_id = job["result"]["documents"][0]["doc_id"]
+        deleted = self.client.delete(f"/v1/documents/{doc_id}")
+        self.assertEqual(deleted.status_code, 200)
+        delete_job = self._wait_job(deleted.json()["job_id"])
+        self.assertEqual(delete_job["status"], "done")
+        self.assertEqual(self.client.get("/v1/documents").json()["count"], 0)
+        self.assertEqual(self.client.get(f"/v1/documents/{doc_id}").status_code, 404)
+
     def _wait_job(self, job_id: str, timeout: float = 15.0) -> dict:
         deadline = time.time() + timeout
         while time.time() < deadline:

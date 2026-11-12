@@ -98,6 +98,7 @@ class Retriever:
             "threshold": self.cfg.retrieval.similarity_threshold,
             "rerank": self.rerank is not None,
             "candidates": self.cfg.rerank.candidates,
+            "expand_cross_language": self.cfg.retrieval.expand_cross_language,
         }
         return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
 

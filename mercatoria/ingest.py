@@ -191,14 +191,21 @@ def ingest_batch(
         if progress:
             progress("index", done, total)
 
-    result = build_index(
-        manifest,
-        cfg,
-        cfg.resolved_index_dir(),
-        embed_fn=embed_fn,
-        activate=True,
-        progress=index_progress,
-    )
+    try:
+        result = build_index(
+            manifest,
+            cfg,
+            cfg.resolved_index_dir(),
+            embed_fn=embed_fn,
+            activate=True,
+            progress=index_progress,
+        )
+    except Exception as exc:
+        for doc in parsed:
+            registry.update(
+                doc["doc_id"], status="failed", error=f"index rebuild failed: {exc}"[:500]
+            )
+        raise
     if progress:
         progress("index", len(manifest["docs"]), len(manifest["docs"]))
 
