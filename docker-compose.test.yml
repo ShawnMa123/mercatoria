@@ -25,3 +25,13 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+
+  test:
+    build:
+      context: .
+      target: test
+    image: mercatoria:test-suite
+    profiles: ["test"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]

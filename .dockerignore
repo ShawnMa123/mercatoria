@@ -6,7 +6,6 @@ ragflow-src
 docs
 openspec
 tools
-tests
 scripts
 mercatoria.egg-info
 **/__pycache__

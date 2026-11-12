@@ -1,9 +1,11 @@
 # mercatoria test image: corpus and the active SQLite index are baked in.
 #
-# The index is tied to the embedding model recorded in its metadata
-# (my-team-2k/qwen3.7-text-embedding, 1024 dims). Rebuild it when the
-# embedding model or chunking config changes:
-#   docker run --rm -e MERCATORIA_FORCE_REBUILD=1 ... mercatoria:test
+# Targets:
+#   runtime (default)  service image with corpus + active index
+#   test               unit/integration tests, no corpus or index needed
+#
+#   docker build -t mercatoria:test .
+#   docker build --target test -t mercatoria:test-suite .
 FROM python:3.11-slim AS index
 
 WORKDIR /stage
@@ -14,7 +16,7 @@ RUN set -eu; \
     cp "/stage/index/$keep" /stage/out/; \
     cp /stage/index/current.txt /stage/out/
 
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -28,6 +30,18 @@ RUN pip install --no-cache-dir \
     "pymupdf>=1.24" "python-docx>=1.1" "python-multipart>=0.0.9"
 
 COPY mercatoria ./mercatoria
+COPY pyproject.toml ./
+
+FROM base AS test
+
+RUN pip install --no-cache-dir "httpx>=0.27"
+COPY tests ./tests
+COPY config.example.json ./config.json
+
+CMD ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
+
+FROM base AS runtime
+
 COPY corpus ./corpus
 COPY config.example.json ./config.json
 COPY --from=index /stage/out ./data/index
