@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -66,6 +67,8 @@ class ApiTests(unittest.TestCase):
                     "corpus_dir": str(self.corpus),
                     "index_dir": str(self.root / "index"),
                     "manifest_path": str(self.manifest_path),
+                    "documents_dir": str(self.root / "documents"),
+                    "uploads_dir": str(self.root / "uploads"),
                     "embedding": {"dim": 3, "batch_size": 2, "api_key": "secret"},
                     "rerank": {"enabled": False, "api_key": "rerank-secret"},
                     "answer": {"enabled": False},
@@ -82,6 +85,7 @@ class ApiTests(unittest.TestCase):
         service = self.app.state.service
         if service.index is not None:
             service.index.conn.close()
+        service.registry.close()
         self.tmp.cleanup()
 
     def test_health_and_retrieve(self) -> None:
@@ -132,6 +136,50 @@ class ApiTests(unittest.TestCase):
             "/v1/chat", json={"messages": [{"role": "assistant", "content": "你好"}]}
         )
         self.assertEqual(resp.status_code, 400)
+
+    def test_upload_runs_ingest_and_lists_chunks(self) -> None:
+        resp = self.client.post(
+            "/v1/documents",
+            files=[("files", ("upload.md", b"## Test\n\nfirst article\n", "text/markdown"))],
+            data={"jurisdiction": "CN", "applies_to": "customs"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        job_id = resp.json()["job_id"]
+        job = self._wait_job(job_id)
+        self.assertEqual(job["status"], "done", job)
+        self.assertEqual(job["result"]["indexed"], 1)
+
+        listing = self.client.get("/v1/documents").json()
+        self.assertEqual(listing["count"], 1)
+        doc_id = listing["documents"][0]["doc_id"]
+        self.assertEqual(listing["documents"][0]["status"], "ready")
+        self.assertGreater(listing["documents"][0]["chunk_count"], 0)
+
+        detail = self.client.get(f"/v1/documents/{doc_id}")
+        self.assertEqual(detail.status_code, 200)
+        chunks = self.client.get(f"/v1/documents/{doc_id}/chunks")
+        self.assertEqual(chunks.status_code, 200)
+        self.assertGreaterEqual(chunks.json()["total"], 1)
+        self.assertIn("text", chunks.json()["chunks"][0])
+
+        duplicate = self.client.post(
+            "/v1/documents",
+            files=[("files", ("upload.md", b"## Test\n\nfirst article\n", "text/markdown"))],
+            data={"jurisdiction": "CN"},
+        )
+        self.assertEqual(duplicate.status_code, 200)
+        dup_job = self._wait_job(duplicate.json()["job_id"])
+        self.assertEqual(dup_job["result"]["indexed"], 0)
+        self.assertTrue(dup_job["result"]["documents"][0]["duplicate"])
+
+    def _wait_job(self, job_id: str, timeout: float = 15.0) -> dict:
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            job = self.client.get(f"/v1/jobs/{job_id}").json()
+            if job["status"] != "running":
+                return job
+            time.sleep(0.05)
+        self.fail(f"job did not finish: {job_id}")
 
     def test_config_pending_rebuild(self) -> None:
         resp = self.client.put("/v1/config", json={"retrieval": {"top_k": 3}})

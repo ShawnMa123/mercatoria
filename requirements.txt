@@ -17,6 +17,10 @@ lxml~=5.2
 # Data models
 pydantic~=2.7
 
+# Document parsing and multipart uploads
+python-docx>=1.1
+python-multipart>=0.0.9
+
 # Lightweight retrieval/answer service (no GPU, no RAGFlow runtime)
 numpy>=1.26
 fastapi>=0.110

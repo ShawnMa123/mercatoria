@@ -370,7 +370,32 @@ def _records_for_unit_article(
                 )
             )
             ordinal += 1
-    return records
+    if records:
+        return records
+
+    # A file with only non-article headings (or sections dropped by config)
+    # must still become searchable: fall back to one whole-document chunk.
+    start, end = _trim_span(body, 0, len(body))
+    if start >= end:
+        return []
+    text = body[start:end]
+    article_id = f"{doc_id}:doc"
+    if not cfg.include_heading:
+        text, start = _drop_heading_marker(text, start)
+    return [
+        ChunkRecord(
+            chunk_id=make_chunk_id(doc_id, article_id, text),
+            doc_id=doc_id,
+            article_id=article_id,
+            article_label="document",
+            text=text,
+            section="",
+            part=0,
+            ordinal=0,
+            start=start,
+            end=end,
+        )
+    ]
 
 
 def _records_for_unit_section(

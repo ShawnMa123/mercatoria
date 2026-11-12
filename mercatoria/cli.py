@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .config import load_config
+from .documents import DocumentRegistry, combined_manifest
 from .manifest import load_manifest, write_manifest
 from .store import build_index
 
@@ -26,15 +27,21 @@ def _cmd_rebuild(args: argparse.Namespace) -> int:
         manifest = load_manifest(manifest_path)
     else:
         manifest = write_manifest(cfg.resolved_corpus_dir(), manifest_path)
+    registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
+    try:
+        merged = combined_manifest(manifest, registry)
+    finally:
+        registry.close()
     if args.limit:
-        manifest = {**manifest, "docs": manifest["docs"][: args.limit]}
+        docs = merged["docs"][: args.limit]
+        merged = {**merged, "docs": docs, "documents": len(docs)}
 
     def progress(stage: str, done: int, total: int) -> None:
         if stage in {"chunk", "embed", "done"}:
             print(f"{stage}: {done}/{total}", flush=True)
 
     result = build_index(
-        manifest,
+        merged,
         cfg,
         args.out or cfg.resolved_index_dir(),
         activate=not args.no_activate,

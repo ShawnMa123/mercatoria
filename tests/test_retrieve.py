@@ -186,6 +186,14 @@ class RetrievalTests(unittest.TestCase):
         self.assertIsNotNone(result["chunks"][0]["score_parts"]["rerank"])
         self.assertLessEqual(len(result["chunks"]), 2)
 
+    def test_query_cache_is_isolated_from_caller_mutation(self) -> None:
+        first = self.retriever.retrieve(["关税"], top_k=2)
+        self.assertTrue(first["chunks"])
+        original = first["chunks"][0]["text"]
+        first["chunks"][0]["text"] = "mutated"
+        second = self.retriever.retrieve(["关税"], top_k=2)
+        self.assertEqual(second["chunks"][0]["text"], original)
+
     def test_rerank_failure_keeps_first_stage_order(self) -> None:
         def broken_rerank(query: str, docs: list[str], top_n: int):
             raise RuntimeError("reranker down")

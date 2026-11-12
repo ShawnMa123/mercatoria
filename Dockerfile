@@ -23,7 +23,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir "numpy>=1.26" "fastapi>=0.110" "uvicorn>=0.29"
+RUN pip install --no-cache-dir \
+    "numpy>=1.26" "fastapi>=0.110" "uvicorn>=0.29" \
+    "pymupdf>=1.24" "python-docx>=1.1" "python-multipart>=0.0.9"
 
 COPY mercatoria ./mercatoria
 COPY corpus ./corpus

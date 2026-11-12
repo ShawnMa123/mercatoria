@@ -3,26 +3,34 @@
 from __future__ import annotations
 
 import copy
+import shutil
 import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from .answer import ChatError, answer_question
 from .config import AppConfig, load_config, save_config
+from .documents import DocumentRegistry
 from .embed import EmbeddingError
-from .manifest import build_manifest, load_manifest, write_manifest
+from .ingest import (
+    IngestError,
+    UploadItem,
+    ingest_batch,
+    rebuild_with_uploads,
+    reindex_document,
+)
+from .manifest import write_manifest
 from .retrieve import Retriever
 from .store import (
     CorpusUnavailable,
     Index,
     IndexNotFound,
     activate_index,
-    build_index,
     open_current,
 )
 
@@ -77,6 +85,8 @@ class Service:
         self.error: str | None = None
         self.pending_rebuild = False
         self.jobs: dict[str, dict[str, Any]] = {}
+        self.registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
+        self.job_lock = threading.Lock()
         self.reload()
 
     def reload(self) -> None:
@@ -122,11 +132,11 @@ class Service:
             save_config(self.cfg, Path("config.json"))
         return pending
 
-    def start_rebuild(self, body: dict[str, Any]) -> dict[str, Any]:
-        pending = self._apply_updates(body)
+    def _new_job(self, kind: str) -> dict[str, Any]:
         job_id = uuid.uuid4().hex[:10]
         job = {
             "job_id": job_id,
+            "kind": kind,
             "status": "running",
             "started_at": _now(),
             "finished_at": None,
@@ -135,43 +145,118 @@ class Service:
             "progress": {"stage": "starting", "done": 0, "total": 0},
         }
         self.jobs[job_id] = job
+        return job
+
+    def _claim_job(self) -> None:
+        if not self.job_lock.acquire(blocking=False):
+            raise IngestError("another ingest/rebuild job is running")
+
+    def _progress(self, job: dict[str, Any]):
+        def progress(stage: str, done: int, total: int) -> None:
+            job["progress"] = {"stage": stage, "done": done, "total": total}
+
+        return progress
+
+    def _finish_job(self, job: dict[str, Any], work) -> None:
+        try:
+            job["result"] = work()
+            job["status"] = "done"
+        except Exception as exc:  # background jobs must report, not crash
+            job["status"] = "error"
+            job["error"] = f"{type(exc).__name__}: {exc}"
+        finally:
+            job["finished_at"] = _now()
+            self.job_lock.release()
+
+    def start_rebuild(self, body: dict[str, Any]) -> dict[str, Any]:
+        pending = self._apply_updates(body)
+        self._claim_job()
+        job = self._new_job("rebuild")
         cfg = copy.deepcopy(self.cfg)
-        background = body.get("background", True)
+        activate = bool(body.get("activate", True))
 
-        def worker() -> None:
-            try:
-                manifest_path = cfg.resolved_manifest_path()
-                if manifest_path.is_file():
-                    manifest = load_manifest(manifest_path)
-                else:
-                    manifest = write_manifest(cfg.resolved_corpus_dir(), manifest_path)
+        def work() -> dict[str, Any]:
+            result = rebuild_with_uploads(
+                cfg, self.registry, embed_fn=self.embed_fn, progress=self._progress(job)
+            )
+            if activate:
+                self.reload()
+            return result
 
-                def progress(stage: str, done: int, total: int) -> None:
-                    job["progress"] = {"stage": stage, "done": done, "total": total}
+        if body.get("background", True):
+            threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+            return {"job_id": job["job_id"], "status": "running", "pending_rebuild": pending}
+        self._finish_job(job, work)
+        return {"job_id": job["job_id"], **job, "pending_rebuild": pending}
 
-                result = build_index(
-                    manifest,
-                    cfg,
-                    cfg.resolved_index_dir(),
-                    embed_fn=self.embed_fn,
-                    activate=bool(body.get("activate", True)),
-                    progress=progress,
-                )
-                job["result"] = result
-                job["status"] = "done"
-                job["finished_at"] = _now()
-                if body.get("activate", True):
-                    self.reload()
-            except Exception as exc:  # background jobs must report, not crash
-                job["status"] = "error"
-                job["error"] = f"{type(exc).__name__}: {exc}"
-                job["finished_at"] = _now()
+    def start_ingest(self, items: list[UploadItem]) -> dict[str, Any]:
+        self._claim_job()
+        job = self._new_job("ingest")
+        cfg = copy.deepcopy(self.cfg)
 
-        if background:
-            threading.Thread(target=worker, daemon=True).start()
-            return {"job_id": job_id, "status": "running", "pending_rebuild": self.pending_rebuild}
-        worker()
-        return {"job_id": job_id, **job, "pending_rebuild": self.pending_rebuild}
+        def work() -> dict[str, Any]:
+            result = ingest_batch(
+                cfg,
+                self.registry,
+                items,
+                embed_fn=self.embed_fn,
+                progress=self._progress(job),
+            )
+            if result.get("indexed"):
+                self.reload()
+            return result
+
+        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+        return {
+            "job_id": job["job_id"],
+            "status": "running",
+            "documents": [item.filename for item in items],
+        }
+
+    def start_delete(self, doc_id: str) -> dict[str, Any]:
+        record = self.registry.get(doc_id)
+        if record is None:
+            raise IngestError(f"document not found: {doc_id}")
+        self._claim_job()
+        job = self._new_job("delete")
+        cfg = copy.deepcopy(self.cfg)
+
+        def work() -> dict[str, Any]:
+            parsed = record.get("parsed_path")
+            if parsed:
+                Path(parsed).unlink(missing_ok=True)
+            original = Path(record["original_path"])
+            shutil.rmtree(original.parent, ignore_errors=True)
+            self.registry.delete(doc_id)
+            result = rebuild_with_uploads(
+                cfg, self.registry, embed_fn=self.embed_fn, progress=self._progress(job)
+            )
+            self.reload()
+            return {"deleted": doc_id, **result}
+
+        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+        return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
+
+    def start_reindex(self, doc_id: str) -> dict[str, Any]:
+        if self.registry.get(doc_id) is None:
+            raise IngestError(f"document not found: {doc_id}")
+        self._claim_job()
+        job = self._new_job("reindex")
+        cfg = copy.deepcopy(self.cfg)
+
+        def work() -> dict[str, Any]:
+            result = reindex_document(
+                cfg,
+                self.registry,
+                doc_id,
+                embed_fn=self.embed_fn,
+                progress=self._progress(job),
+            )
+            self.reload()
+            return result
+
+        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+        return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
 
 def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
@@ -314,6 +399,121 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         }
         return result
 
+    @app.post("/v1/documents")
+    async def upload_documents(
+        files: list[UploadFile] = File(...),
+        jurisdiction: str = Form("CN"),
+        language: str = Form(""),
+        precision: str = Form(""),
+        applies_to: str = Form(""),
+        effective_from: str | None = Form(None),
+        effective_to: str | None = Form(None),
+        source_doc: str | None = Form(None),
+    ) -> Any:
+        if not files:
+            raise HTTPException(status_code=400, detail="at least one file is required")
+        if len(files) > 200:
+            raise HTTPException(status_code=400, detail="at most 200 files per batch")
+        jur = jurisdiction.strip().upper() or "CN"
+        lang = language.strip() or ("zh" if jur == "CN" else "ja" if jur == "JP" else "en")
+        prec = precision.strip() or ("exact" if jur == "CN" else "degraded")
+        applies = [
+            part.strip().lower()
+            for part in applies_to.replace(";", ",").split(",")
+            if part.strip()
+        ]
+        items: list[UploadItem] = []
+        for upload in files:
+            data = await upload.read()
+            if len(data) > service.cfg.max_upload_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail=(
+                        f"{upload.filename}: file exceeds "
+                        f"{service.cfg.max_upload_bytes // (1024 * 1024)} MB"
+                    ),
+                )
+            items.append(
+                UploadItem(
+                    filename=upload.filename or "upload.md",
+                    data=data,
+                    jurisdiction=jur,
+                    language=lang,
+                    precision=prec,
+                    applies_to=applies,
+                    effective_from=effective_from,
+                    effective_to=effective_to,
+                    source_doc=source_doc,
+                )
+            )
+        try:
+            return service.start_ingest(items)
+        except IngestError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/v1/documents")
+    def list_documents(status: str | None = None) -> dict[str, Any]:
+        docs = service.registry.list()
+        if status:
+            docs = [doc for doc in docs if doc.get("status") == status]
+        return {"documents": docs, "count": len(docs)}
+
+    @app.get("/v1/documents/{doc_id}")
+    def get_document(doc_id: str) -> Any:
+        record = service.registry.get(doc_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        return record
+
+    @app.delete("/v1/documents/{doc_id}")
+    def delete_document(doc_id: str) -> Any:
+        if service.registry.get(doc_id) is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        try:
+            return service.start_delete(doc_id)
+        except IngestError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/v1/documents/{doc_id}/reindex")
+    def reindex_document_endpoint(doc_id: str) -> Any:
+        if service.registry.get(doc_id) is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        try:
+            return service.start_reindex(doc_id)
+        except IngestError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/v1/documents/{doc_id}/chunks")
+    def document_chunks(doc_id: str, limit: int = 100, offset: int = 0) -> Any:
+        if service.registry.get(doc_id) is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        if service.index is None:
+            raise HTTPException(status_code=503, detail="index is not built")
+        limit = max(1, min(int(limit), 500))
+        offset = max(0, int(offset))
+        rows = [chunk for chunk in service.index.chunks if chunk["doc_id"] == doc_id]
+        page = rows[offset : offset + limit]
+        return {
+            "doc_id": doc_id,
+            "total": len(rows),
+            "offset": offset,
+            "limit": limit,
+            "chunks": [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "article_id": chunk["article_id"],
+                    "article_label": chunk["article_label"],
+                    "section": chunk["section"],
+                    "part": chunk["part"],
+                    "text": chunk["text"],
+                    "token_count": chunk["token_count"],
+                    "effective_from": chunk["effective_from"],
+                    "effective_to": chunk["effective_to"],
+                }
+                for chunk in page
+            ],
+        }
+
     @app.post("/v1/admin/manifest")
     def rebuild_manifest() -> dict[str, Any]:
         manifest = write_manifest(
@@ -328,6 +528,7 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         except (FileNotFoundError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/v1/jobs/{job_id}")
     @app.get("/v1/admin/rebuild/{job_id}")
     def rebuild_status(job_id: str) -> dict[str, Any]:
         job = service.jobs.get(job_id)
@@ -363,6 +564,8 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 "/v1/retrieve",
                 "/v1/chat",
                 "/v1/ask",
+                "/v1/documents",
+                "/v1/jobs/{job_id}",
                 "/v1/config",
                 "/v1/admin/rebuild",
             ],

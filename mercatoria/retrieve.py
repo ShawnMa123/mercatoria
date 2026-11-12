@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import datetime as dt
+import json
+from collections import OrderedDict
 from typing import Any, Callable
 
 import numpy as np
@@ -75,6 +78,40 @@ class Retriever:
             self.rerank = RerankClient(cfg.rerank).rerank
         else:
             self.rerank = None
+        self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
+        self._cache_size = 256
+
+    def _cache_key(
+        self,
+        queries: list[str],
+        top_k: int,
+        filters: dict[str, Any],
+        fields: dict[str, Any],
+    ) -> str:
+        payload = {
+            "queries": queries,
+            "top_k": top_k,
+            "filters": filters,
+            "fields": fields,
+            "vector_weight": self.cfg.retrieval.vector_weight,
+            "threshold": self.cfg.retrieval.similarity_threshold,
+            "rerank": self.rerank is not None,
+            "candidates": self.cfg.rerank.candidates,
+        }
+        return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
+
+    def _cache_get(self, key: str) -> dict[str, Any] | None:
+        cached = self._cache.get(key)
+        if cached is None:
+            return None
+        self._cache.move_to_end(key)
+        return copy.deepcopy(cached)
+
+    def _cache_put(self, key: str, response: dict[str, Any]) -> None:
+        self._cache[key] = copy.deepcopy(response)
+        self._cache.move_to_end(key)
+        while len(self._cache) > self._cache_size:
+            self._cache.popitem(last=False)
 
     def _select(
         self, filters: dict[str, Any]
@@ -208,6 +245,10 @@ class Retriever:
             raise ValueError("top_k must be in [1, 100]")
 
         filters = _map_fields(filters or {}, fields)
+        cache_key = self._cache_key(queries, top_k, filters, fields or {})
+        cached = self._cache_get(cache_key)
+        if cached is not None:
+            return cached
         requested_j = [j.upper() for j in _as_list(filters.get("jurisdictions"))]
         requested_a = [a.lower() for a in _as_list(filters.get("applies_to"))]
         as_of = filters.get("as_of")
@@ -236,6 +277,7 @@ class Retriever:
             "field_matches": self._field_matches(requested_j, requested_a, rows, as_of),
         }
         if zero_reason:
+            self._cache_put(cache_key, response)
             return response
 
         candidate_ids = [r["chunk_id"] for r in rows]
@@ -354,6 +396,7 @@ class Retriever:
         diagnostics["rerank"] = rerank_meta
         if not merged:
             diagnostics["zero_reason"] = "no_match"
+            self._cache_put(cache_key, response)
             return response
 
         ordered = sorted(
@@ -425,4 +468,5 @@ class Retriever:
                 }
             )
         response["chunks"] = chunks
+        self._cache_put(cache_key, response)
         return response

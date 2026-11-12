@@ -119,6 +119,11 @@ class AppConfig:
     corpus_dir: str = "corpus"
     index_dir: str = "data/index"
     manifest_path: str = "corpus/manifest.json"
+    # Uploaded documents: originals, parsed Markdown and the registry.
+    uploads_dir: str = "data/uploads"
+    documents_dir: str = "data/documents"
+    max_upload_bytes: int = 20 * 1024 * 1024
+    ingest_workers: int = 8
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
@@ -133,6 +138,12 @@ class AppConfig:
 
     def resolved_manifest_path(self) -> Path:
         return _resolve(self.manifest_path)
+
+    def resolved_uploads_dir(self) -> Path:
+        return _resolve(self.uploads_dir)
+
+    def resolved_documents_dir(self) -> Path:
+        return _resolve(self.documents_dir)
 
     def chunking_hash(self) -> str:
         payload = {
@@ -178,6 +189,10 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         corpus_dir=data.get("corpus_dir", AppConfig.corpus_dir),
         index_dir=data.get("index_dir", AppConfig.index_dir),
         manifest_path=data.get("manifest_path", AppConfig.manifest_path),
+        uploads_dir=data.get("uploads_dir", AppConfig.uploads_dir),
+        documents_dir=data.get("documents_dir", AppConfig.documents_dir),
+        max_upload_bytes=int(data.get("max_upload_bytes", AppConfig.max_upload_bytes)),
+        ingest_workers=int(data.get("ingest_workers", AppConfig.ingest_workers)),
         chunking=_merge_dataclass(ChunkingConfig, data.get("chunking")),
         embedding=_merge_dataclass(EmbeddingConfig, data.get("embedding")),
         retrieval=_merge_dataclass(RetrievalConfig, data.get("retrieval")),
@@ -190,6 +205,12 @@ def load_config(path: str | Path | None = None) -> AppConfig:
     cfg.corpus_dir = _env("MERCATORIA_CORPUS_DIR", cfg.corpus_dir)
     cfg.index_dir = _env("MERCATORIA_INDEX_DIR", cfg.index_dir)
     cfg.manifest_path = _env("MERCATORIA_MANIFEST", cfg.manifest_path)
+    cfg.uploads_dir = _env("MERCATORIA_UPLOADS_DIR", cfg.uploads_dir)
+    cfg.documents_dir = _env("MERCATORIA_DOCUMENTS_DIR", cfg.documents_dir)
+    if _env("MERCATORIA_MAX_UPLOAD_MB"):
+        cfg.max_upload_bytes = int(_env("MERCATORIA_MAX_UPLOAD_MB")) * 1024 * 1024
+    if _env("MERCATORIA_INGEST_WORKERS"):
+        cfg.ingest_workers = int(_env("MERCATORIA_INGEST_WORKERS"))
     cfg.embedding.base = _env("EMBEDDING_BASE", cfg.embedding.base)
     cfg.embedding.model = _env("EMBEDDING_MODEL", cfg.embedding.model)
     cfg.embedding.api_key = _env("EMBEDDING_API_KEY", cfg.embedding.api_key)
