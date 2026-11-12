@@ -44,7 +44,7 @@ FROM base AS runtime
 
 COPY corpus ./corpus
 COPY config.example.json ./config.json
-COPY --from=index /stage/out ./data/index
+COPY --from=index /stage/out ./seed/index
 COPY docker/entrypoint.sh /usr/local/bin/mercatoria-entrypoint
 
 RUN chmod +x /usr/local/bin/mercatoria-entrypoint

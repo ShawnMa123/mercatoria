@@ -57,10 +57,14 @@ class DocumentRegistry:
     def __init__(self, path: Path):
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(path, check_same_thread=False)
+        # Autocommit: the registry is written from a background ingest thread
+        # while HTTP requests read it. A shared implicit transaction produced
+        # "cannot commit - no transaction is active" under that interleaving.
+        self.conn = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")
         self.conn.executescript(SCHEMA)
-        self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -112,7 +116,6 @@ class DocumentRegistry:
             f"INSERT OR REPLACE INTO documents ({columns}) VALUES ({placeholders})",
             tuple(values.values()),
         )
-        self.conn.commit()
 
     def update(self, doc_id: str, **fields: Any) -> None:
         allowed = {
@@ -139,11 +142,9 @@ class DocumentRegistry:
             f"UPDATE documents SET {assignments} WHERE doc_id=?",
             (*values.values(), doc_id),
         )
-        self.conn.commit()
 
     def delete(self, doc_id: str) -> None:
         self.conn.execute("DELETE FROM documents WHERE doc_id=?", (doc_id,))
-        self.conn.commit()
 
     def manifest_docs(self) -> list[dict[str, Any]]:
         rows = self.conn.execute(

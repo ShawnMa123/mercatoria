@@ -24,6 +24,8 @@ services:
       RERANK_CANDIDATES: "40"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - mercatoria-data:/app/data
     restart: unless-stopped
 
   test:
@@ -35,3 +37,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
+
+volumes:
+  mercatoria-data:
