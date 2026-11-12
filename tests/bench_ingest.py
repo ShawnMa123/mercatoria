@@ -7,6 +7,7 @@ Run from the test container:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import time
 import urllib.request
@@ -55,6 +56,7 @@ def main() -> int:
     ap.add_argument("--files", type=int, default=100)
     ap.add_argument("--jurisdiction", default="CN")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--mix", action="store_true")
     args = ap.parse_args()
 
     files: list[tuple[str, bytes]] = []
@@ -67,7 +69,35 @@ def main() -> int:
             f"第三条 出口经营者应当依法提交许可证。\n\n"
             f"第四条 违反规定的，依照海关法处理。\n"
         )
-        files.append((f"bench-{i:03d}.md", body.encode("utf-8")))
+        if not args.mix:
+            files.append((f"bench-{i:03d}.md", body.encode("utf-8")))
+            continue
+        bucket = i % 10
+        if bucket < 6:
+            files.append((f"bench-{i:03d}.md", body.encode("utf-8")))
+        elif bucket < 8:
+            from docx import Document
+
+            doc = Document()
+            doc.add_heading(f"压测办法 {args.tag}{i}", level=1)
+            doc.add_paragraph("第一章 总则")
+            doc.add_paragraph(f"第一条 压测办法 {args.tag}{i} 适用于进口货物。")
+            doc.add_paragraph("第二条 出口经营者应当提交许可证。")
+            buf = io.BytesIO()
+            doc.save(buf)
+            files.append((f"bench-{i:03d}.docx", buf.getvalue()))
+        else:
+            import pymupdf
+
+            doc = pymupdf.open()
+            page = doc.new_page()
+            page.insert_text(
+                (72, 72),
+                f"## Section {i}.1 Scope\n\nThis regulation applies to test imports and entry.",
+                fontsize=11,
+            )
+            files.append((f"bench-{i:03d}.pdf", doc.tobytes()))
+            doc.close()
 
     body, content_type = _multipart(
         files, {"jurisdiction": args.jurisdiction, "applies_to": "customs"}

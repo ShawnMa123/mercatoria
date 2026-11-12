@@ -329,6 +329,7 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 top_k=body.get("top_k"),
                 filters=body.get("filters") or {},
                 fields=body.get("fields") or {},
+                use_rerank=body.get("rerank"),
             )
         except (IndexNotFound, CorpusUnavailable) as exc:
             return unavailable(exc)
@@ -353,6 +354,7 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 top_k=body.get("top_k"),
                 filters=body.get("filters") or {},
                 fields=body.get("fields") or {},
+                use_rerank=body.get("rerank"),
             )
         except (IndexNotFound, CorpusUnavailable) as exc:
             return unavailable(exc)
@@ -423,8 +425,18 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
             if part.strip()
         ]
         items: list[UploadItem] = []
+        total = 0
         for upload in files:
             data = await upload.read()
+            total += len(data)
+            if total > service.cfg.max_batch_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail=(
+                        "batch exceeds "
+                        f"{service.cfg.max_batch_bytes // (1024 * 1024)} MB"
+                    ),
+                )
             if len(data) > service.cfg.max_upload_bytes:
                 raise HTTPException(
                     status_code=413,

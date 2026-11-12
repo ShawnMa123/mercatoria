@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import shutil
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -99,6 +100,14 @@ def ingest_batch(
             )
         digest = hashlib.sha256(item.data).hexdigest()
         existing = registry.get_by_sha(digest)
+        if existing and existing["status"] == "failed":
+            # A failed row still holds the unique sha256. Clear its files and
+            # row so the same content can be retried with a new document id.
+            if existing.get("parsed_path"):
+                Path(existing["parsed_path"]).unlink(missing_ok=True)
+            shutil.rmtree(Path(existing["original_path"]).parent, ignore_errors=True)
+            registry.delete(existing["doc_id"])
+            existing = None
         if existing and existing["status"] in {"queued", "parsing", "parsed", "indexing", "ready"}:
             skipped.append(
                 {

@@ -153,14 +153,16 @@ MRR **0.6890**；RAGFlow v2 基线为 0.783 / 0.859 / 0.656。59 条分层样本
 
 ### Rerank（gte-rerank-v2）
 
-`rerank.enabled=true` 时，检索先取 `candidates`（默认 40）条候选，再交给
+默认关闭（no-rerank 检索 p50 约 32 ms）。请求体传 `"rerank": true`
+或设 `RERANK_ENABLED=true` 时，检索先取 `candidates`（默认 10）条候选，再交给
 cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失败不报错，
 自动回退到 BM25+cosine 顺序，原因写在 `diagnostics.rerank.error`。
 `gte-rerank-v2` 只提供在 DashScope 原生路径
 （`/api/v1/services/rerank/text-rerank/text-rerank`），不走 magpie 的
 `/v1/rerank`；key 用 `RERANK_API_KEY` 注入，不写入配置文件。
 每个 chunk 的 `score_parts` 同时给出 `first_stage`（混合分）和 `rerank`（原始分），
-两者不可直接比较。
+两者不可直接比较。响应里的 `score` 是 max fusion 后的最终分：
+`max(first_stage_norm, 0.8 * rerank_norm)`。
 
 | 端点 | 用途 |
 |---|---|
@@ -215,6 +217,7 @@ curl -s localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{
 上传后后台解析、归一化为条文 Markdown、自动重建索引；同一批次只重建一次。
 支持 `.md` / `.markdown` / `.txt` / `.docx` / `.pdf`（PDF 必须有文本层）。
 旧版 `.doc` 需先转 `.docx`；扫描件不做 OCR，会以 `failed` 明确返回。
+限制：单文件 ≤ 20 MB、单批 ≤ 200 MB 且 ≤ 200 个文件；超出返回 413。
 
 ```bash
 curl -s -X POST localhost:8080/v1/documents \
@@ -321,7 +324,8 @@ docker run --rm --add-host host.docker.internal:host-gateway \
 | 容器空闲内存 | 216 MiB |
 | 92 文档 / 7,196 chunks 启动 | 就绪，无重建 |
 | 200 个小文件批量入库 | **8.6 s**（上传 0.02 s + 解析/索引 8.6 s，新增 600 chunks） |
-| 60 题检索（含 rerank，冷缓存） | p50 **1.41 s**，p95 **4.33 s** |
+| 60 题检索（默认 no-rerank，冷缓存） | p50 **32.5 ms**，p95 **81.4 ms** |
+| 60 题检索（可选 rerank，`candidates=5`） | p50 **0.90 s**，p95 **2.04 s** |
 | 同一查询重复 | p50 **~4 ms**（LRU 命中） |
 | 60 题 Hit@5 | **0.9333**；剔除 6 道语料缺口后 **1.00（54/54）** |
 | 60 题 MRR | **0.8381** |

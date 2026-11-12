@@ -172,6 +172,23 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(dup_job["result"]["indexed"], 0)
         self.assertTrue(dup_job["result"]["documents"][0]["duplicate"])
 
+    def test_batch_size_limit(self) -> None:
+        service = self.app.state.service
+        old = service.cfg.max_batch_bytes
+        service.cfg.max_batch_bytes = 10
+        try:
+            resp = self.client.post(
+                "/v1/documents",
+                files=[
+                    ("files", ("a.md", b"0123456789", "text/markdown")),
+                    ("files", ("b.md", b"0123456789", "text/markdown")),
+                ],
+                data={"jurisdiction": "CN"},
+            )
+            self.assertEqual(resp.status_code, 413)
+        finally:
+            service.cfg.max_batch_bytes = old
+
     def test_delete_document_rebuilds_without_it(self) -> None:
         resp = self.client.post(
             "/v1/documents",

@@ -73,12 +73,10 @@ class Retriever:
         self.index = index
         self.cfg = cfg
         self.embed = embed_fn or EmbeddingClient(cfg.embedding).embed
-        if rerank_fn is not None:
-            self.rerank = rerank_fn
-        elif cfg.rerank.enabled:
-            self.rerank = RerankClient(cfg.rerank).rerank
-        else:
-            self.rerank = None
+        # Keep the client even when disabled: a request can opt in with
+        # "rerank": true without rebuilding the retriever.
+        self._rerank = rerank_fn if rerank_fn is not None else RerankClient(cfg.rerank).rerank
+        self.rerank_enabled = bool(rerank_fn is not None or cfg.rerank.enabled)
         self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._cache_size = 256
 
@@ -88,6 +86,7 @@ class Retriever:
         top_k: int,
         filters: dict[str, Any],
         fields: dict[str, Any],
+        rerank: bool,
     ) -> str:
         payload = {
             "queries": queries,
@@ -96,7 +95,7 @@ class Retriever:
             "fields": fields,
             "vector_weight": self.cfg.retrieval.vector_weight,
             "threshold": self.cfg.retrieval.similarity_threshold,
-            "rerank": self.rerank is not None,
+            "rerank": rerank,
             "candidates": self.cfg.rerank.candidates,
             "expand_cross_language": self.cfg.retrieval.expand_cross_language,
         }
@@ -234,6 +233,7 @@ class Retriever:
         top_k: int | None = None,
         filters: dict[str, Any] | None = None,
         fields: dict[str, Any] | None = None,
+        use_rerank: bool | None = None,
     ) -> dict[str, Any]:
         if isinstance(queries, str):
             queries = [queries]
@@ -249,7 +249,9 @@ class Retriever:
             raise ValueError("top_k must be in [1, 100]")
 
         filters = _map_fields(filters or {}, fields)
-        cache_key = self._cache_key(queries, top_k, filters, fields or {})
+        rerank_on = self.rerank_enabled if use_rerank is None else bool(use_rerank)
+        rerank = self._rerank if rerank_on else None
+        cache_key = self._cache_key(queries, top_k, filters, fields or {}, rerank_on)
         cached = self._cache_get(cache_key)
         if cached is not None:
             return cached
@@ -295,12 +297,12 @@ class Retriever:
         cfg = self.cfg.retrieval
         rerank_cfg = self.cfg.rerank
         rerank_meta: dict[str, Any] = {
-            "enabled": self.rerank is not None,
+            "enabled": rerank is not None,
             "applied": False,
-            "model": rerank_cfg.model if self.rerank is not None else None,
+            "model": rerank_cfg.model if rerank is not None else None,
             "candidates": 0,
-            "blend_weight": rerank_cfg.weight if self.rerank is not None else None,
-            "fusion": "max" if self.rerank is not None else None,
+            "blend_weight": rerank_cfg.weight if rerank is not None else None,
+            "fusion": "max" if rerank is not None else None,
             "latency_ms": 0.0,
             "error": None,
         }
@@ -359,7 +361,7 @@ class Retriever:
             if not scored:
                 continue
 
-            if self.rerank is None:
+            if rerank is None:
                 for score, cid, b_raw, v_raw, b_norm, v_norm in scored[:top_k]:
                     absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
                 continue
@@ -372,7 +374,7 @@ class Retriever:
             rerank_meta["candidates"] += len(pool)
             pairs: list[tuple[int, float]] = []
             try:
-                pairs, latency = self.rerank(query, texts, len(texts))
+                pairs, latency = rerank(query, texts, len(texts))
                 rerank_meta["latency_ms"] = max(rerank_meta["latency_ms"], latency)
             except Exception as exc:  # reranking must never fail the request
                 rerank_meta["error"] = f"{type(exc).__name__}: {exc}"[:300]

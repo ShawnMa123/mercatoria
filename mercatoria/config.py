@@ -97,7 +97,7 @@ class RerankConfig:
     api_key: str = ""
     # First-stage hits handed to the reranker. The final top_k is taken from
     # this list, so candidates must be >= top_k.
-    candidates: int = 40
+    candidates: int = 10
     # 0 = score every candidate the client sends.
     top_n: int = 0
     # Rerank contribution in max fusion:
@@ -130,6 +130,7 @@ class AppConfig:
     uploads_dir: str = "data/uploads"
     documents_dir: str = "data/documents"
     max_upload_bytes: int = 20 * 1024 * 1024
+    max_batch_bytes: int = 200 * 1024 * 1024
     ingest_workers: int = 8
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
@@ -199,6 +200,7 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         uploads_dir=data.get("uploads_dir", AppConfig.uploads_dir),
         documents_dir=data.get("documents_dir", AppConfig.documents_dir),
         max_upload_bytes=int(data.get("max_upload_bytes", AppConfig.max_upload_bytes)),
+        max_batch_bytes=int(data.get("max_batch_bytes", AppConfig.max_batch_bytes)),
         ingest_workers=int(data.get("ingest_workers", AppConfig.ingest_workers)),
         chunking=_merge_dataclass(ChunkingConfig, data.get("chunking")),
         embedding=_merge_dataclass(EmbeddingConfig, data.get("embedding")),
@@ -216,6 +218,8 @@ def load_config(path: str | Path | None = None) -> AppConfig:
     cfg.documents_dir = _env("MERCATORIA_DOCUMENTS_DIR", cfg.documents_dir)
     if _env("MERCATORIA_MAX_UPLOAD_MB"):
         cfg.max_upload_bytes = int(_env("MERCATORIA_MAX_UPLOAD_MB")) * 1024 * 1024
+    if _env("MERCATORIA_MAX_BATCH_MB"):
+        cfg.max_batch_bytes = int(_env("MERCATORIA_MAX_BATCH_MB")) * 1024 * 1024
     if _env("MERCATORIA_INGEST_WORKERS"):
         cfg.ingest_workers = int(_env("MERCATORIA_INGEST_WORKERS"))
     cfg.embedding.base = _env("EMBEDDING_BASE", cfg.embedding.base)

@@ -34,13 +34,13 @@
     "expand_cross_language": true
   },
   "rerank": {
-    "enabled": true,
+    "enabled": false,
     "style": "dashscope",
     "base": "https://llm-tlndh47wd9ustbss.cn-beijing.maas.aliyuncs.com",
     "path": "/api/v1/services/rerank/text-rerank/text-rerank",
     "model": "gte-rerank-v2",
     "api_key": "",
-    "candidates": 40,
+    "candidates": 10,
     "top_n": 0,
     "weight": 0.8,
     "min_score": 0.0,
@@ -56,5 +56,8 @@
     "temperature": 0.0,
     "timeout": 180,
     "max_context_chunks": 12
-  }
+  },
+  "max_upload_bytes": 20971520,
+  "max_batch_bytes": 209715200,
+  "ingest_workers": 8
 }

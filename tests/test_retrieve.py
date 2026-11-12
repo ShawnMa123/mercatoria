@@ -195,6 +195,18 @@ class RetrievalTests(unittest.TestCase):
         result = retriever.retrieve(["关税"], top_k=2)
         self.assertIn("关税", result["chunks"][0]["text"])
 
+    def test_request_can_disable_rerank(self) -> None:
+        def fake_rerank(query: str, docs: list[str], top_n: int):
+            return [(i, 10.0) for i in range(len(docs))], 1.0
+
+        retriever = Retriever(
+            self.retriever.index, self.cfg, embed_fn=fake_embed, rerank_fn=fake_rerank
+        )
+        result = retriever.retrieve(["关税"], top_k=2, use_rerank=False)
+        self.assertFalse(result["diagnostics"]["rerank"]["enabled"])
+        self.assertFalse(result["diagnostics"]["rerank"]["applied"])
+        self.assertIsNone(result["chunks"][0]["score_parts"]["rerank"])
+
     def test_query_cache_is_isolated_from_caller_mutation(self) -> None:
         first = self.retriever.retrieve(["关税"], top_k=2)
         self.assertTrue(first["chunks"])
