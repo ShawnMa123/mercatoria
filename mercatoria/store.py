@@ -250,6 +250,36 @@ class Index:
         return self.vectors[candidate_indices] @ query_vector.astype(np.float32)
 
 
+def _reusable_vectors(
+    index_dir: Path, model: str, wanted: set[str]
+) -> dict[str, np.ndarray]:
+    """Vectors from the active index for unchanged chunk IDs.
+
+    Rebuilding after an upload should only embed the new chunks. Reading the
+    current SQLite file directly keeps this independent of the in-memory Index
+    held by the serving process.
+    """
+    current = index_dir / "current.txt"
+    if not current.is_file():
+        return {}
+    name = current.read_text(encoding="utf-8").strip()
+    path = index_dir / name
+    if not name or not path.is_file():
+        return {}
+    conn = sqlite3.connect(path)
+    try:
+        row = conn.execute("SELECT value FROM meta WHERE key='embedding_model'").fetchone()
+        if not row or str(row[0]) != model:
+            return {}
+        out: dict[str, np.ndarray] = {}
+        for chunk_id, blob in conn.execute("SELECT chunk_id, vec FROM vectors"):
+            if chunk_id in wanted:
+                out[str(chunk_id)] = np.frombuffer(blob, dtype=np.float32)
+        return out
+    finally:
+        conn.close()
+
+
 def build_index(
     manifest: dict[str, Any],
     cfg: AppConfig,
@@ -369,9 +399,28 @@ def build_index(
     if progress:
         progress("embed", 0, len(texts))
     try:
-        matrix = embed(texts) if texts else np.zeros((0, 0), dtype=np.float32)
-        if matrix.shape[0] != len(texts):
-            raise ValueError("embedding count mismatch")
+        if not texts:
+            matrix = np.zeros((0, 0), dtype=np.float32)
+        else:
+            reuse = _reusable_vectors(out.parent, cfg.embedding.model, set(chunk_ids))
+            missing = [i for i, cid in enumerate(chunk_ids) if cid not in reuse]
+            fresh = embed([texts[i] for i in missing]) if missing else None
+            if fresh is not None:
+                if fresh.shape[0] != len(missing):
+                    raise ValueError("embedding count mismatch")
+                dim = int(fresh.shape[1])
+            else:
+                dim = int(next(iter(reuse.values())).shape[0])
+            matrix = np.zeros((len(texts), dim), dtype=np.float32)
+            for i, cid in enumerate(chunk_ids):
+                cached = reuse.get(cid)
+                if cached is not None and cached.shape[0] == dim:
+                    matrix[i] = cached
+            if fresh is not None:
+                for row, index in enumerate(missing):
+                    matrix[index] = fresh[row]
+            if progress and missing:
+                progress("embed", len(texts) - len(missing), len(texts))
     except Exception:
         conn.close()
         tmp.unlink(missing_ok=True)
