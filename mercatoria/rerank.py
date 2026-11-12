@@ -16,13 +16,11 @@ order and reports the failure in ``diagnostics.rerank``.
 
 from __future__ import annotations
 
-import json
 import time
-import urllib.error
-import urllib.request
 from typing import Any
 
 from .config import RerankConfig
+from .http_client import HttpError, JsonHttp
 
 
 class RerankError(RuntimeError):
@@ -32,14 +30,7 @@ class RerankError(RuntimeError):
 class RerankClient:
     def __init__(self, cfg: RerankConfig):
         self.cfg = cfg
-
-    @property
-    def url(self) -> str:
-        base = self.cfg.base.rstrip("/")
-        path = self.cfg.path.strip()
-        if not path:
-            return base
-        return base + "/" + path.lstrip("/")
+        self._http = JsonHttp(cfg.base, cfg.timeout)
 
     def _payload(self, query: str, documents: list[str], top_n: int) -> dict[str, Any]:
         if self.cfg.style == "dashscope":
@@ -84,20 +75,10 @@ class RerankClient:
         return parsed
 
     def _post(self, body: dict[str, Any]) -> dict[str, Any]:
-        data = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        headers = {}
         if self.cfg.api_key:
             headers["Authorization"] = f"Bearer {self.cfg.api_key}"
-        req = urllib.request.Request(self.url, data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=self.cfg.timeout) as resp:
-            raw = resp.read()
-        try:
-            payload = json.loads(raw.decode("utf-8", "replace"))
-        except json.JSONDecodeError as exc:
-            raise RerankError("rerank response is not JSON") from exc
-        if not isinstance(payload, dict):
-            raise RerankError("rerank response is not a JSON object")
-        return payload
+        return self._http.post(self.cfg.path.strip().lstrip("/"), body, headers)
 
     def rerank(
         self, query: str, documents: list[str], top_n: int = 0
@@ -125,13 +106,12 @@ class RerankClient:
                 if self.cfg.min_score > 0:
                     results = [pair for pair in results if pair[1] >= self.cfg.min_score]
                 return results, (time.perf_counter() - started) * 1000.0
-            except urllib.error.HTTPError as exc:
-                detail = exc.read(300).decode("utf-8", "replace")
-                last = RerankError(f"HTTP {exc.code}: {detail}")
+            except HttpError as exc:
+                last = RerankError(str(exc))
                 # 4xx other than 429 will not succeed on retry.
-                if 400 <= exc.code < 500 and exc.code != 429:
+                if 400 <= exc.status < 500 and exc.status != 429:
                     break
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            except (RuntimeError, TimeoutError, OSError) as exc:
                 last = exc
             except RerankError as exc:
                 last = exc

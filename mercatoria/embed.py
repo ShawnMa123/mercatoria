@@ -9,18 +9,16 @@ one HTTP dependency, no CUDA, no model cache. The current gateway exposes
 from __future__ import annotations
 
 import hashlib
-import json
 import sqlite3
 import threading
 import time
-import urllib.error
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
 
 from .config import EmbeddingConfig
+from .http_client import HttpError, JsonHttp
 
 
 class EmbeddingError(RuntimeError):
@@ -36,6 +34,7 @@ def _normalize(matrix: np.ndarray) -> np.ndarray:
 class EmbeddingClient:
     def __init__(self, cfg: EmbeddingConfig):
         self.cfg = cfg
+        self._http = JsonHttp(cfg.base, cfg.timeout)
         self._cache: sqlite3.Connection | None = None
         self._cache_lock = threading.Lock()
         if cfg.cache_path:
@@ -91,19 +90,14 @@ class EmbeddingClient:
             )
 
     def _post(self, texts: list[str]) -> np.ndarray:
-        url = self.cfg.base.rstrip("/") + "/embeddings"
-        body = json.dumps(
-            {"model": self.cfg.model, "input": texts}, ensure_ascii=False
-        ).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        headers = {}
         if self.cfg.api_key:
             headers["Authorization"] = "Bearer " + self.cfg.api_key
-        req = urllib.request.Request(url, body, headers)
+        body = {"model": self.cfg.model, "input": texts}
         last: Exception | None = None
         for attempt in range(max(1, self.cfg.retries)):
             try:
-                with urllib.request.urlopen(req, timeout=self.cfg.timeout) as resp:
-                    payload = json.loads(resp.read().decode("utf-8"))
+                payload = self._http.post("embeddings", body, headers)
                 data = payload.get("data")
                 if not isinstance(data, list) or len(data) != len(texts):
                     raise EmbeddingError(
@@ -118,12 +112,13 @@ class EmbeddingClient:
                         f"embedding dim mismatch: configured {self.cfg.dim}, got {matrix.shape[1]}"
                     )
                 return _normalize(matrix)
-            except urllib.error.HTTPError as exc:
-                body = exc.read().decode("utf-8", "replace")[:500]
-                last = EmbeddingError(f"HTTP {exc.code}: {body}")
+            except HttpError as exc:
+                last = EmbeddingError(str(exc))
+                if 400 <= exc.status < 500 and exc.status != 429:
+                    break
                 if attempt + 1 < max(1, self.cfg.retries):
                     time.sleep(2**attempt)
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError) as exc:
+            except (RuntimeError, TimeoutError, KeyError, TypeError) as exc:
                 last = exc
                 if attempt + 1 < max(1, self.cfg.retries):
                     time.sleep(2**attempt)

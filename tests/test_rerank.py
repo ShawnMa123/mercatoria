@@ -1,20 +1,11 @@
 from __future__ import annotations
 
-import io
-import json
 import unittest
-import urllib.error
 from unittest import mock
 
 from mercatoria.config import RerankConfig
+from mercatoria.http_client import HttpError
 from mercatoria.rerank import RerankClient, RerankError
-
-
-def _response(payload: dict) -> mock.MagicMock:
-    ctx = mock.MagicMock()
-    ctx.__enter__.return_value.read.return_value = json.dumps(payload).encode()
-    ctx.__exit__.return_value = False
-    return ctx
 
 
 class PayloadTests(unittest.TestCase):
@@ -55,32 +46,32 @@ class RequestTests(unittest.TestCase):
         )
         client = RerankClient(cfg)
         payload = {"output": {"results": [{"index": 0, "relevance_score": 0.2}, {"index": 1, "relevance_score": 0.8}]}}
-        with mock.patch("urllib.request.urlopen", return_value=_response(payload)) as opened:
+        with mock.patch.object(client._http, "post", return_value=payload) as posted:
             pairs, latency = client.rerank("q", ["a", "b"])
         self.assertEqual(pairs, [(1, 0.8), (0, 0.2)])
         self.assertGreaterEqual(latency, 0.0)
-        request = opened.call_args[0][0]
-        self.assertEqual(request.full_url, "https://example.test/rerank")
-        self.assertEqual(request.headers["Authorization"], "Bearer secret")
+        path, body, headers = posted.call_args[0]
+        self.assertEqual(path, "rerank")
+        self.assertEqual(body["model"], "gte-rerank-v2")
+        self.assertEqual(headers["Authorization"], "Bearer secret")
 
     def test_client_error_is_not_retried(self) -> None:
         cfg = RerankConfig(base="https://example.test", path="/rerank", retries=3)
         client = RerankClient(cfg)
-        err = urllib.error.HTTPError(
-            "https://example.test/rerank", 400, "bad", {}, io.BytesIO(b"invalid")
-        )
-        with mock.patch("urllib.request.urlopen", side_effect=err) as opened:
+        with mock.patch.object(
+            client._http, "post", side_effect=HttpError(400, "invalid")
+        ) as posted:
             with self.assertRaises(RerankError):
                 client.rerank("q", ["a"])
-        self.assertEqual(opened.call_count, 1)
+        self.assertEqual(posted.call_count, 1)
 
     def test_empty_documents_skips_network(self) -> None:
         client = RerankClient(RerankConfig())
-        with mock.patch("urllib.request.urlopen") as opened:
+        with mock.patch.object(client._http, "post") as posted:
             pairs, latency = client.rerank("q", [])
         self.assertEqual(pairs, [])
         self.assertEqual(latency, 0.0)
-        opened.assert_not_called()
+        posted.assert_not_called()
 
 
 if __name__ == "__main__":

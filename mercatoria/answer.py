@@ -7,13 +7,11 @@ endpoint and requires citations in the form ``[chunk_id]``.
 
 from __future__ import annotations
 
-import json
 import re
-import urllib.error
-import urllib.request
 from typing import Any
 
 from .config import AnswerConfig
+from .http_client import HttpError, JsonHttp
 
 CITATION_RE = re.compile(r"\[([0-9a-f]{16})\]")
 REFUSAL_MARKERS = (
@@ -35,27 +33,22 @@ class ChatError(RuntimeError):
 class ChatClient:
     def __init__(self, cfg: AnswerConfig):
         self.cfg = cfg
+        self._http = JsonHttp(cfg.base, cfg.timeout)
 
     def chat(self, messages: list[dict[str, str]]) -> str:
-        url = self.cfg.base.rstrip("/") + "/chat/completions"
-        body = json.dumps(
-            {
-                "model": self.cfg.model,
-                "messages": messages,
-                "temperature": self.cfg.temperature,
-                "max_tokens": self.cfg.max_tokens,
-            },
-            ensure_ascii=False,
-        ).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        headers = {}
         if self.cfg.api_key:
             headers["Authorization"] = "Bearer " + self.cfg.api_key
-        req = urllib.request.Request(url, body, headers)
+        body = {
+            "model": self.cfg.model,
+            "messages": messages,
+            "temperature": self.cfg.temperature,
+            "max_tokens": self.cfg.max_tokens,
+        }
         try:
-            with urllib.request.urlopen(req, timeout=self.cfg.timeout) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
+            payload = self._http.post("chat/completions", body, headers)
             return str(payload["choices"][0]["message"]["content"] or "")
-        except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as exc:
+        except (HttpError, RuntimeError, TimeoutError, KeyError, TypeError) as exc:
             raise ChatError(f"chat request failed: {exc}") from exc
 
 
