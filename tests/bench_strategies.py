@@ -8,13 +8,14 @@ Run in the test container against the running service:
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import statistics
+import threading
 import time
-import urllib.error
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlsplit
 
 CHUNKING = [
     ("article-2048-ov120", {"unit": "article", "max_chars": 2048, "overlap": 120}),
@@ -35,14 +36,44 @@ RERANK = [
 ]
 
 
-def _request(method: str, url: str, body: dict | None = None, timeout: float = 300) -> dict:
-    data = json.dumps(body, ensure_ascii=False).encode() if body is not None else None
-    req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method=method
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+_LOCAL = threading.local()
 
+
+def _connection(url: str) -> http.client.HTTPConnection:
+    parts = urlsplit(url)
+    key = (parts.scheme, parts.hostname, parts.port)
+    if getattr(_LOCAL, "key", None) != key:
+        old = getattr(_LOCAL, "conn", None)
+        if old is not None:
+            old.close()
+        cls = http.client.HTTPSConnection if parts.scheme == "https" else http.client.HTTPConnection
+        _LOCAL.conn = cls(parts.hostname, parts.port or (443 if parts.scheme == "https" else 80), timeout=300)
+        _LOCAL.key = key
+    return _LOCAL.conn
+
+
+def _request(method: str, url: str, body: dict | None = None, timeout: float = 300) -> dict:
+    parts = urlsplit(url)
+    path = parts.path + (("?" + parts.query) if parts.query else "")
+    data = json.dumps(body, ensure_ascii=False).encode() if body is not None else None
+    headers = {"Content-Type": "application/json", "Connection": "keep-alive"}
+    last: Exception | None = None
+    for _attempt in range(2):
+        conn = _connection(url)
+        try:
+            conn.request(method, path, body=data, headers=headers)
+            response = conn.getresponse()
+            raw = response.read()
+            if response.status >= 400:
+                raise RuntimeError(f"HTTP {response.status}: {raw.decode('utf-8', 'replace')[:300]}")
+            return json.loads(raw.decode("utf-8"))
+        except (http.client.HTTPException, OSError) as exc:
+            last = exc
+            try:
+                conn.close()
+            finally:
+                _LOCAL.conn = None
+    raise RuntimeError(f"request failed: {last}")
 
 def _wait(base: str, job_id: str, timeout: float = 1800) -> dict:
     deadline = time.time() + timeout
