@@ -31,6 +31,43 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _parse_conversation(
+    body: dict[str, Any]
+) -> tuple[str, list[dict[str, str]], int]:
+    """Return (last user question, prior turns, index of that question)."""
+    raw = body.get("messages")
+    if isinstance(raw, list) and raw:
+        turns: list[dict[str, str]] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            role = str(item.get("role") or "")
+            content = str(item.get("content") or "").strip()
+            if role in {"user", "assistant"} and content:
+                turns.append({"role": role, "content": content})
+        last_user = max((i for i, turn in enumerate(turns) if turn["role"] == "user"), default=-1)
+        if last_user < 0:
+            raise HTTPException(status_code=400, detail="messages must contain a user message")
+        return turns[last_user]["content"], turns[:last_user], last_user
+    question = str(body.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="question or messages is required")
+    return question, [], 0
+
+
+def _retrieval_query(question: str, history: list[dict[str, str]]) -> str:
+    """Follow-up questions need the previous turn to retrieve anything useful."""
+    previous = [turn["content"] for turn in history if turn["role"] == "user"]
+    if not previous:
+        return question
+    first = question.lower().split()[0] if question.split() else ""
+    pronoun = any(question.startswith(p) for p in ("它", "这", "该", "此", "上述", "那", "其"))
+    pronoun = pronoun or first in {"it", "this", "that", "these", "those", "they", "them"}
+    if len(question) > 24 and not pronoun:
+        return question
+    return (previous[-1] + " " + question)[:400]
+
+
 class Service:
     def __init__(self, cfg: AppConfig, embed_fn=None):
         self.cfg = cfg
@@ -215,16 +252,19 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         except EmbeddingError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    @app.post("/chat")
+    @app.post("/v1/chat")
     @app.post("/ask")
     @app.post("/v1/ask")
-    def ask(body: dict[str, Any]) -> Any:
-        question = str(body.get("question") or "").strip()
-        if not question:
-            raise HTTPException(status_code=400, detail="question is required")
+    def chat_answer(body: dict[str, Any]) -> Any:
+        question, history, _ = _parse_conversation(body)
+        query = str(body.get("retrieval_query") or "").strip() or _retrieval_query(
+            question, history
+        )
         try:
             retriever = service.require_retriever()
             result = retriever.retrieve(
-                queries=body.get("queries") or [question],
+                queries=body.get("queries") or [query],
                 top_k=body.get("top_k"),
                 filters=body.get("filters") or {},
                 fields=body.get("fields") or {},
@@ -243,11 +283,23 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         else:
             answer_cfg = service.cfg.answer
         try:
-            result.update(answer_question(answer_cfg, question, result["chunks"]))
+            result.update(
+                answer_question(answer_cfg, question, result["chunks"], history=history)
+            )
         except ChatError as exc:
             result.update(
-                {"answer": None, "answer_status": "error", "citations": [], "error": str(exc)}
+                {
+                    "answer": None,
+                    "answer_status": "error",
+                    "citations": [],
+                    "references": [],
+                    "error": str(exc),
+                }
             )
+        result["question"] = question
+        result["retrieval_query"] = query
+        result["messages"] = history
+        result["messages"].append({"role": "user", "content": question})
         notes: list[str] = []
         reason = result.get("diagnostics", {}).get("zero_reason")
         if reason:
@@ -306,7 +358,14 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
     def root() -> dict[str, Any]:
         return {
             "service": "mercatoria",
-            "endpoints": ["/health", "/v1/retrieve", "/v1/ask", "/v1/config", "/v1/admin/rebuild"],
+            "endpoints": [
+                "/health",
+                "/v1/retrieve",
+                "/v1/chat",
+                "/v1/ask",
+                "/v1/config",
+                "/v1/admin/rebuild",
+            ],
         }
 
     return app

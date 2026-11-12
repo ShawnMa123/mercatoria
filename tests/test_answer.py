@@ -21,8 +21,10 @@ class FakeChat(ChatClient):
     def __init__(self, text: str):
         self._text = text
         self.cfg = AnswerConfig()
+        self.messages = None
 
     def chat(self, messages):  # type: ignore[override]
+        self.messages = messages
         return self._text
 
 
@@ -65,6 +67,38 @@ class AnswerTests(unittest.TestCase):
         )
         self.assertEqual(result["answer_status"], "unsupported")
         self.assertEqual(result["citations"], [])
+
+    def test_references_carry_full_original_text(self) -> None:
+        result = answer_question(
+            self.cfg,
+            "关税怎么征收？",
+            self.chunks,
+            client=FakeChat(f"关税依法征收 [{self.cid}]。"),
+        )
+        self.assertEqual(len(result["references"]), 1)
+        reference = result["references"][0]
+        self.assertEqual(reference["chunk_id"], self.cid)
+        self.assertEqual(reference["text"], self.chunks[0]["text"])
+        self.assertTrue(reference["cited"])
+        self.assertEqual(result["citations"][0]["text"], self.chunks[0]["text"])
+
+    def test_history_is_forwarded_to_the_model(self) -> None:
+        fake = FakeChat(f"关税依法征收 [{self.cid}]。")
+        history = [
+            {"role": "user", "content": "关税是什么？"},
+            {"role": "assistant", "content": "关税是进口环节的税。"},
+        ]
+        answer_question(self.cfg, "它什么时候缴纳？", self.chunks, client=fake, history=history)
+        roles = [m["role"] for m in fake.messages]
+        self.assertEqual(roles, ["system", "user", "assistant", "user"])
+        self.assertIn("关税是什么", fake.messages[1]["content"])
+        self.assertIn("它什么时候缴纳", fake.messages[-1]["content"])
+
+    def test_references_exist_when_answer_is_disabled(self) -> None:
+        cfg = AnswerConfig(enabled=False)
+        result = answer_question(cfg, "问题", self.chunks)
+        self.assertEqual(result["answer_status"], "skipped")
+        self.assertEqual(result["references"][0]["text"], self.chunks[0]["text"])
 
 
 if __name__ == "__main__":

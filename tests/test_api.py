@@ -111,6 +111,28 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(body["chunks"])
         self.assertFalse(body["coverage"]["unavailable"])
 
+    def test_chat_accepts_messages_and_returns_references(self) -> None:
+        resp = self.client.post(
+            "/v1/chat",
+            json={
+                "messages": [{"role": "user", "content": "关税怎么征收？"}],
+                "answer": {"enabled": False},
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["question"], "关税怎么征收？")
+        self.assertEqual(body["answer_status"], "skipped")
+        self.assertTrue(body["references"])
+        self.assertEqual(body["references"][0]["text"], "第一条 关税的征收适用本法。")
+        self.assertFalse(body["references"][0]["cited"])
+
+    def test_chat_rejects_messages_without_user(self) -> None:
+        resp = self.client.post(
+            "/v1/chat", json={"messages": [{"role": "assistant", "content": "你好"}]}
+        )
+        self.assertEqual(resp.status_code, 400)
+
     def test_config_pending_rebuild(self) -> None:
         resp = self.client.put("/v1/config", json={"retrieval": {"top_k": 3}})
         self.assertEqual(resp.status_code, 200)

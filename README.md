@@ -165,12 +165,50 @@ cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失
 | 端点 | 用途 |
 |---|---|
 | `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
-| `POST /ask`（别名 `/v1/ask`） | 检索 + 可选答案 + citations；`answer.enabled=false` 只返回检索 |
+| `POST /chat`（别名 `/v1/chat`） | 对话式问答：接受 `messages` 历史，返回 answer + citations + **references 原文** |
+| `POST /ask`（别名 `/v1/ask`） | 单轮问答，与 `/chat` 同一实现；`answer.enabled=false` 只返回检索 + references |
 | `GET /v1/config` / `PUT /v1/config` | 查看/更新检索、生成、分片配置 |
 | `POST /v1/admin/rebuild` | 后台重建索引；`background=false` 同步冒烟 |
 | `GET /v1/admin/rebuild/{job_id}` | 重建进度 |
 | `POST /v1/admin/activate/{version}` | 切换活动索引 |
 | `GET /health` | 活动索引、chunk 数、文档数 |
+
+对话式请求与响应（`references` 是检索到的原文全文，不只是摘要）：
+
+```bash
+curl -s localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{
+  "messages": [
+    {"role": "user", "content": "进口货物的完税价格由哪些项目组成？"}
+  ],
+  "top_k": 5,
+  "filters": {"jurisdictions": ["CN"]}
+}'
+```
+
+```jsonc
+{
+  "question": "进口货物的完税价格由哪些项目组成？",
+  "retrieval_query": "进口货物的完税价格由哪些项目组成？",
+  "answer": "进口货物完税价格以成交价格为基础… [f583078a58c014ca]",
+  "answer_status": "answered",
+  "citations": [
+    {"chunk_id": "f583078a58c014ca", "article_id": "cn-customs-law-2021:55",
+     "article_label": "第五十五条", "quote": "…", "text": "第五十五条 进出口货物的完税价格…"}
+  ],
+  "references": [
+    {"chunk_id": "f583078a58c014ca", "rank": 1, "source_doc": "中华人民共和国海关法",
+     "article_id": "cn-customs-law-2021:55", "article_label": "第五十五条",
+     "jurisdiction": "CN", "score": 0.406691, "rerank_score": 0.406691,
+     "cited": true, "text": "第五十五条 进出口货物的完税价格…（原文全文）"}
+  ],
+  "chunks": ["…完整检索结果，含 matched_terms / score_parts…"],
+  "diagnostics": {"rerank": {"enabled": true, "applied": true}},
+  "coverage": {"unavailable": false, "notes": []}
+}
+```
+
+多轮对话把之前轮次放进 `messages` 即可；最后一轮是短追问（如「它什么时候生效？」）时，
+服务会自动把上一轮用户问题拼进检索 query。也可以显式传 `retrieval_query` 覆盖。
 
 ```bash
 # 单元/接口测试（离线，不调外部网关）

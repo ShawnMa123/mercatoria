@@ -59,7 +59,11 @@ class ChatClient:
             raise ChatError(f"chat request failed: {exc}") from exc
 
 
-def _prompt(question: str, chunks: list[dict[str, Any]]) -> list[dict[str, str]]:
+def _prompt(
+    question: str,
+    chunks: list[dict[str, Any]],
+    history: list[dict[str, str]] | None = None,
+) -> list[dict[str, str]]:
     blocks = []
     for chunk in chunks:
         cid = chunk["chunk_id"]
@@ -74,8 +78,19 @@ def _prompt(question: str, chunks: list[dict[str, Any]]) -> list[dict[str, str]]
         "如果条文不足以回答问题，明确写“依据不足”，并说明缺少哪类规则。"
         "不要编造条文、条号或来源。"
     )
+    messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+    # Keep the last four turns of the conversation. Prior assistant replies may
+    # carry old chunk ids; the system prompt constrains citations to the
+    # references supplied in the final user message.
+    for turn in (history or [])[-8:]:
+        role = turn.get("role")
+        content = str(turn.get("content") or "").strip()
+        if role not in {"user", "assistant"} or not content:
+            continue
+        messages.append({"role": role, "content": content[:4000]})
     user = "问题：\n" + question + "\n\n可用条文：\n\n" + "\n\n---\n\n".join(blocks)
-    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    messages.append({"role": "user", "content": user})
+    return messages
 
 
 def _citations(answer: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -95,9 +110,39 @@ def _citations(answer: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]
                 "article_label": (chunk.get("articles") or [None])[0],
                 "source_doc": chunk.get("source_doc"),
                 "quote": str(chunk.get("text", ""))[:500],
+                "text": str(chunk.get("text", "")),
             }
         )
     return out
+
+
+def _references(
+    chunks: list[dict[str, Any]], citations: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Full original passages used for the answer, in retrieval rank order."""
+    cited = {c["chunk_id"] for c in citations}
+    refs: list[dict[str, Any]] = []
+    for chunk in chunks:
+        score_parts = chunk.get("score_parts") or {}
+        refs.append(
+            {
+                "chunk_id": chunk["chunk_id"],
+                "rank": chunk.get("rank"),
+                "doc_id": chunk.get("doc_id"),
+                "source_doc": chunk.get("source_doc"),
+                "article_id": (chunk.get("article_ids") or [None])[0],
+                "article_label": (chunk.get("articles") or [None])[0],
+                "jurisdiction": (chunk.get("jurisdictions") or [None])[0],
+                "effective_from": chunk.get("effective_from"),
+                "effective_to": chunk.get("effective_to"),
+                "score": chunk.get("score"),
+                "rerank_score": score_parts.get("rerank"),
+                "cited": chunk["chunk_id"] in cited,
+                "text": str(chunk.get("text", "")),
+                "article_offsets": chunk.get("article_offsets"),
+            }
+        )
+    return refs
 
 
 def answer_question(
@@ -105,25 +150,34 @@ def answer_question(
     question: str,
     chunks: list[dict[str, Any]],
     client: ChatClient | None = None,
+    history: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     if not cfg.enabled:
-        return {"answer": None, "answer_status": "skipped", "citations": [], "error": None}
+        return {
+            "answer": None,
+            "answer_status": "skipped",
+            "citations": [],
+            "references": _references(chunks, []),
+            "error": None,
+        }
     if not chunks:
         return {
             "answer": None,
             "answer_status": "unavailable",
             "citations": [],
+            "references": [],
             "error": None,
             "message": "no retrieved chunks",
         }
     chunks = chunks[: max(1, cfg.max_context_chunks)]
     try:
-        text = (client or ChatClient(cfg)).chat(_prompt(question, chunks))
+        text = (client or ChatClient(cfg)).chat(_prompt(question, chunks, history))
     except ChatError as exc:
         return {
             "answer": None,
             "answer_status": "error",
             "citations": [],
+            "references": _references(chunks, []),
             "error": str(exc),
         }
 
@@ -144,5 +198,6 @@ def answer_question(
         "answer": text,
         "answer_status": status,
         "citations": citations,
+        "references": _references(chunks, citations),
         "error": None,
     }
