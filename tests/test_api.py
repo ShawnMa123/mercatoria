@@ -189,6 +189,25 @@ class ApiTests(unittest.TestCase):
         finally:
             service.cfg.max_batch_bytes = old
 
+    def test_update_document_metadata_rebuilds(self) -> None:
+        resp = self.client.post(
+            "/v1/documents",
+            files=[("files", ("meta.md", b"## Test\n\nfirst article\n", "text/markdown"))],
+            data={"jurisdiction": "CN"},
+        )
+        job = self._wait_job(resp.json()["job_id"])
+        doc_id = job["result"]["documents"][0]["doc_id"]
+        updated = self.client.patch(
+            f"/v1/documents/{doc_id}",
+            json={"applies_to": "guarantee", "source_doc": "改名后的法规"},
+        )
+        self.assertEqual(updated.status_code, 200)
+        update_job = self._wait_job(updated.json()["job_id"])
+        self.assertEqual(update_job["status"], "done")
+        detail = self.client.get(f"/v1/documents/{doc_id}").json()
+        self.assertEqual(detail["applies_to"], ["guarantee"])
+        self.assertEqual(detail["source_doc"], "改名后的法规")
+
     def test_delete_document_rebuilds_without_it(self) -> None:
         resp = self.client.post(
             "/v1/documents",

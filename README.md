@@ -254,6 +254,7 @@ curl -s localhost:8080/v1/jobs/<job_id>
 |---|---|
 | `GET /v1/documents` | 列表 + 状态 + `chunk_count` |
 | `GET /v1/documents/{id}` | 详情 |
+| `PATCH /v1/documents/{id}` | 改 `applies_to`/`effective_from`/`source_doc` 等并重建 |
 | `DELETE /v1/documents/{id}` | 删除原文件/解析产物并重建索引 |
 | `POST /v1/documents/{id}/reindex` | 重新解析并重建 |
 | `GET /v1/documents/{id}/chunks` | 该文档的 chunk 列表 |

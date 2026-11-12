@@ -258,6 +258,53 @@ class Service:
         threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
+    def start_update(self, doc_id: str, fields: dict[str, Any]) -> dict[str, Any]:
+        if self.registry.get(doc_id) is None:
+            raise IngestError(f"document not found: {doc_id}")
+        values: dict[str, Any] = {}
+        for key in (
+            "jurisdiction",
+            "language",
+            "precision",
+            "source_doc",
+            "effective_from",
+            "effective_to",
+        ):
+            if key in fields:
+                values[key] = fields[key]
+        if "jurisdiction" in values:
+            values["jurisdiction"] = str(values["jurisdiction"]).strip().upper()
+        if "source_doc" in values:
+            source = str(values["source_doc"]).strip()
+            if not source:
+                raise IngestError("source_doc cannot be empty")
+            values["source_doc"] = source
+        if "applies_to" in fields:
+            raw = fields["applies_to"]
+            if isinstance(raw, str):
+                raw = raw.replace(";", ",").split(",")
+            if not isinstance(raw, list):
+                raise IngestError("applies_to must be a list or comma-separated string")
+            values["applies_to"] = [
+                str(item).strip().lower() for item in raw if str(item).strip()
+            ]
+        if not values:
+            raise IngestError("no updatable fields")
+        self._claim_job()
+        job = self._new_job("update")
+        cfg = copy.deepcopy(self.cfg)
+
+        def work() -> dict[str, Any]:
+            self.registry.update(doc_id, **values)
+            result = rebuild_with_uploads(
+                cfg, self.registry, embed_fn=self.embed_fn, progress=self._progress(job)
+            )
+            self.reload()
+            return {"updated": doc_id, "fields": values, **result}
+
+        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+        return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
+
 
 def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
     cfg = load_config(config_path)
@@ -469,6 +516,17 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         if status:
             docs = [doc for doc in docs if doc.get("status") == status]
         return {"documents": docs, "count": len(docs)}
+
+    @app.patch("/v1/documents/{doc_id}")
+    def update_document(doc_id: str, body: dict[str, Any]) -> Any:
+        if service.registry.get(doc_id) is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        try:
+            return service.start_update(doc_id, body)
+        except IngestError as exc:
+            message = str(exc)
+            code = 409 if "another" in message else 400
+            raise HTTPException(status_code=code, detail=message) from exc
 
     @app.get("/v1/documents/{doc_id}")
     def get_document(doc_id: str) -> Any:
