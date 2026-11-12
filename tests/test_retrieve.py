@@ -168,6 +168,37 @@ class RetrievalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.retriever.retrieve(["  "])
 
+    def test_rerank_reorders_the_first_stage(self) -> None:
+        def fake_rerank(query: str, docs: list[str], top_n: int):
+            pairs = []
+            for i, doc in enumerate(docs):
+                score = 10.0 if "原产地" in doc else (1.0 if "关税" in doc else 0.1)
+                pairs.append((i, score))
+            return pairs, 1.5
+
+        retriever = Retriever(
+            self.retriever.index, self.cfg, embed_fn=fake_embed, rerank_fn=fake_rerank
+        )
+        result = retriever.retrieve(["关税"], top_k=2)
+        self.assertTrue(result["diagnostics"]["rerank"]["applied"])
+        self.assertEqual(result["diagnostics"]["rerank"]["model"], self.cfg.rerank.model)
+        self.assertIn("原产地", result["chunks"][0]["text"])
+        self.assertIsNotNone(result["chunks"][0]["score_parts"]["rerank"])
+        self.assertLessEqual(len(result["chunks"]), 2)
+
+    def test_rerank_failure_keeps_first_stage_order(self) -> None:
+        def broken_rerank(query: str, docs: list[str], top_n: int):
+            raise RuntimeError("reranker down")
+
+        retriever = Retriever(
+            self.retriever.index, self.cfg, embed_fn=fake_embed, rerank_fn=broken_rerank
+        )
+        result = retriever.retrieve(["关税"], top_k=2)
+        self.assertFalse(result["diagnostics"]["rerank"]["applied"])
+        self.assertIn("reranker down", result["diagnostics"]["rerank"]["error"])
+        self.assertTrue(result["chunks"])
+        self.assertIsNone(result["chunks"][0]["score_parts"]["rerank"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -70,7 +70,7 @@ class Service:
         """Apply config sections in place. Return True if a rebuild is needed."""
         pending = False
         old_hash = self.cfg.chunking_hash()
-        for section in ("chunking", "embedding", "retrieval", "answer"):
+        for section in ("chunking", "embedding", "retrieval", "rerank", "answer"):
             values = body.get(section)
             if not isinstance(values, dict):
                 continue

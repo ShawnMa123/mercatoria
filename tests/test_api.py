@@ -67,6 +67,7 @@ class ApiTests(unittest.TestCase):
                     "index_dir": str(self.root / "index"),
                     "manifest_path": str(self.manifest_path),
                     "embedding": {"dim": 3, "batch_size": 2, "api_key": "secret"},
+                    "rerank": {"enabled": False, "api_key": "rerank-secret"},
                     "answer": {"enabled": False},
                 }
             ),
@@ -88,6 +89,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(health.status_code, 200)
         self.assertEqual(health.json()["status"], "ready")
         self.assertEqual(health.json()["config"]["embedding"]["api_key"], "***")
+        self.assertEqual(health.json()["config"]["rerank"]["api_key"], "***")
         resp = self.client.post(
             "/v1/retrieve",
             json={"queries": ["关税"], "filters": {"jurisdictions": ["CN"]}},

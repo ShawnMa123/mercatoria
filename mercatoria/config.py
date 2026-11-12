@@ -79,6 +79,30 @@ class RetrievalConfig:
 
 
 @dataclass
+class RerankConfig:
+    # Cross-encoder reranking of the first-stage candidate set. Disabled by
+    # default so offline tests and installations without a reranker keep the
+    # previous behaviour; enable it in config.json or RERANK_ENABLED=1.
+    enabled: bool = False
+    # "dashscope" is the native gte-rerank-v2 contract
+    # (input.query/input.documents); "cohere" is the /v1/rerank contract
+    # served by Jina, Cohere, TEI and magpie.
+    style: str = "dashscope"
+    base: str = "https://llm-tlndh47wd9ustbss.cn-beijing.maas.aliyuncs.com"
+    path: str = "/api/v1/services/rerank/text-rerank/text-rerank"
+    model: str = "gte-rerank-v2"
+    api_key: str = ""
+    # First-stage hits handed to the reranker. The final top_k is taken from
+    # this list, so candidates must be >= top_k.
+    candidates: int = 40
+    # 0 = score every candidate the client sends.
+    top_n: int = 0
+    min_score: float = 0.0
+    timeout: float = 30.0
+    retries: int = 2
+
+
+@dataclass
 class AnswerConfig:
     enabled: bool = True
     base: str = "http://localhost:3425/v1"
@@ -98,6 +122,7 @@ class AppConfig:
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+    rerank: RerankConfig = field(default_factory=RerankConfig)
     answer: AnswerConfig = field(default_factory=AnswerConfig)
 
     def resolved_corpus_dir(self) -> Path:
@@ -124,7 +149,7 @@ class AppConfig:
     def public_dict(self) -> dict[str, Any]:
         """Config safe to return over HTTP: redact write-only secrets."""
         data = self.to_dict()
-        for section in ("embedding", "answer"):
+        for section in ("embedding", "rerank", "answer"):
             if data.get(section, {}).get("api_key"):
                 data[section]["api_key"] = "***"
         return data
@@ -156,6 +181,7 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         chunking=_merge_dataclass(ChunkingConfig, data.get("chunking")),
         embedding=_merge_dataclass(EmbeddingConfig, data.get("embedding")),
         retrieval=_merge_dataclass(RetrievalConfig, data.get("retrieval")),
+        rerank=_merge_dataclass(RerankConfig, data.get("rerank")),
         answer=_merge_dataclass(AnswerConfig, data.get("answer")),
     )
 
@@ -167,6 +193,19 @@ def load_config(path: str | Path | None = None) -> AppConfig:
     cfg.embedding.base = _env("EMBEDDING_BASE", cfg.embedding.base)
     cfg.embedding.model = _env("EMBEDDING_MODEL", cfg.embedding.model)
     cfg.embedding.api_key = _env("EMBEDDING_API_KEY", cfg.embedding.api_key)
+    if _env("RERANK_ENABLED"):
+        cfg.rerank.enabled = _env("RERANK_ENABLED").lower() in {"1", "true", "yes"}
+    cfg.rerank.style = _env("RERANK_STYLE", cfg.rerank.style)
+    cfg.rerank.base = _env("RERANK_BASE", cfg.rerank.base)
+    cfg.rerank.path = _env("RERANK_PATH", cfg.rerank.path)
+    cfg.rerank.model = _env("RERANK_MODEL", cfg.rerank.model)
+    cfg.rerank.api_key = _env("RERANK_API_KEY", cfg.rerank.api_key)
+    if _env("RERANK_CANDIDATES"):
+        cfg.rerank.candidates = int(_env("RERANK_CANDIDATES"))
+    if _env("RERANK_TOP_N"):
+        cfg.rerank.top_n = int(_env("RERANK_TOP_N"))
+    if _env("RERANK_TIMEOUT"):
+        cfg.rerank.timeout = float(_env("RERANK_TIMEOUT"))
     cfg.answer.base = _env("LLM_BASE", cfg.answer.base)
     cfg.answer.model = _env("LLM_MODEL", cfg.answer.model)
     cfg.answer.api_key = _env("LLM_API_KEY", cfg.answer.api_key)

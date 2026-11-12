@@ -9,6 +9,7 @@ import numpy as np
 
 from .config import AppConfig
 from .embed import EmbeddingClient
+from .rerank import RerankClient, RerankError
 from .store import CorpusUnavailable, Index
 from .tokenizer import extract_matches, query_terms
 
@@ -62,10 +63,18 @@ class Retriever:
         index: Index,
         cfg: AppConfig,
         embed_fn: Callable[[list[str]], np.ndarray] | None = None,
+        rerank_fn: Callable[[str, list[str], int], tuple[list[tuple[int, float]], float]]
+        | None = None,
     ):
         self.index = index
         self.cfg = cfg
         self.embed = embed_fn or EmbeddingClient(cfg.embedding).embed
+        if rerank_fn is not None:
+            self.rerank = rerank_fn
+        elif cfg.rerank.enabled:
+            self.rerank = RerankClient(cfg.rerank).rerank
+        else:
+            self.rerank = None
 
     def _select(
         self, filters: dict[str, Any]
@@ -238,6 +247,52 @@ class Retriever:
 
         merged: dict[str, dict[str, Any]] = {}
         cfg = self.cfg.retrieval
+        rerank_cfg = self.cfg.rerank
+        rerank_meta: dict[str, Any] = {
+            "enabled": self.rerank is not None,
+            "applied": False,
+            "model": rerank_cfg.model if self.rerank is not None else None,
+            "candidates": 0,
+            "latency_ms": 0.0,
+            "error": None,
+        }
+
+        def absorb(
+            qi: int,
+            cid: str,
+            score: float,
+            first_stage: float,
+            rerank_score: float | None,
+            b_raw: float,
+            v_raw: float,
+            b_norm: float,
+            v_norm: float,
+        ) -> None:
+            current = merged.get(cid)
+            if current is None:
+                merged[cid] = {
+                    "score": score,
+                    "first_stage": first_stage,
+                    "rerank": rerank_score,
+                    "query_indices": {qi},
+                    "bm25": b_raw,
+                    "vector": v_raw,
+                    "bm25_norm": b_norm,
+                    "vector_norm": v_norm,
+                }
+                return
+            current["query_indices"].add(qi)
+            if score > current["score"]:
+                current.update(
+                    score=score,
+                    first_stage=first_stage,
+                    rerank=rerank_score,
+                    bm25=b_raw,
+                    vector=v_raw,
+                    bm25_norm=b_norm,
+                    vector_norm=v_norm,
+                )
+
         for qi, (query, qvec) in enumerate(zip(queries, query_vectors)):
             terms = query_terms(query)
             bm25 = self.index.bm25_scores(candidate_set, terms, cfg.bm25_k1, cfg.bm25_b)
@@ -253,25 +308,57 @@ class Retriever:
                     continue
                 scored.append((score, cid, raw_bm25[i], vec_list[i], bm25_norm[i], vec_norm[i]))
             scored.sort(key=lambda item: (-item[0], item[1]))
-            for score, cid, b_raw, v_raw, b_norm, v_norm in scored[:top_k]:
-                current = merged.get(cid)
-                if current is None or score > current["score"]:
-                    merged[cid] = {
-                        "score": score,
-                        "query_indices": {qi},
-                        "bm25": b_raw,
-                        "vector": v_raw,
-                        "bm25_norm": b_norm,
-                        "vector_norm": v_norm,
-                    }
-                else:
-                    current["query_indices"].add(qi)
+            if not scored:
+                continue
 
+            if self.rerank is None:
+                for score, cid, b_raw, v_raw, b_norm, v_norm in scored[:top_k]:
+                    absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
+                continue
+
+            # A cross-encoder only sees what the first stage offers, so widen
+            # the pool beyond top_k and let the reranker choose the final N.
+            depth = max(top_k, int(rerank_cfg.candidates or 0), 1)
+            pool = scored[:depth]
+            texts = [self.index.chunk_by_id[item[1]]["text"] for item in pool]
+            rerank_meta["candidates"] += len(pool)
+            pairs: list[tuple[int, float]] = []
+            try:
+                pairs, latency = self.rerank(query, texts, len(texts))
+                rerank_meta["latency_ms"] = max(rerank_meta["latency_ms"], latency)
+            except Exception as exc:  # reranking must never fail the request
+                rerank_meta["error"] = f"{type(exc).__name__}: {exc}"[:300]
+
+            if pairs:
+                rerank_meta["applied"] = True
+                pairs = sorted(pairs, key=lambda pair: (-pair[1], pair[0]))
+                pairs = [(idx, score) for idx, score in pairs if 0 <= idx < len(pool)]
+                for idx, rscore in pairs[:top_k]:
+                    score, cid, b_raw, v_raw, b_norm, v_norm = pool[idx]
+                    absorb(qi, cid, rscore, score, rscore, b_raw, v_raw, b_norm, v_norm)
+                # A reranker that returns fewer rows than top_k must still
+                # yield top_k chunks: fill from first-stage order.
+                if len(pairs) < top_k:
+                    seen = {pool[idx][1] for idx, _ in pairs}
+                    for score, cid, b_raw, v_raw, b_norm, v_norm in pool:
+                        if cid in seen:
+                            continue
+                        absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
+                        seen.add(cid)
+                        if len(seen) >= top_k:
+                            break
+            else:
+                for score, cid, b_raw, v_raw, b_norm, v_norm in pool[:top_k]:
+                    absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
+
+        diagnostics["rerank"] = rerank_meta
         if not merged:
             diagnostics["zero_reason"] = "no_match"
             return response
 
-        ordered = sorted(merged.items(), key=lambda item: (-item[1]["score"], item[0]))
+        ordered = sorted(
+            merged.items(), key=lambda item: (-item[1]["score"], -item[1]["first_stage"], item[0])
+        )[:top_k]
         funnel["after_retrieval"] = len(ordered)
         chunks: list[dict[str, Any]] = []
         for rank, (cid, hit) in enumerate(ordered, 1):
@@ -305,7 +392,11 @@ class Retriever:
                         "keyword": round(float(hit["bm25"]), 6),
                         "vector_norm": round(float(hit["vector_norm"]), 6),
                         "keyword_norm": round(float(hit["bm25_norm"]), 6),
-                        "hybrid": round(float(hit["score"]), 6),
+                        # first_stage is the BM25+cosine hybrid; hybrid is
+                        # kept as an alias for older consumers.
+                        "first_stage": round(float(hit["first_stage"]), 6),
+                        "hybrid": round(float(hit["first_stage"]), 6),
+                        "rerank": None if hit["rerank"] is None else round(float(hit["rerank"]), 6),
                     },
                     "articles": [row["article_label"]],
                     "article_ids": [row["article_id"]],

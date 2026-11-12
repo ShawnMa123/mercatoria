@@ -32,6 +32,19 @@
     "bm25_b": 0.75,
     "similarity_threshold": 0.0
   },
+  "rerank": {
+    "enabled": true,
+    "style": "dashscope",
+    "base": "https://llm-tlndh47wd9ustbss.cn-beijing.maas.aliyuncs.com",
+    "path": "/api/v1/services/rerank/text-rerank/text-rerank",
+    "model": "gte-rerank-v2",
+    "api_key": "",
+    "candidates": 40,
+    "top_n": 0,
+    "min_score": 0.0,
+    "timeout": 30.0,
+    "retries": 2
+  },
   "answer": {
     "enabled": true,
     "base": "http://localhost:3425/v1",
