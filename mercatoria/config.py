@@ -76,6 +76,9 @@ class RetrievalConfig:
     bm25_k1: float = 1.5
     bm25_b: float = 0.75
     similarity_threshold: float = 0.0
+    # Append English equivalents of known Chinese legal terms so a Chinese
+    # question can reach WTO/CISG English text without a translation call.
+    expand_cross_language: bool = True
 
 
 @dataclass
@@ -97,6 +100,10 @@ class RerankConfig:
     candidates: int = 40
     # 0 = score every candidate the client sends.
     top_n: int = 0
+    # Rerank contribution in max fusion:
+    #   final = max(first_stage_norm, weight * rerank_norm)
+    # Pure rerank overrides exact legal matches; max fusion keeps them.
+    weight: float = 0.8
     min_score: float = 0.0
     timeout: float = 30.0
     retries: int = 2
@@ -223,6 +230,8 @@ def load_config(path: str | Path | None = None) -> AppConfig:
     cfg.rerank.api_key = _env("RERANK_API_KEY", cfg.rerank.api_key)
     if _env("RERANK_CANDIDATES"):
         cfg.rerank.candidates = int(_env("RERANK_CANDIDATES"))
+    if _env("RERANK_WEIGHT"):
+        cfg.rerank.weight = float(_env("RERANK_WEIGHT"))
     if _env("RERANK_TOP_N"):
         cfg.rerank.top_n = int(_env("RERANK_TOP_N"))
     if _env("RERANK_TIMEOUT"):

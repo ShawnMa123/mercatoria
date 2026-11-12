@@ -12,6 +12,7 @@ import numpy as np
 
 from .config import AppConfig
 from .embed import EmbeddingClient
+from .glossary import expand_query
 from .rerank import RerankClient, RerankError
 from .store import CorpusUnavailable, Index
 from .tokenizer import extract_matches, query_terms
@@ -240,6 +241,8 @@ class Retriever:
             raise ValueError("queries must contain at least one non-empty string")
         if len(queries) > MAX_QUERIES:
             raise ValueError(f"queries must contain at most {MAX_QUERIES} items")
+        if self.cfg.retrieval.expand_cross_language:
+            queries = [expand_query(query) for query in queries]
         top_k = int(top_k or self.cfg.retrieval.top_k)
         if top_k < 1 or top_k > 100:
             raise ValueError("top_k must be in [1, 100]")
@@ -295,6 +298,8 @@ class Retriever:
             "applied": False,
             "model": rerank_cfg.model if self.rerank is not None else None,
             "candidates": 0,
+            "blend_weight": rerank_cfg.weight if self.rerank is not None else None,
+            "fusion": "max" if self.rerank is not None else None,
             "latency_ms": 0.0,
             "error": None,
         }
@@ -374,21 +379,33 @@ class Retriever:
             if pairs:
                 rerank_meta["applied"] = True
                 pairs = sorted(pairs, key=lambda pair: (-pair[1], pair[0]))
-                pairs = [(idx, score) for idx, score in pairs if 0 <= idx < len(pool)]
-                for idx, rscore in pairs[:top_k]:
-                    score, cid, b_raw, v_raw, b_norm, v_norm = pool[idx]
-                    absorb(qi, cid, rscore, score, rscore, b_raw, v_raw, b_norm, v_norm)
-                # A reranker that returns fewer rows than top_k must still
-                # yield top_k chunks: fill from first-stage order.
-                if len(pairs) < top_k:
-                    seen = {pool[idx][1] for idx, _ in pairs}
-                    for score, cid, b_raw, v_raw, b_norm, v_norm in pool:
-                        if cid in seen:
-                            continue
-                        absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
-                        seen.add(cid)
-                        if len(seen) >= top_k:
-                            break
+                rerank_map = {
+                    idx: score for idx, score in pairs if 0 <= idx < len(pool)
+                }
+                first_norm = _minmax([item[0] for item in pool])
+                rerank_values = list(rerank_map.values())
+                rerank_norm = _minmax(rerank_values)
+                norm_by_idx = {
+                    idx: rerank_norm[i] for i, idx in enumerate(rerank_map)
+                }
+                ranked: list[tuple[float, float | None, float, str, float, float, float, float]] = []
+                for idx, (fscore, cid, b_raw, v_raw, b_norm, v_norm) in enumerate(pool):
+                    rscore = rerank_map.get(idx)
+                    rnorm = norm_by_idx.get(idx, 0.0) if rscore is not None else 0.0
+                    # Max fusion keeps a strong lexical (exact legal term)
+                    # match visible even when the cross-encoder dislikes it,
+                    # while still letting rerank promote a semantic match.
+                    final = max(first_norm[idx], rerank_cfg.weight * rnorm)
+                    ranked.append((final, rscore, fscore, cid, b_raw, v_raw, b_norm, v_norm))
+                ranked.sort(
+                    key=lambda item: (
+                        -item[0],
+                        -(item[1] if item[1] is not None else -1.0),
+                        item[3],
+                    )
+                )
+                for final, rscore, fscore, cid, b_raw, v_raw, b_norm, v_norm in ranked[:top_k]:
+                    absorb(qi, cid, final, fscore, rscore, b_raw, v_raw, b_norm, v_norm)
             else:
                 for score, cid, b_raw, v_raw, b_norm, v_norm in pool[:top_k]:
                     absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)

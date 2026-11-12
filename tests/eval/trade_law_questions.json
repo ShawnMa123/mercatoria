@@ -7,8 +7,16 @@
       "category": "完税价格",
       "language": "zh",
       "question": "进口货物的完税价格由哪些项目组成？",
-      "expected_doc_ids": ["cn-customs-law-2021", "cn-tariff-law-2024", "cn-import-export-tariff-2017", "wto-cv"],
-      "expected_keywords": ["完税价格", "成交价格"],
+      "expected_doc_ids": [
+        "cn-customs-law-2021",
+        "cn-tariff-law-2024",
+        "cn-import-export-tariff-2017",
+        "wto-cv"
+      ],
+      "expected_keywords": [
+        "完税价格",
+        "成交价格"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -17,8 +25,17 @@
       "category": "完税价格",
       "language": "zh",
       "question": "进口货物不存在成交价格，或者成交价格不能确定时，海关应当依次采用哪些估价方法？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024", "wto-cv"],
-      "expected_keywords": ["相同货物", "类似货物", "倒扣价格", "计算价格"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024",
+        "wto-cv"
+      ],
+      "expected_keywords": [
+        "相同货物",
+        "类似货物",
+        "倒扣价格",
+        "计算价格"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -27,18 +44,32 @@
       "category": "完税价格",
       "language": "zh",
       "question": "运往境外修理的机械器具复运进境，海关以什么为基础审查确定完税价格？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024"],
-      "expected_keywords": ["境外修理费", "料件费"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "境外修理费",
+        "料件费"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
-      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
+      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
+      "corpus_gap": true,
+      "coverage_note": "该规则仅在已被《关税法》替代的 2017 年进出口关税条例中；as_of=null 按现行法过滤后不可见"
     },
     {
       "id": "FT-004",
       "category": "完税价格",
       "language": "zh",
       "question": "进口货物的保险费无法确定或者未实际发生时，保险费应当如何计算？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024"],
-      "expected_keywords": ["保险费", "货价加运费"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "保险费",
+        "货价加运费"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -47,8 +78,15 @@
       "category": "完税价格",
       "language": "zh",
       "question": "出口货物的完税价格如何计算？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024"],
-      "expected_keywords": ["出口货物", "完税价格", "FOB"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "出口货物",
+        "完税价格",
+        "FOB"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -57,8 +95,15 @@
       "category": "完税价格",
       "language": "zh",
       "question": "买卖双方存在特殊关系，海关是否一律不接受其成交价格？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024", "wto-cv"],
-      "expected_keywords": ["特殊关系", "成交价格"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024",
+        "wto-cv"
+      ],
+      "expected_keywords": [
+        "特殊关系",
+        "成交价格"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -67,8 +112,15 @@
       "category": "完税价格",
       "language": "zh",
       "question": "进口货物的价款中单独列明的哪些费用不计入完税价格？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024"],
-      "expected_keywords": ["不计入", "完税价格", "进口关税"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "不计入",
+        "完税价格",
+        "进口关税"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -77,18 +129,34 @@
       "category": "完税价格",
       "language": "zh",
       "question": "公式定价货物适用成交价格估价方法需要同时满足哪些条件？",
-      "expected_doc_ids": ["cn-import-export-tariff-2017", "cn-tariff-law-2024"],
-      "expected_keywords": ["定价公式", "结算价格"],
+      "expected_doc_ids": [
+        "cn-import-export-tariff-2017",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "定价公式",
+        "结算价格"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
-      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
+      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
+      "corpus_gap": true,
+      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
     },
     {
       "id": "FT-009",
       "category": "关税征收",
       "language": "zh",
       "question": "我国关税的纳税义务人包括哪些？",
-      "expected_doc_ids": ["cn-tariff-law-2024", "cn-customs-law-2021", "cn-import-export-tariff-2017"],
-      "expected_keywords": ["纳税义务人", "收货人", "发货人"],
+      "expected_doc_ids": [
+        "cn-tariff-law-2024",
+        "cn-customs-law-2021",
+        "cn-import-export-tariff-2017"
+      ],
+      "expected_keywords": [
+        "纳税义务人",
+        "收货人",
+        "发货人"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -97,8 +165,15 @@
       "category": "关税征收",
       "language": "zh",
       "question": "进口关税的计征方法有哪几种？",
-      "expected_doc_ids": ["cn-tariff-law-2024", "cn-import-export-tariff-2017"],
-      "expected_keywords": ["从价", "从量", "复合"],
+      "expected_doc_ids": [
+        "cn-tariff-law-2024",
+        "cn-import-export-tariff-2017"
+      ],
+      "expected_keywords": [
+        "从价",
+        "从量",
+        "复合"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -107,8 +182,16 @@
       "category": "关税征收",
       "language": "zh",
       "question": "纳税义务人未按期缴纳税款，海关可以采取哪些强制措施？",
-      "expected_doc_ids": ["cn-tariff-law-2024", "cn-customs-law-2021", "cn-import-export-tariff-2017"],
-      "expected_keywords": ["滞纳金", "强制", "扣缴"],
+      "expected_doc_ids": [
+        "cn-tariff-law-2024",
+        "cn-customs-law-2021",
+        "cn-import-export-tariff-2017"
+      ],
+      "expected_keywords": [
+        "滞纳金",
+        "强制",
+        "扣缴"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -117,8 +200,14 @@
       "category": "关税征收",
       "language": "zh",
       "question": "进口货物的收货人自运输工具申报进境之日起超过三个月未向海关申报的，海关如何处理？",
-      "expected_doc_ids": ["cn-customs-law-2021", "cn-tariff-law-2024"],
-      "expected_keywords": ["三个月", "变卖"],
+      "expected_doc_ids": [
+        "cn-customs-law-2021",
+        "cn-tariff-law-2024"
+      ],
+      "expected_keywords": [
+        "三个月",
+        "变卖"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -127,8 +216,15 @@
       "category": "关税征收",
       "language": "zh",
       "question": "海关发现多征税款的，纳税义务人应当在多长时间内办理退税手续？",
-      "expected_doc_ids": ["cn-tariff-law-2024", "cn-import-export-tariff-2017", "cn-customs-law-2021"],
-      "expected_keywords": ["退税", "一年"],
+      "expected_doc_ids": [
+        "cn-tariff-law-2024",
+        "cn-import-export-tariff-2017",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "退税",
+        "一年"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -137,8 +233,16 @@
       "category": "原产地",
       "language": "zh",
       "question": "如何判断进口货物的原产地？",
-      "expected_doc_ids": ["cn-origin-2019", "wto-ro", "us-cfr-19-102"],
-      "expected_keywords": ["原产地", "完全获得", "实质性改变"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "wto-ro",
+        "us-cfr-19-102"
+      ],
+      "expected_keywords": [
+        "原产地",
+        "完全获得",
+        "实质性改变"
+      ],
       "source": "海关总署《关于非优惠原产地规则的解读》（改编）",
       "source_url": "http://www.customs.gov.cn/gss/zwdt36/6462212/index.html"
     },
@@ -147,8 +251,14 @@
       "category": "原产地",
       "language": "zh",
       "question": "非优惠原产地规则中实质性改变的基本标准是什么？",
-      "expected_doc_ids": ["cn-origin-2019", "wto-ro"],
-      "expected_keywords": ["实质性改变", "税则归类"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "wto-ro"
+      ],
+      "expected_keywords": [
+        "实质性改变",
+        "税则归类"
+      ],
       "source": "海关总署《关于非优惠原产地规则的解读》（改编）",
       "source_url": "http://www.customs.gov.cn/gss/zwdt36/6462212/index.html"
     },
@@ -157,8 +267,14 @@
       "category": "原产地",
       "language": "zh",
       "question": "完全在一个国家或者地区获得的货物，其原产地如何确定？",
-      "expected_doc_ids": ["cn-origin-2019", "wto-ro"],
-      "expected_keywords": ["完全获得", "原产地"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "wto-ro"
+      ],
+      "expected_keywords": [
+        "完全获得",
+        "原产地"
+      ],
       "source": "《中华人民共和国进出口货物原产地条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -167,18 +283,32 @@
       "category": "原产地",
       "language": "zh",
       "question": "出口加工区企业使用台湾产原料加工成服装后内销，原产国应当如何申报？",
-      "expected_doc_ids": ["cn-origin-2019", "cn-customs-law-2021"],
-      "expected_keywords": ["原产国", "加工"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "原产国",
+        "加工"
+      ],
       "source": "2004年报关员考试真题（改编）",
-      "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
+      "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html",
+      "corpus_gap": true,
+      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
     },
     {
       "id": "FT-018",
       "category": "原产地",
       "language": "zh",
       "question": "原产地标记管理有哪些要求？",
-      "expected_doc_ids": ["cn-origin-2019", "us-cfr-19-134"],
-      "expected_keywords": ["原产地标记", "标记"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "us-cfr-19-134"
+      ],
+      "expected_keywords": [
+        "原产地标记",
+        "标记"
+      ],
       "source": "《中华人民共和国进出口货物原产地条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -187,8 +317,14 @@
       "category": "原产地",
       "language": "zh",
       "question": "优惠原产地证书在国际贸易中有什么作用？",
-      "expected_doc_ids": ["cn-origin-2019", "wto-ro"],
-      "expected_keywords": ["优惠", "原产地证书"],
+      "expected_doc_ids": [
+        "cn-origin-2019",
+        "wto-ro"
+      ],
+      "expected_keywords": [
+        "优惠",
+        "原产地证书"
+      ],
       "source": "商务部《原产地规则知识手册》（改编）",
       "source_url": "https://wms.mofcom.gov.cn/cms_files/filemanager/271034535/attach/20255/c1acd624c45e4cbcae952e687fff3bff.pdf"
     },
@@ -197,8 +333,14 @@
       "category": "出口管制",
       "language": "zh",
       "question": "出口两用物项是否需要申请出口许可证？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["两用物项", "出口许可"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "两用物项",
+        "出口许可"
+      ],
       "source": "商务部出口管制信息网常见问题（改编）",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html"
     },
@@ -207,8 +349,16 @@
       "category": "出口管制",
       "language": "zh",
       "question": "货物属于两用物项，报关时未交验出口许可证，事后补办许可证是否还构成未经许可出口？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024", "cn-customs-law-2021"],
-      "expected_keywords": ["未经许可出口", "补办", "许可证"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "未经许可出口",
+        "补办",
+        "许可证"
+      ],
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html"
     },
@@ -217,8 +367,15 @@
       "category": "出口管制",
       "language": "zh",
       "question": "出口经营者获得商务部“不属于两用物项”的答复后，是否可以直接出口？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["答复", "识别", "两用物项"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "答复",
+        "识别",
+        "两用物项"
+      ],
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html"
     },
@@ -227,18 +384,33 @@
       "category": "出口管制",
       "language": "zh",
       "question": "海关商品编号是否可以作为判定是否属于两用物项的依据？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["海关商品编号", "管制清单", "管制编码"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "海关商品编号",
+        "管制清单",
+        "管制编码"
+      ],
       "source": "商务部出口管制信息网常见问题",
-      "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html"
+      "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html",
+      "corpus_gap": true,
+      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
     },
     {
       "id": "FT-024",
       "category": "出口管制",
       "language": "zh",
       "question": "出口经营者建立出口管制内部合规机制是否是法律强制要求？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["内部合规", "出口管制"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "内部合规",
+        "出口管制"
+      ],
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202111/291.html"
     },
@@ -247,8 +419,15 @@
       "category": "出口管制",
       "language": "zh",
       "question": "出口经营者发现最终用户或者最终用途可能发生变化的，应当如何处理？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["最终用户", "最终用途", "报告"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "最终用户",
+        "最终用途",
+        "报告"
+      ],
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202111/291.html"
     },
@@ -257,8 +436,14 @@
       "category": "出口管制",
       "language": "zh",
       "question": "哪些行为属于未经许可出口两用物项？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["未经许可", "出口"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "未经许可",
+        "出口"
+      ],
       "source": "商务部出口管制信息网常见问题（改编）",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html"
     },
@@ -267,8 +452,15 @@
       "category": "出口管制",
       "language": "zh",
       "question": "两用物项出口许可证的有效期和跨年度使用规则是什么？",
-      "expected_doc_ids": ["cn-export-control-law-2020", "cn-dual-use-export-control-2024"],
-      "expected_keywords": ["许可证", "有效期", "次年"],
+      "expected_doc_ids": [
+        "cn-export-control-law-2020",
+        "cn-dual-use-export-control-2024"
+      ],
+      "expected_keywords": [
+        "许可证",
+        "有效期",
+        "次年"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -277,8 +469,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "我国反倾销调查的主管机关是谁？",
-      "expected_doc_ids": ["cn-anti-dumping-2004", "wto-adp"],
-      "expected_keywords": ["商务部", "反倾销", "调查"],
+      "expected_doc_ids": [
+        "cn-anti-dumping-2004",
+        "wto-adp"
+      ],
+      "expected_keywords": [
+        "商务部",
+        "反倾销",
+        "调查"
+      ],
       "source": "2025年贸易救济法治业务考试题库（改编）",
       "source_url": "https://www.renrendoc.com:8443/paper/538596455.html"
     },
@@ -287,8 +486,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "反倾销税由哪个机关决定，由谁负责执行？",
-      "expected_doc_ids": ["cn-anti-dumping-2004", "wto-adp"],
-      "expected_keywords": ["反倾销税", "国务院关税税则委员会", "海关"],
+      "expected_doc_ids": [
+        "cn-anti-dumping-2004",
+        "wto-adp"
+      ],
+      "expected_keywords": [
+        "反倾销税",
+        "国务院关税税则委员会",
+        "海关"
+      ],
       "source": "商务部反倾销调查裁定（改编）",
       "source_url": "https://www.mofcom.gov.cn/cms_files/filemanager/1511035453/attach/202511/1f42065d3ce645c49cee468f32920129.pdf"
     },
@@ -297,8 +503,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "在什么情况下可以采取反倾销措施？",
-      "expected_doc_ids": ["cn-anti-dumping-2004", "wto-adp"],
-      "expected_keywords": ["倾销", "损害", "因果关系"],
+      "expected_doc_ids": [
+        "cn-anti-dumping-2004",
+        "wto-adp"
+      ],
+      "expected_keywords": [
+        "倾销",
+        "损害",
+        "因果关系"
+      ],
       "source": "《中华人民共和国反倾销条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -307,8 +520,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "反补贴税的征收条件是什么？",
-      "expected_doc_ids": ["cn-countervailing-2004", "wto-scm"],
-      "expected_keywords": ["补贴", "损害", "反补贴税"],
+      "expected_doc_ids": [
+        "cn-countervailing-2004",
+        "wto-scm"
+      ],
+      "expected_keywords": [
+        "补贴",
+        "损害",
+        "反补贴税"
+      ],
       "source": "《中华人民共和国反补贴条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -317,8 +537,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "保障措施可以采取哪些形式？",
-      "expected_doc_ids": ["cn-foreign-trade-law-2025", "wto-gatt-1994"],
-      "expected_keywords": ["保障措施", "提高关税", "数量限制"],
+      "expected_doc_ids": [
+        "cn-foreign-trade-law-2025",
+        "wto-gatt-1994"
+      ],
+      "expected_keywords": [
+        "保障措施",
+        "提高关税",
+        "数量限制"
+      ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
     },
@@ -327,8 +554,15 @@
       "category": "贸易救济",
       "language": "zh",
       "question": "反倾销调查中的倾销幅度如何确定？",
-      "expected_doc_ids": ["cn-anti-dumping-2004", "wto-adp"],
-      "expected_keywords": ["倾销幅度", "正常价值", "出口价格"],
+      "expected_doc_ids": [
+        "cn-anti-dumping-2004",
+        "wto-adp"
+      ],
+      "expected_keywords": [
+        "倾销幅度",
+        "正常价值",
+        "出口价格"
+      ],
       "source": "《中华人民共和国反倾销条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -337,8 +571,16 @@
       "category": "检验检疫",
       "language": "zh",
       "question": "进出口商品检验的依据是什么？",
-      "expected_doc_ids": ["cn-inspection-law-2021", "cn-inspection-regulations-2026", "wto-tbt"],
-      "expected_keywords": ["检验", "标准", "合同"],
+      "expected_doc_ids": [
+        "cn-inspection-law-2021",
+        "cn-inspection-regulations-2026",
+        "wto-tbt"
+      ],
+      "expected_keywords": [
+        "检验",
+        "标准",
+        "合同"
+      ],
       "source": "《中华人民共和国进出口商品检验法》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -347,8 +589,15 @@
       "category": "检验检疫",
       "language": "zh",
       "question": "进口商品未经检验是否可以销售或者使用？",
-      "expected_doc_ids": ["cn-inspection-law-2021", "cn-inspection-regulations-2026"],
-      "expected_keywords": ["未经检验", "销售", "使用"],
+      "expected_doc_ids": [
+        "cn-inspection-law-2021",
+        "cn-inspection-regulations-2026"
+      ],
+      "expected_keywords": [
+        "未经检验",
+        "销售",
+        "使用"
+      ],
       "source": "《中华人民共和国进出口商品检验法》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -357,8 +606,14 @@
       "category": "检验检疫",
       "language": "zh",
       "question": "WTO《技术性贸易壁垒协定》对成员国的技术法规和标准提出了哪些主要要求？",
-      "expected_doc_ids": ["wto-tbt"],
-      "expected_keywords": ["technical regulations", "standards", "TBT"],
+      "expected_doc_ids": [
+        "wto-tbt"
+      ],
+      "expected_keywords": [
+        "technical regulations",
+        "standards",
+        "TBT"
+      ],
       "source": "WTO TBT Agreement（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/17-tbt_e.htm"
     },
@@ -367,8 +622,14 @@
       "category": "检验检疫",
       "language": "zh",
       "question": "WTO《实施卫生与植物卫生措施协定》对科学依据和风险评估有什么要求？",
-      "expected_doc_ids": ["wto-sps"],
-      "expected_keywords": ["scientific", "risk assessment", "SPS"],
+      "expected_doc_ids": [
+        "wto-sps"
+      ],
+      "expected_keywords": [
+        "scientific",
+        "risk assessment",
+        "SPS"
+      ],
       "source": "WTO SPS Agreement（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/15-sps_e.htm"
     },
@@ -377,8 +638,15 @@
       "category": "海关处罚",
       "language": "zh",
       "question": "报关人员向海关工作人员行贿的，海关有权给予什么处罚？",
-      "expected_doc_ids": ["cn-customs-law-2021", "cn-customs-penalty-2022"],
-      "expected_keywords": ["行贿", "处罚", "报关"],
+      "expected_doc_ids": [
+        "cn-customs-law-2021",
+        "cn-customs-penalty-2022"
+      ],
+      "expected_keywords": [
+        "行贿",
+        "处罚",
+        "报关"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -387,8 +655,15 @@
       "category": "海关处罚",
       "language": "zh",
       "question": "违反海关监管规定的行为应当如何处罚？",
-      "expected_doc_ids": ["cn-customs-penalty-2022", "cn-customs-law-2021"],
-      "expected_keywords": ["违反海关监管规定", "罚款", "处罚"],
+      "expected_doc_ids": [
+        "cn-customs-penalty-2022",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "违反海关监管规定",
+        "罚款",
+        "处罚"
+      ],
       "source": "《中华人民共和国海关行政处罚实施条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -397,8 +672,14 @@
       "category": "海关担保",
       "language": "zh",
       "question": "海关事务担保适用于哪些情形？",
-      "expected_doc_ids": ["cn-customs-guarantee-2018", "cn-customs-law-2021"],
-      "expected_keywords": ["担保", "海关"],
+      "expected_doc_ids": [
+        "cn-customs-guarantee-2018",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "担保",
+        "海关"
+      ],
       "source": "《中华人民共和国海关事务担保条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -407,8 +688,15 @@
       "category": "海关担保",
       "language": "zh",
       "question": "担保人可以以哪些方式提供海关事务担保？",
-      "expected_doc_ids": ["cn-customs-guarantee-2018"],
-      "expected_keywords": ["保证金", "保证", "抵押", "质押"],
+      "expected_doc_ids": [
+        "cn-customs-guarantee-2018"
+      ],
+      "expected_keywords": [
+        "保证金",
+        "保证",
+        "抵押",
+        "质押"
+      ],
       "source": "《中华人民共和国海关事务担保条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -417,8 +705,14 @@
       "category": "海关担保",
       "language": "zh",
       "question": "海关发现多征税款后，纳税义务人办理退税的期限是多久？",
-      "expected_doc_ids": ["cn-tariff-law-2024", "cn-import-export-tariff-2017"],
-      "expected_keywords": ["退税", "一年"],
+      "expected_doc_ids": [
+        "cn-tariff-law-2024",
+        "cn-import-export-tariff-2017"
+      ],
+      "expected_keywords": [
+        "退税",
+        "一年"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -427,8 +721,14 @@
       "category": "CISG",
       "language": "en",
       "question": "Under the CISG, what remedies does the buyer have if the seller delivers goods that do not conform to the contract?",
-      "expected_doc_ids": ["cisg"],
-      "expected_keywords": ["remedies", "non-conforming", "buyer"],
+      "expected_doc_ids": [
+        "cisg"
+      ],
+      "expected_keywords": [
+        "remedies",
+        "non-conforming",
+        "buyer"
+      ],
       "source": "CISG Article 45-52（改编）",
       "source_url": "https://www.uncitral.org/pdf/english/texts/sales/cisg/V1056997-CISG-e-book.pdf"
     },
@@ -437,8 +737,14 @@
       "category": "CISG",
       "language": "en",
       "question": "What constitutes a fundamental breach of contract under the CISG?",
-      "expected_doc_ids": ["cisg"],
-      "expected_keywords": ["fundamental breach", "detriment", "substantial"],
+      "expected_doc_ids": [
+        "cisg"
+      ],
+      "expected_keywords": [
+        "fundamental breach",
+        "detriment",
+        "substantial"
+      ],
       "source": "CISG Article 25（改编）",
       "source_url": "https://www.uncitral.org/pdf/english/texts/sales/cisg/V1056997-CISG-e-book.pdf"
     },
@@ -447,8 +753,14 @@
       "category": "CISG",
       "language": "en",
       "question": "When may the buyer declare the contract avoided under the CISG?",
-      "expected_doc_ids": ["cisg"],
-      "expected_keywords": ["avoid", "contract", "fundamental breach"],
+      "expected_doc_ids": [
+        "cisg"
+      ],
+      "expected_keywords": [
+        "avoid",
+        "contract",
+        "fundamental breach"
+      ],
       "source": "CISG Article 49（改编）",
       "source_url": "https://www.uncitral.org/pdf/english/texts/sales/cisg/V1056997-CISG-e-book.pdf"
     },
@@ -457,8 +769,14 @@
       "category": "CISG",
       "language": "en",
       "question": "How are damages calculated under the CISG?",
-      "expected_doc_ids": ["cisg"],
-      "expected_keywords": ["damages", "loss", "profit"],
+      "expected_doc_ids": [
+        "cisg"
+      ],
+      "expected_keywords": [
+        "damages",
+        "loss",
+        "profit"
+      ],
       "source": "CISG Article 74（改编）",
       "source_url": "https://www.uncitral.org/pdf/english/texts/sales/cisg/V1056997-CISG-e-book.pdf"
     },
@@ -467,8 +785,14 @@
       "category": "CISG",
       "language": "en",
       "question": "Does the CISG apply to a contract of sale of goods between parties whose places of business are in different Contracting States?",
-      "expected_doc_ids": ["cisg"],
-      "expected_keywords": ["Contracting States", "place of business", "applies"],
+      "expected_doc_ids": [
+        "cisg"
+      ],
+      "expected_keywords": [
+        "Contracting States",
+        "place of business",
+        "applies"
+      ],
       "source": "CISG Article 1（改编）",
       "source_url": "https://www.uncitral.org/pdf/english/texts/sales/cisg/V1056997-CISG-e-book.pdf"
     },
@@ -477,8 +801,14 @@
       "category": "WTO",
       "language": "zh",
       "question": "GATT 1994 的国民待遇原则对进口产品的国内税有什么要求？",
-      "expected_doc_ids": ["wto-gatt-1994"],
-      "expected_keywords": ["national treatment", "internal taxes", "imported"],
+      "expected_doc_ids": [
+        "wto-gatt-1994"
+      ],
+      "expected_keywords": [
+        "national treatment",
+        "internal taxes",
+        "imported"
+      ],
       "source": "GATT 1994 Article III（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/06-gatt_e.htm"
     },
@@ -487,8 +817,14 @@
       "category": "WTO",
       "language": "en",
       "question": "What does the WTO Anti-Dumping Agreement require for a determination of dumping?",
-      "expected_doc_ids": ["wto-adp"],
-      "expected_keywords": ["dumping", "normal value", "export price"],
+      "expected_doc_ids": [
+        "wto-adp"
+      ],
+      "expected_keywords": [
+        "dumping",
+        "normal value",
+        "export price"
+      ],
       "source": "WTO Anti-Dumping Agreement（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/19-adp_e.htm"
     },
@@ -497,8 +833,14 @@
       "category": "WTO",
       "language": "en",
       "question": "What does the Trade Facilitation Agreement require regarding advance rulings?",
-      "expected_doc_ids": ["wto-tfa"],
-      "expected_keywords": ["advance rulings", "customs", "TFA"],
+      "expected_doc_ids": [
+        "wto-tfa"
+      ],
+      "expected_keywords": [
+        "advance rulings",
+        "customs",
+        "TFA"
+      ],
       "source": "WTO TFA Article 3（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/tfa_e.htm"
     },
@@ -507,8 +849,14 @@
       "category": "WTO",
       "language": "zh",
       "question": "关税同盟和自由贸易区在 GATT 第24条下需要满足什么条件？",
-      "expected_doc_ids": ["wto-gatt-1994"],
-      "expected_keywords": ["customs union", "free-trade area", "GATT"],
+      "expected_doc_ids": [
+        "wto-gatt-1994"
+      ],
+      "expected_keywords": [
+        "customs union",
+        "free-trade area",
+        "GATT"
+      ],
       "source": "GATT 1994 Article XXIV（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/06-gatt_e.htm"
     },
@@ -517,18 +865,32 @@
       "category": "WTO",
       "language": "en",
       "question": "What is the role of the Appellate Body in WTO dispute settlement?",
-      "expected_doc_ids": ["wto-gatt-1994"],
-      "expected_keywords": ["Appellate Body", "dispute settlement", "panel"],
+      "expected_doc_ids": [
+        "wto-gatt-1994"
+      ],
+      "expected_keywords": [
+        "Appellate Body",
+        "dispute settlement",
+        "panel"
+      ],
       "source": "WTO Dispute Settlement Understanding（改编）",
-      "source_url": "https://www.wto.org/english/docs_e/legal_e/28-dsu_e.htm"
+      "source_url": "https://www.wto.org/english/docs_e/legal_e/28-dsu_e.htm",
+      "corpus_gap": true,
+      "coverage_note": "语料未收录 WTO 争端解决谅解（DSU），Appellate Body 仅在 SCM 中附带出现"
     },
     {
       "id": "FT-053",
       "category": "外汇",
       "language": "zh",
       "question": "经常项目外汇收支是否需要事先审批？",
-      "expected_doc_ids": ["cn-foreign-exchange-2008"],
-      "expected_keywords": ["经常项目", "外汇", "审批"],
+      "expected_doc_ids": [
+        "cn-foreign-exchange-2008"
+      ],
+      "expected_keywords": [
+        "经常项目",
+        "外汇",
+        "审批"
+      ],
       "source": "《中华人民共和国外汇管理条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -537,18 +899,31 @@
       "category": "外汇",
       "language": "zh",
       "question": "出口收汇是否需要办理核销手续？",
-      "expected_doc_ids": ["cn-foreign-exchange-2008"],
-      "expected_keywords": ["出口收汇", "核销"],
+      "expected_doc_ids": [
+        "cn-foreign-exchange-2008"
+      ],
+      "expected_keywords": [
+        "出口收汇",
+        "核销"
+      ],
       "source": "《中华人民共和国外汇管理条例》（改编）",
-      "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
+      "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm",
+      "corpus_gap": true,
+      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
     },
     {
       "id": "FT-055",
       "category": "外贸经营",
       "language": "zh",
       "question": "对外贸易经营者从事货物进出口是否需要办理备案登记？",
-      "expected_doc_ids": ["cn-foreign-trade-law-2025", "cn-goods-import-export-2024"],
-      "expected_keywords": ["对外贸易经营者", "备案登记"],
+      "expected_doc_ids": [
+        "cn-foreign-trade-law-2025",
+        "cn-goods-import-export-2024"
+      ],
+      "expected_keywords": [
+        "对外贸易经营者",
+        "备案登记"
+      ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
     },
@@ -557,8 +932,15 @@
       "category": "海关处罚",
       "language": "zh",
       "question": "走私行为尚未构成犯罪的，海关可以给予什么处罚？",
-      "expected_doc_ids": ["cn-customs-law-2021", "cn-customs-penalty-2022"],
-      "expected_keywords": ["走私", "没收", "罚款"],
+      "expected_doc_ids": [
+        "cn-customs-law-2021",
+        "cn-customs-penalty-2022"
+      ],
+      "expected_keywords": [
+        "走私",
+        "没收",
+        "罚款"
+      ],
       "source": "《中华人民共和国海关法》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -567,8 +949,15 @@
       "category": "海关处罚",
       "language": "zh",
       "question": "进出口货物申报不实的，海关如何处理？",
-      "expected_doc_ids": ["cn-customs-penalty-2022", "cn-customs-law-2021"],
-      "expected_keywords": ["申报不实", "罚款", "补税"],
+      "expected_doc_ids": [
+        "cn-customs-penalty-2022",
+        "cn-customs-law-2021"
+      ],
+      "expected_keywords": [
+        "申报不实",
+        "罚款",
+        "补税"
+      ],
       "source": "《中华人民共和国海关行政处罚实施条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -577,8 +966,14 @@
       "category": "外汇",
       "language": "zh",
       "question": "资本项目外汇收支的管理原则是什么？",
-      "expected_doc_ids": ["cn-foreign-exchange-2008"],
-      "expected_keywords": ["资本项目", "外汇", "审批"],
+      "expected_doc_ids": [
+        "cn-foreign-exchange-2008"
+      ],
+      "expected_keywords": [
+        "资本项目",
+        "外汇",
+        "审批"
+      ],
       "source": "《中华人民共和国外汇管理条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -587,8 +982,14 @@
       "category": "外贸经营",
       "language": "zh",
       "question": "国家对部分货物的进出口实行国营贸易管理，具体范围如何确定？",
-      "expected_doc_ids": ["cn-foreign-trade-law-2025", "cn-goods-import-export-2024"],
-      "expected_keywords": ["国营贸易", "进出口"],
+      "expected_doc_ids": [
+        "cn-foreign-trade-law-2025",
+        "cn-goods-import-export-2024"
+      ],
+      "expected_keywords": [
+        "国营贸易",
+        "进出口"
+      ],
       "source": "《中华人民共和国对外贸易法》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     },
@@ -597,8 +998,14 @@
       "category": "外贸经营",
       "language": "zh",
       "question": "限制进出口的货物应当凭何种证件办理报关手续？",
-      "expected_doc_ids": ["cn-foreign-trade-law-2025", "cn-goods-import-export-2024"],
-      "expected_keywords": ["许可证", "限制进出口"],
+      "expected_doc_ids": [
+        "cn-foreign-trade-law-2025",
+        "cn-goods-import-export-2024"
+      ],
+      "expected_keywords": [
+        "许可证",
+        "限制进出口"
+      ],
       "source": "《中华人民共和国货物进出口管理条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
     }

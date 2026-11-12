@@ -56,7 +56,13 @@ def _rank(case: dict, chunks: list[dict]) -> tuple[int, bool, bool]:
     return 0, doc_hit, keyword_hit
 
 
-def run(base: str, top_k: int, answer_limit: int, out_path: Path | None) -> dict:
+def run(
+    base: str,
+    top_k: int,
+    answer_limit: int,
+    out_path: Path | None,
+    answer_ids: str = "",
+) -> dict:
     data = json.loads(DEFAULT_SET.read_text(encoding="utf-8"))
     rows: list[dict] = []
     for case in data["questions"]:
@@ -75,6 +81,8 @@ def run(base: str, top_k: int, answer_limit: int, out_path: Path | None) -> dict
             "question": case["question"],
             "source": case.get("source"),
             "source_url": case.get("source_url"),
+            "corpus_gap": bool(case.get("corpus_gap")),
+            "coverage_note": case.get("coverage_note"),
             "latency_ms": round(latency, 1),
             "rank": rank,
             "hit": rank > 0,
@@ -97,9 +105,12 @@ def run(base: str, top_k: int, answer_limit: int, out_path: Path | None) -> dict
             f"rank={row['rank']} {row['latency_ms']:.0f}ms"
         )
 
+    wanted = [x.strip() for x in answer_ids.split(",") if x.strip()]
     answered: list[dict] = []
     for row in rows:
-        if len(answered) >= answer_limit:
+        if wanted and row["id"] not in wanted:
+            continue
+        if not wanted and len(answered) >= answer_limit:
             break
         case = next(q for q in data["questions"] if q["id"] == row["id"])
         payload, latency = _post(
@@ -142,9 +153,21 @@ def run(base: str, top_k: int, answer_limit: int, out_path: Path | None) -> dict
             "p50_ms": round(statistics.median([r["latency_ms"] for r in items]), 1),
         }
 
+    covered = [r for r in rows if not r.get("corpus_gap")]
+    gaps = [r for r in rows if r.get("corpus_gap")]
     summary = {
         "n": len(rows),
         "hit5": round(sum(1 for r in rows if r["hit"]) / len(rows), 4),
+        "hit5_covered": round(
+            sum(1 for r in covered if r["hit"]) / len(covered), 4
+        )
+        if covered
+        else 0.0,
+        "covered_n": len(covered),
+        "corpus_gaps": [
+            {"id": r["id"], "question": r["question"], "note": r.get("coverage_note")}
+            for r in gaps
+        ],
         "mrr": round(
             sum((1.0 / r["rank"] if r["rank"] else 0.0) for r in rows) / len(rows), 4
         ),
@@ -181,10 +204,11 @@ def main() -> int:
     ap.add_argument("--base", default="http://localhost:8080")
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--answer-limit", type=int, default=0)
+    ap.add_argument("--answer-ids", default="")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
     out = Path(args.out) if args.out else None
-    run(args.base, args.top_k, args.answer_limit, out)
+    run(args.base, args.top_k, args.answer_limit, out, args.answer_ids)
     return 0
 
 

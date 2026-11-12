@@ -210,9 +210,58 @@ curl -s localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{
 多轮对话把之前轮次放进 `messages` 即可；最后一轮是短追问（如「它什么时候生效？」）时，
 服务会自动把上一轮用户问题拼进检索 query。也可以显式传 `retrieval_query` 覆盖。
 
+## 文件入库（md / docx / pdf）
+
+上传后后台解析、归一化为条文 Markdown、自动重建索引；同一批次只重建一次。
+支持 `.md` / `.markdown` / `.txt` / `.docx` / `.pdf`（PDF 必须有文本层）。
+旧版 `.doc` 需先转 `.docx`；扫描件不做 OCR，会以 `failed` 明确返回。
+
 ```bash
-# 单元/接口测试（离线，不调外部网关）
-python -m unittest discover -s tests -v
+curl -s -X POST localhost:8080/v1/documents \
+  -F "files=@法规.md" \
+  -F "files=@办法.docx" \
+  -F "files=@part-101.pdf" \
+  -F "jurisdiction=CN" \
+  -F "applies_to=customs,tariff" \
+  -F "effective_from=2026-01-01"
+```
+
+返回 `job_id`，轮询进度：
+
+```bash
+curl -s localhost:8080/v1/jobs/<job_id>
+```
+
+```jsonc
+{
+  "status": "done",
+  "progress": {"stage": "index", "done": 95, "total": 95},
+  "result": {
+    "indexed": 3,
+    "chunks": 7202,
+    "documents_total": 95,
+    "documents": [{"doc_id": "cn-upload-…", "ok": true, "format": "docx"}]
+  }
+}
+```
+
+文档生命周期：
+
+| 接口 | 用途 |
+|---|---|
+| `GET /v1/documents` | 列表 + 状态 + `chunk_count` |
+| `GET /v1/documents/{id}` | 详情 |
+| `DELETE /v1/documents/{id}` | 删除原文件/解析产物并重建索引 |
+| `POST /v1/documents/{id}/reindex` | 重新解析并重建 |
+| `GET /v1/documents/{id}/chunks` | 该文档的 chunk 列表 |
+
+同一文件重复上传按 `sha256` 幂等，返回已有 `doc_id`，不重复 embedding。
+索引重建只 embedding 新增 chunk：活动索引里 `chunk_id` 未变的向量直接复用。
+
+```bash
+# 容器内跑全部测试（推荐，也是验收方式）
+docker build --target test -t mercatoria:test-suite .
+docker run --rm mercatoria:test-suite
 ```
 
 Agent 也可以不走 HTTP，直接进程内调用：
@@ -248,6 +297,16 @@ docker run --rm --add-host host.docker.internal:host-gateway \
 ```
 
 镜像只复制 `data/index/current.txt` 指向的活动索引，历史版本不会进入镜像。
+`data/` 挂在 `mercatoria-data` 命名卷上；首次启动会把镜像里的索引种子复制进去，
+上传的文档、注册表和后续重建都持久化在卷里。
+
+```bash
+# 用 60 道真实来源题目做检索验收（题目在 tests/eval/trade_law_questions.json）
+docker run --rm --add-host host.docker.internal:host-gateway \
+  mercatoria:test-suite \
+  python tests/eval_trade_questions.py \
+    --base http://host.docker.internal:8080 --answer-limit 5
+```
 
 > [!IMPORTANT]
 > 调分片会改变 chunk 边界与 `chunk_id`。下游引用请同时保存
