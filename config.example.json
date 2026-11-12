@@ -45,7 +45,8 @@
     "weight": 0.8,
     "min_score": 0.0,
     "timeout": 30.0,
-    "retries": 2
+    "retries": 2,
+    "fusion": "max"
   },
   "answer": {
     "enabled": true,

@@ -97,6 +97,8 @@ class Retriever:
             "threshold": self.cfg.retrieval.similarity_threshold,
             "rerank": rerank,
             "candidates": self.cfg.rerank.candidates,
+            "fusion": self.cfg.rerank.fusion,
+            "rerank_weight": self.cfg.rerank.weight,
             "expand_cross_language": self.cfg.retrieval.expand_cross_language,
         }
         return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
@@ -302,7 +304,7 @@ class Retriever:
             "model": rerank_cfg.model if rerank is not None else None,
             "candidates": 0,
             "blend_weight": rerank_cfg.weight if rerank is not None else None,
-            "fusion": "max" if rerank is not None else None,
+            "fusion": rerank_cfg.fusion if rerank is not None else None,
             "latency_ms": 0.0,
             "error": None,
         }
@@ -395,10 +397,14 @@ class Retriever:
                 for idx, (fscore, cid, b_raw, v_raw, b_norm, v_norm) in enumerate(pool):
                     rscore = rerank_map.get(idx)
                     rnorm = norm_by_idx.get(idx, 0.0) if rscore is not None else 0.0
-                    # Max fusion keeps a strong lexical (exact legal term)
-                    # match visible even when the cross-encoder dislikes it,
-                    # while still letting rerank promote a semantic match.
-                    final = max(first_norm[idx], rerank_cfg.weight * rnorm)
+                    if rerank_cfg.fusion == "rerank":
+                        final = rnorm
+                    elif rerank_cfg.fusion == "weighted":
+                        final = rerank_cfg.weight * rnorm + (1.0 - rerank_cfg.weight) * first_norm[idx]
+                    else:
+                        # Max fusion keeps a strong lexical (exact legal term)
+                        # match visible even when the cross-encoder dislikes it.
+                        final = max(first_norm[idx], rerank_cfg.weight * rnorm)
                     ranked.append((final, rscore, fscore, cid, b_raw, v_raw, b_norm, v_norm))
                 ranked.sort(
                     key=lambda item: (

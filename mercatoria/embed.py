@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -36,6 +37,7 @@ class EmbeddingClient:
     def __init__(self, cfg: EmbeddingConfig):
         self.cfg = cfg
         self._cache: sqlite3.Connection | None = None
+        self._cache_lock = threading.Lock()
         if cfg.cache_path:
             path = Path(cfg.cache_path)
             if not path.is_absolute():
@@ -43,7 +45,11 @@ class EmbeddingClient:
 
                 path = REPO_ROOT / path
             path.parent.mkdir(parents=True, exist_ok=True)
-            self._cache = sqlite3.connect(path, check_same_thread=False)
+            self._cache = sqlite3.connect(
+                path, check_same_thread=False, isolation_level=None
+            )
+            self._cache.execute("PRAGMA journal_mode=WAL")
+            self._cache.execute("PRAGMA busy_timeout=5000")
             self._cache.execute(
                 """CREATE TABLE IF NOT EXISTS embeddings (
                        model TEXT NOT NULL,
@@ -53,7 +59,6 @@ class EmbeddingClient:
                        PRIMARY KEY (model, text_hash)
                    )"""
             )
-            self._cache.commit()
 
     @staticmethod
     def _key(text: str) -> str:
@@ -62,10 +67,11 @@ class EmbeddingClient:
     def _cache_get(self, text: str) -> np.ndarray | None:
         if self._cache is None:
             return None
-        row = self._cache.execute(
-            "SELECT dim, vec FROM embeddings WHERE model=? AND text_hash=?",
-            (self.cfg.model, self._key(text)),
-        ).fetchone()
+        with self._cache_lock:
+            row = self._cache.execute(
+                "SELECT dim, vec FROM embeddings WHERE model=? AND text_hash=?",
+                (self.cfg.model, self._key(text)),
+            ).fetchone()
         if not row:
             return None
         return np.frombuffer(row[1], dtype=np.float32)
@@ -73,15 +79,16 @@ class EmbeddingClient:
     def _cache_put(self, text: str, vector: np.ndarray) -> None:
         if self._cache is None:
             return
-        self._cache.execute(
-            "INSERT OR REPLACE INTO embeddings(model, text_hash, dim, vec) VALUES (?,?,?,?)",
-            (
-                self.cfg.model,
-                self._key(text),
-                int(vector.shape[0]),
-                sqlite3.Binary(vector.astype(np.float32).tobytes()),
-            ),
-        )
+        with self._cache_lock:
+            self._cache.execute(
+                "INSERT OR REPLACE INTO embeddings(model, text_hash, dim, vec) VALUES (?,?,?,?)",
+                (
+                    self.cfg.model,
+                    self._key(text),
+                    int(vector.shape[0]),
+                    sqlite3.Binary(vector.astype(np.float32).tobytes()),
+                ),
+            )
 
     def _post(self, texts: list[str]) -> np.ndarray:
         url = self.cfg.base.rstrip("/") + "/embeddings"
@@ -142,8 +149,6 @@ class EmbeddingClient:
             for index, vector in zip(missing, fresh):
                 results[index] = vector
                 self._cache_put(texts[index], vector)
-            if self._cache is not None:
-                self._cache.commit()
 
         final = np.vstack([vector for vector in results if vector is not None])
         if self.cfg.dim and final.shape[1] != self.cfg.dim:

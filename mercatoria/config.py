@@ -104,6 +104,8 @@ class RerankConfig:
     #   final = max(first_stage_norm, weight * rerank_norm)
     # Pure rerank overrides exact legal matches; max fusion keeps them.
     weight: float = 0.8
+    # "max" | "weighted" | "rerank" -- how first-stage and rerank scores fuse.
+    fusion: str = "max"
     min_score: float = 0.0
     timeout: float = 30.0
     retries: int = 2

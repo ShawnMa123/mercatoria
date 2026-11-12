@@ -34,8 +34,9 @@ COPY pyproject.toml ./
 
 FROM base AS test
 
-RUN pip install --no-cache-dir "httpx>=0.27"
+RUN pip install --no-cache-dir "httpx>=0.27" "jieba>=0.42"
 COPY tests ./tests
+COPY corpus ./corpus
 COPY config.example.json ./config.json
 
 CMD ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
