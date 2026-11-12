@@ -306,7 +306,31 @@ docker run --rm --add-host host.docker.internal:host-gateway \
   mercatoria:test-suite \
   python tests/eval_trade_questions.py \
     --base http://host.docker.internal:8080 --answer-limit 5
+
+# 200 文件批量入库压测
+docker run --rm --add-host host.docker.internal:host-gateway \
+  mercatoria:test-suite \
+  python tests/bench_ingest.py \
+    --base http://host.docker.internal:8080 --files 200
 ```
+
+### POC 实测（2026-11-12，CPU-only）
+
+| 指标 | 实测 |
+|---|---|
+| 容器空闲内存 | 216 MiB |
+| 92 文档 / 7,196 chunks 启动 | 就绪，无重建 |
+| 200 个小文件批量入库 | **8.6 s**（上传 0.02 s + 解析/索引 8.6 s，新增 600 chunks） |
+| 60 题检索（含 rerank，冷缓存） | p50 **1.41 s**，p95 **4.33 s** |
+| 同一查询重复 | p50 **~4 ms**（LRU 命中） |
+| 60 题 Hit@5 | **0.9333**；剔除 6 道语料缺口后 **1.00（54/54）** |
+| 60 题 MRR | **0.8381** |
+| 真实问答（3 题） | 10.7–18.1 s，citations 4–5 条，references 5 条全文 |
+| Docker 测试 | **69 项全部通过** |
+
+6 道 `corpus_gap` 题是语料本身未覆盖：公式定价、出口加工区内销原产地、
+海关商品编号、出口收汇核销、WTO DSU、以及仅存在于已被《关税法》替代的
+2017 年关税条例中的境外修理规则。它们保留在测试集里，不计入 covered 指标。
 
 > [!IMPORTANT]
 > 调分片会改变 chunk 边界与 `chunk_id`。下游引用请同时保存

@@ -692,13 +692,13 @@
         "cn-customs-guarantee-2018"
       ],
       "expected_keywords": [
-        "保证金",
-        "保证",
-        "抵押",
-        "质押"
+        "财产",
+        "权利",
+        "保函"
       ],
       "source": "《中华人民共和国海关事务担保条例》（改编）",
-      "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
+      "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm",
+      "coverage_note": "条例第十二、十三条用“财产、权利、保函”表述，未使用保证金/抵押/质押等考试口径"
     },
     {
       "id": "FT-042",
