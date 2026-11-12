@@ -111,7 +111,8 @@ python tools/eval_retrieval.py --kb <kb_id> --tag baseline
 
 RAGFlow 保留为评测基线；运行时使用本仓库的 `mercatoria` 包：
 一个 Python 进程 + SQLite 索引 + NumPy 暴力向量检索。embedding 与
-answer 都走 OpenAI-compatible 外部网关，不在本地加载模型，不需要 GPU。
+answer 走 OpenAI-compatible 外部网关，rerank 走 `gte-rerank-v2` 的 DashScope
+原生接口（可关闭），不在本地加载模型，不需要 GPU。
 
 ```bash
 # 安装（numpy / fastapi / uvicorn）
@@ -150,6 +151,17 @@ MRR **0.6890**；RAGFlow v2 基线为 0.783 / 0.859 / 0.656。59 条分层样本
 `(model, text)` 缓存到 `data/embedding-cache.db`，重建时只算变化过的 chunk。
 完整配置见 `config.example.json`。
 
+### Rerank（gte-rerank-v2）
+
+`rerank.enabled=true` 时，检索先取 `candidates`（默认 40）条候选，再交给
+cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失败不报错，
+自动回退到 BM25+cosine 顺序，原因写在 `diagnostics.rerank.error`。
+`gte-rerank-v2` 只提供在 DashScope 原生路径
+（`/api/v1/services/rerank/text-rerank/text-rerank`），不走 magpie 的
+`/v1/rerank`；key 用 `RERANK_API_KEY` 注入，不写入配置文件。
+每个 chunk 的 `score_parts` 同时给出 `first_stage`（混合分）和 `rerank`（原始分），
+两者不可直接比较。
+
 | 端点 | 用途 |
 |---|---|
 | `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
@@ -178,6 +190,26 @@ result = retriever.retrieve(["完税价格由哪些项目组成"], top_k=5)
 > [!NOTE]
 > 跨语言检索仍是已知短板：中文问 WTO/CISG 等英文语料时，向量召回可能不足。
 > 服务保留了纯检索接口，后续可在 `retrieve` 前加语言路由/查询翻译，不影响本层契约。
+
+## Docker 测试镜像
+
+镜像内置 `corpus/`（92 文档 / 7,196 chunks）和活动索引（`qwen3.7-text-embedding`，
+1024 维），启动即可检索。embedding 与 chat 通过 `host.docker.internal:3425`
+访问宿主 magpie；rerank 直连 DashScope。
+
+```bash
+# .env 提供 RERANK_API_KEY
+docker compose -f docker-compose.test.yml up -d --build
+curl -s localhost:8080/health
+
+# 改 embedding 模型或分片参数后重建内置索引
+docker run --rm --add-host host.docker.internal:host-gateway \
+  -e EMBEDDING_BASE=http://host.docker.internal:3425/v1 \
+  --entrypoint python mercatoria:test \
+  -m mercatoria --config config.json rebuild
+```
+
+镜像只复制 `data/index/current.txt` 指向的活动索引，历史版本不会进入镜像。
 
 > [!IMPORTANT]
 > 调分片会改变 chunk 边界与 `chunk_id`。下游引用请同时保存
