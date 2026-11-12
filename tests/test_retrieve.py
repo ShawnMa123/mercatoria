@@ -186,6 +186,9 @@ class RetrievalTests(unittest.TestCase):
         self.assertIsNotNone(result["chunks"][0]["score_parts"]["rerank"])
 
     def test_max_fusion_keeps_exact_first_stage_match(self) -> None:
+        self.cfg.rerank.fusion = "max"
+        self.cfg.rerank.weight = 0.8
+
         def fake_rerank(query: str, docs: list[str], top_n: int):
             return [(i, 10.0 if "原产地" in d else 1.0) for i, d in enumerate(docs)], 1.0
 

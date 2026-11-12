@@ -42,7 +42,7 @@ _LOCAL = threading.local()
 def _connection(url: str) -> http.client.HTTPConnection:
     parts = urlsplit(url)
     key = (parts.scheme, parts.hostname, parts.port)
-    if getattr(_LOCAL, "key", None) != key:
+    if getattr(_LOCAL, "key", None) != key or getattr(_LOCAL, "conn", None) is None:
         old = getattr(_LOCAL, "conn", None)
         if old is not None:
             old.close()

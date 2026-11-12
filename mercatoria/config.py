@@ -103,9 +103,10 @@ class RerankConfig:
     # Rerank contribution in max fusion:
     #   final = max(first_stage_norm, weight * rerank_norm)
     # Pure rerank overrides exact legal matches; max fusion keeps them.
-    weight: float = 0.8
+    weight: float = 0.5
     # "max" | "weighted" | "rerank" -- how first-stage and rerank scores fuse.
-    fusion: str = "max"
+    # The 1000-question benchmark picked weighted 0.5 for MRR.
+    fusion: str = "weighted"
     min_score: float = 0.0
     timeout: float = 30.0
     retries: int = 2

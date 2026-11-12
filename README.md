@@ -161,8 +161,10 @@ cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失
 （`/api/v1/services/rerank/text-rerank/text-rerank`），不走 magpie 的
 `/v1/rerank`；key 用 `RERANK_API_KEY` 注入，不写入配置文件。
 每个 chunk 的 `score_parts` 同时给出 `first_stage`（混合分）和 `rerank`（原始分），
-两者不可直接比较。响应里的 `score` 是 max fusion 后的最终分：
-`max(first_stage_norm, 0.8 * rerank_norm)`。
+两者不可直接比较。开启 rerank 时，`score` 默认用 weighted fusion：
+`0.5 * rerank_norm + 0.5 * first_stage_norm`；也可配置
+`fusion=max`（`max(first_stage_norm, weight * rerank_norm)`）或 `fusion=rerank`
+（纯 rerank 排序）。
 
 | 端点 | 用途 |
 |---|---|
@@ -318,6 +320,33 @@ docker run --rm --add-host host.docker.internal:host-gateway \
     --base http://host.docker.internal:8080 --files 200
 ```
 
+### 策略 benchmark（300 题：60 真实 + 240 合成）
+
+| chunk 策略 | chunks | 重建 | Hit@5 | article Hit@5 | MRR |
+|---|---|---|---|---|---|
+| **article 2048 / overlap 120（默认）** | 7,196 | **3.0 s** | 0.9067 | 0.7267 | 0.7453 |
+| article 4096 / overlap 120 | 5,813 | 116 s | **0.9100** | 0.7233 | **0.7542** |
+| article 1024 / overlap 120 | 11,096 | 325 s | 0.8833 | 0.7100 | 0.7031 |
+| article 2048 / overlap 0 | 7,106 | 128 s | 0.8867 | 0.7200 | 0.7265 |
+| section 2048 | 6,670 | 198 s | 0.2500 | 0.0633 | 0.2372 |
+
+结论：`article 2048 / overlap 120` 是默认值；4096 只多 +0.3 点 Hit@5、+0.9 点 MRR，
+但索引重建慢 39 倍、引用粒度更粗。1024 和 overlap 0 都更差；section 切法丢失
+`article_id`，不可用于法条引用。
+
+| rerank 策略（108 题子集） | Hit@5 | MRR（all） | MRR（real） | p50 |
+|---|---|---|---|---|
+| 关闭 | 0.8889 | 0.7549 | 0.8381 | 1.31 s |
+| max w0.5 | 0.8889 | 0.7597 | 0.8381 | 1.87 s |
+| max w0.8 | 0.8889 | 0.7613 | 0.8381 | 1.35 s |
+| max w1.0 | 0.8889 | 0.7665 | 0.8403 | 1.69 s |
+| **weighted w0.5（启用时默认）** | 0.8889 | **0.7914** | **0.8556** | 1.10 s |
+| rerank-pure | 0.8889 | 0.7722 | 0.8311 | 1.07 s |
+| max w0.8 c20 | 0.8889 | 0.7601 | 0.8381 | 1.21 s |
+
+结论：rerank 不改变 Hit@5，但 weighted 0.5 把 MRR 从 0.755 提到 0.791；
+默认仍关闭以保 30 ms 级检索，需要更优排序时请求体传 `"rerank": true`。
+
 ### POC 实测（2026-11-12，CPU-only）
 
 | 指标 | 实测 |
@@ -327,7 +356,7 @@ docker run --rm --add-host host.docker.internal:host-gateway \
 | 200 个小文件批量入库（纯 md） | **8.6 s**（上传 0.02 s + 解析/索引 8.6 s，新增 600 chunks） |
 | 200 个混合文件（120 md + 40 docx + 40 pdf） | **10.7 s**（上传 0.1 s + 解析/索引 10.6 s） |
 | 60 题检索（默认 no-rerank，冷缓存） | p50 **32.5 ms**，p95 **81.4 ms** |
-| 60 题检索（可选 rerank，`candidates=5`） | p50 **0.90 s**，p95 **2.04 s** |
+| 300 题检索（可选 rerank weighted 0.5，`candidates=10`） | p50 **1.10 s**，p95 **3.82 s** |
 | 同一查询重复 | p50 **~4 ms**（LRU 命中） |
 | 60 题 Hit@5 | **0.9333**；剔除 6 道语料缺口后 **1.00（54/54）** |
 | 60 题 MRR | **0.8381** |
