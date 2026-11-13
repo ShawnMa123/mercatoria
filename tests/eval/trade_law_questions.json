@@ -45,8 +45,7 @@
       "language": "zh",
       "question": "运往境外修理的机械器具复运进境，海关以什么为基础审查确定完税价格？",
       "expected_doc_ids": [
-        "cn-import-export-tariff-2017",
-        "cn-tariff-law-2024"
+        "cn-customs-valuation-measures-2013"
       ],
       "expected_keywords": [
         "境外修理费",
@@ -54,8 +53,8 @@
       ],
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
-      "corpus_gap": true,
-      "coverage_note": "该规则仅在已被《关税法》替代的 2017 年进出口关税条例中；as_of=null 按现行法过滤后不可见"
+      "corpus_gap": false,
+      "coverage_note": "规则由《海关审定进出口货物完税价格办法》（署令 213 号）第二十八条承接（2017 年《进出口关税条例》已废止）"
     },
     {
       "id": "FT-004",
@@ -80,7 +79,8 @@
       "question": "出口货物的完税价格如何计算？",
       "expected_doc_ids": [
         "cn-import-export-tariff-2017",
-        "cn-tariff-law-2024"
+        "cn-tariff-law-2024",
+        "cn-customs-valuation-measures-2013"
       ],
       "expected_keywords": [
         "出口货物",
@@ -88,7 +88,8 @@
         "FOB"
       ],
       "source": "2015年报关水平测试预测试题（改编）",
-      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
+      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
+      "coverage_note": "完税价格规则现由《海关审定进出口货物完税价格办法》承接"
     },
     {
       "id": "FT-006",
@@ -98,14 +99,16 @@
       "expected_doc_ids": [
         "cn-import-export-tariff-2017",
         "cn-tariff-law-2024",
-        "wto-cv"
+        "wto-cv",
+        "cn-customs-valuation-measures-2013"
       ],
       "expected_keywords": [
         "特殊关系",
         "成交价格"
       ],
       "source": "2015年报关水平测试预测试题（改编）",
-      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
+      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
+      "coverage_note": "完税价格规则现由《海关审定进出口货物完税价格办法》承接"
     },
     {
       "id": "FT-007",
@@ -253,14 +256,16 @@
       "question": "非优惠原产地规则中实质性改变的基本标准是什么？",
       "expected_doc_ids": [
         "cn-origin-2019",
-        "wto-ro"
+        "wto-ro",
+        "cn-nonpreferential-origin-2018"
       ],
       "expected_keywords": [
         "实质性改变",
         "税则归类"
       ],
       "source": "海关总署《关于非优惠原产地规则的解读》（改编）",
-      "source_url": "http://www.customs.gov.cn/gss/zwdt36/6462212/index.html"
+      "source_url": "http://www.customs.gov.cn/gss/zwdt36/6462212/index.html",
+      "coverage_note": "《关于非优惠原产地规则中实质性改变标准的规定》第三条即基本标准"
     },
     {
       "id": "FT-016",
@@ -293,8 +298,8 @@
       ],
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html",
-      "corpus_gap": true,
-      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
+      "corpus_gap": false,
+      "coverage_note": "《海关进出口货物申报管理规定》与《进出口货物原产地条例》已覆盖内销申报要求"
     },
     {
       "id": "FT-018",
@@ -395,8 +400,8 @@
       ],
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html",
-      "corpus_gap": true,
-      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
+      "corpus_gap": false,
+      "coverage_note": "《海关进出口货物商品归类管理规定》与《两用物项出口管制条例》已覆盖"
     },
     {
       "id": "FT-024",
@@ -539,7 +544,8 @@
       "question": "保障措施可以采取哪些形式？",
       "expected_doc_ids": [
         "cn-foreign-trade-law-2025",
-        "wto-gatt-1994"
+        "wto-gatt-1994",
+        "cn-safeguard-2004"
       ],
       "expected_keywords": [
         "保障措施",
@@ -547,7 +553,8 @@
         "数量限制"
       ],
       "source": "2015年报关水平测试预测试题（改编）",
-      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html"
+      "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
+      "coverage_note": "《保障措施条例》第十九条即措施形式"
     },
     {
       "id": "FT-033",
@@ -711,10 +718,11 @@
       ],
       "expected_keywords": [
         "退税",
-        "一年"
+        "三年"
       ],
       "source": "2004年报关员考试真题（改编）",
-      "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html"
+      "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html",
+      "coverage_note": "《关税法》第五十一条：纳税人可在缴税之日起三年内申请退还"
     },
     {
       "id": "FT-043",
@@ -866,7 +874,7 @@
       "language": "en",
       "question": "What is the role of the Appellate Body in WTO dispute settlement?",
       "expected_doc_ids": [
-        "wto-gatt-1994"
+        "wto-dsu"
       ],
       "expected_keywords": [
         "Appellate Body",
@@ -875,8 +883,8 @@
       ],
       "source": "WTO Dispute Settlement Understanding（改编）",
       "source_url": "https://www.wto.org/english/docs_e/legal_e/28-dsu_e.htm",
-      "corpus_gap": true,
-      "coverage_note": "语料未收录 WTO 争端解决谅解（DSU），Appellate Body 仅在 SCM 中附带出现"
+      "corpus_gap": false,
+      "coverage_note": "DSU 第 17 条即上诉机构（Appellate Body）"
     },
     {
       "id": "FT-053",

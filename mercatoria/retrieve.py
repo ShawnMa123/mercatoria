@@ -438,6 +438,14 @@ class Retriever:
                     vector_norm=v_norm,
                 )
 
+        quota = _quota_for(requested_j, top_k, per_jurisdiction_k)
+        # A per-jurisdiction quota can only promote what the first stage
+        # offers. With a bare top_k pool every candidate comes from the
+        # dominant jurisdiction, so widen the pool whenever slots are reserved.
+        pool_depth = top_k
+        if quota:
+            pool_depth = min(200, max(top_k * 3, quota * max(1, len(requested_j)) * 5))
+
         for qi, (query, qvec) in enumerate(zip(queries, query_vectors)):
             terms = query_terms(query)
             bm25 = self.index.bm25_scores(candidate_set, terms, cfg.bm25_k1, cfg.bm25_b)
@@ -464,13 +472,13 @@ class Retriever:
                 continue
 
             if rerank is None:
-                for score, cid, b_raw, v_raw, b_norm, v_norm in scored[:top_k]:
+                for score, cid, b_raw, v_raw, b_norm, v_norm in scored[:pool_depth]:
                     absorb(qi, cid, score, score, None, b_raw, v_raw, b_norm, v_norm)
                 continue
 
             # A cross-encoder only sees what the first stage offers, so widen
             # the pool beyond top_k and let the reranker choose the final N.
-            depth = max(top_k, int(rerank_cfg.candidates or 0), 1)
+            depth = max(pool_depth, int(rerank_cfg.candidates or 0), 1)
             pool = scored[:depth]
             texts = [self.index.chunk_by_id[item[1]]["text"] for item in pool]
             rerank_meta["candidates"] += len(pool)
@@ -544,7 +552,6 @@ class Retriever:
                     item[0],
                 ),
             )
-        quota = _quota_for(requested_j, top_k, per_jurisdiction_k)
         ordered = _apply_jurisdiction_quota(ordered, top_k, requested_j, quota, self.index)
         diagnostics["per_jurisdiction_k"] = quota or None
         funnel["after_retrieval"] = len(ordered)

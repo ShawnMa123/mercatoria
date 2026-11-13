@@ -481,5 +481,85 @@ class ContextHeaderTests(unittest.TestCase):
             self.assertFalse(without.bm25_scores(candidates, terms, 1.5, 0.75))
 
 
+class JurisdictionQuotaTests(unittest.TestCase):
+    """The quota must be able to promote a jurisdiction outside the best top_k."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        corpus = root / "corpus"
+        (corpus / "cn").mkdir(parents=True)
+        (corpus / "us").mkdir(parents=True)
+        (corpus / "cn" / "duty.md").write_text(
+            "第一条 关税的税额。\n\n第二条 关税的减免。\n\n第三条 关税的征收。\n",
+            encoding="utf-8",
+        )
+        (corpus / "us" / "entry.md").write_text(
+            "## § 1.1 Scope.\n\nThis section covers entry procedures.\n",
+            encoding="utf-8",
+        )
+        docs = [
+            ("cn-duty-law", "cn/duty.md", "CN", "zh", "exact"),
+            ("us-entry-1", "us/entry.md", "US", "en", "degraded"),
+        ]
+        manifest_path = root / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "manifest_version": "test",
+                    "docs": [
+                        {
+                            "doc_id": doc_id,
+                            "path": path,
+                            "source_doc": doc_id,
+                            "jurisdiction": jur,
+                            "language": lang,
+                            "precision": precision,
+                            "applies_to": ["customs"],
+                            "effective_from": "2024-01-01",
+                            "effective_to": None,
+                            "snapshot_date": None,
+                        }
+                        for doc_id, path, jur, lang, precision in docs
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        cfg = AppConfig(
+            corpus_dir=str(corpus),
+            index_dir=str(root / "index"),
+            manifest_path=str(manifest_path),
+        )
+        cfg.embedding.dim = 3
+        build_index(
+            load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=fake_embed
+        )
+        self.retriever = Retriever(open_current(cfg.resolved_index_dir()), cfg, embed_fn=fake_embed)
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def test_quota_promotes_second_jurisdiction(self) -> None:
+        filters = {"jurisdictions": ["CN", "US"]}
+        plain = self.retriever.retrieve(
+            ["关税"], top_k=2, filters=filters, per_jurisdiction_k=0
+        )
+        self.assertEqual([c["jurisdictions"][0] for c in plain["chunks"]], ["CN", "CN"])
+        self.assertIsNone(plain["diagnostics"]["per_jurisdiction_k"])
+
+        quotad = self.retriever.retrieve(
+            ["关税"], top_k=2, filters=filters, per_jurisdiction_k=1
+        )
+        self.assertEqual(quotad["diagnostics"]["per_jurisdiction_k"], 1)
+        self.assertEqual(
+            sorted(c["jurisdictions"][0] for c in quotad["chunks"]), ["CN", "US"]
+        )
+        # Two requested jurisdictions reserve a slot automatically.
+        auto = self.retriever.retrieve(["关税"], top_k=2, filters=filters)
+        self.assertEqual(auto["diagnostics"]["per_jurisdiction_k"], 1)
+        self.assertEqual(sorted(c["jurisdictions"][0] for c in auto["chunks"]), ["CN", "US"])
+
+
 if __name__ == "__main__":
     unittest.main()
