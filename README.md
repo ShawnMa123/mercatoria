@@ -1,434 +1,896 @@
-# mercatoria
+# Mercatoria · 跨境贸易法规检索后端 / Cross-border Trade Law Retrieval Backend
 
-**进出口贸易法规检索服务** —— 为 `smart-edit` 的 Agent 3 提供可引用的法规原文片段。
+> **基于 RAGFlow 的后端实现**：沿用 RAGFlow `laws` 解析器的分块契约与知识库导入约定，
+> 检索、过滤、重排、引用与问答由本服务实现，可独立部署，也可作为 RAGFlow 生态的检索后端。
+>
+> **A RAGFlow-based backend implementation**: keeps RAGFlow's `laws` chunking contract and
+> knowledge-base import conventions, and provides retrieval, filtering, reranking, citation
+> and answer generation as a standalone service.
 
-> `lex mercatoria`（商人法）指跨国商事交易自发形成的规则体系：不由任何国家立法机关制定，
-> 而由商人实践、行业惯例与国际公约构成。这个名字同时界定了语料范围 ——
-> 不装刑法、婚姻法、行政诉讼法，不是因为没做，而是它们不属 lex mercatoria。
+`Python 3.11` · `FastAPI` · `SQLite` · `NumPy` · `CPU-only` · `deterministic chunk ids`
 
-## 这是什么，不是什么
+**中文** · [English](#english-documentation)
 
-**是**：`queries + filters → chunks` 的检索服务；额外的 `/ask` 是可选便利层，
-直接返回「带引用的答案 + 匹配信息」，也可以关掉让 Agent 自己生成。
+---
 
-**不是**：
-- ❌ RAG 库 —— 检索策略（切分/向量/rerank）是本仓库的自由
-- ❌ 合规判断/法律意见 —— 返回「可被引用的原文片段」和基于片段的答案，不是「能做/不能做」的结论
-- ❌ 必须依赖 `smart-edit` 的 `answer` 节点 —— `/ask` 可选用，Agent 仍可直接消费 `/retrieve`
+## 架构图 / Architecture
 
-**另一个区分**：通用文档检索引擎只回答「我找到了什么」，
-`mercatoria` 还要回答「我**不**覆盖什么」（`corpus.jurisdictions` / `corpus.status`）。
+**图 1 · 系统架构 / System architecture**
 
-## 语料范围
+```mermaid
+flowchart LR
+  A["Agent / 业务系统 / Client"] -->|"HTTP JSON"| B["FastAPI /v1/*"]
+  B --> C["Service 单例<br/>config · registry · jobs"]
+  C --> R["Retriever<br/>filter-first · hybrid · quota · confidence"]
+  C --> G["Embedding Gateway<br/>OpenAI-compatible"]
+  C --> K["Rerank API（可选）"]
+  C --> L["Chat LLM（可选）"]
+  R --> I["Index（进程内）<br/>chunks · vectors[N,1024] · postings"]
+  I --> S[("SQLite 索引文件 / index-*.db")]
+  P["Corpus pipeline<br/>fetch → normalize → manifest"] --> S
+  U["Upload API<br/>md · docx · pdf"] --> P
+```
 
-| 类别 | 内容 | 上游 |
+**图 2 · 检索流水线 / Retrieval pipeline**
+
+```mermaid
+flowchart LR
+  Q["queries ≤ 16"] --> X["跨语言术语扩展"]
+  X --> F["Filter-first<br/>jurisdiction → applies_to → as_of → doc_ids → article_ids"]
+  F --> C["候选 chunk 集"]
+  C --> B["BM25（内存倒排 + 饱和归一）"]
+  C --> V["向量矩阵 matmul"]
+  B --> M["融合 vector_weight"]
+  V --> M
+  M --> QS["多查询融合（可选）"]
+  QS --> QJ["法域配额 / 软配额"]
+  QJ --> CK["confidence · timings · funnel"]
+  CK --> O["top-k + diagnostics"]
+```
+
+**图 3 · 索引生命周期 / Index lifecycle**
+
+```mermaid
+flowchart LR
+  S["源文件"] --> P["解析 md / txt / docx / pdf"]
+  P --> CH["Chunker<br/>article · section · fixed"]
+  CH --> ID["内容派生 chunk_id"]
+  CH --> IX["index_text = 法典 / 章节 / 条号 + 原文"]
+  IX --> E["Embedding（批量 / 并发 / 重试 / 缓存）"]
+  E --> T[("tmp index.db")]
+  ID --> T
+  T -->|"os.replace 原子落盘"| D[("index-*.db")]
+  D -->|"current.txt"| A["激活 / activate"]
+  A --> R["进程内 Index 加载"]
+  R --> H["/v1/admin/rebuild → reload"]
+```
+
+---
+
+# 中文文档
+
+## 1. 定位
+
+Mercatoria 是面向跨境贸易合规场景的**法条级检索后端**：输入一句自然语言问题，输出可引用的
+法规原文片段、完整法条、交叉引用与低置信提示。它的设计目标按优先级排列：
+
+1. **可引用**：返回的 `text` 是法规原文，`chunk_id` 由内容派生，同一段法律文本在任何一次重建中
+   都得到相同的 id，引用可复核、可回归。
+2. **可解释**：每次请求都附带 `diagnostics.funnel`、`zero_reason`、`score_parts`、
+   `matched_terms`、`timings_ms`，能回答“为什么召回 / 为什么没召回 / 慢在哪”。
+3. **可运营**：配置热更新即失效缓存、索引多版本原子切换、上传/删除/重建是异步 job、
+   schema 版本化并兼容旧库。
+4. **零 GPU**：embedding 走外部 OpenAI 兼容网关，检索侧是 NumPy + 内存倒排，
+   单机 CPU 即可稳定服务。
+
+## 2. 架构总览
+
+| 层 | 组成 | 职责 |
 |---|---|---|
-| 进出口贸易 | 关税法、进出口商品检验法、原产地规则、反倾销/反补贴、两用物项出口管制 | LawRefBook、US eCFR Title 19 |
-| 国际经贸规则 | GATT 1994、TBT、SPS、TFA、反倾销、海关估价、CISG | WTO、UNCITRAL |
-| 银行规定 | 商业银行法、反洗钱法、外汇管理条例、担保制度、独立保函司法解释 | LawRefBook、eCFR Title 31 |
-| 出口管制 / 制裁 | EAR（Title 15）、OFAC（Title 31） | US eCFR |
+| 接入层 | FastAPI（`mercatoria/api.py`） | 路由、参数校验、错误码；同步检索 + 异步 job |
+| 服务层 | `Service`（单例） | 配置热更新、索引 reload、文档注册表、job 锁 |
+| 检索层 | `Retriever`（`mercatoria/retrieve.py`） | 查询扩展、过滤漏斗、混合打分、配额、置信度、缓存 |
+| 索引层 | `Index`（`mercatoria/store.py`） | 内存倒排 + 向量矩阵 + 条文聚合 + 交叉引用；启动后关闭 SQLite 连接 |
+| 语料层 | `corpus/fetch_*.py`、`manifest.py`、`normalize_cn_corpus.py` | 抓取、规整、生成 `manifest.json` |
+| 评测层 | `tools/*.py`、`tests/*` | 消融、hold-out、覆盖率、profile、并发压测、fixture 审计 |
 
-**明确不装**：刑法、婚姻家庭、行政诉讼、劳动法、知识产权、地方性法规（除非直接涉及贸易）。
+**规模**：143 篇法规 / 11,562 个 chunk / 8,191 个条文；向量 11,562 × 1024（float32，约 45 MB）。
+索引加载约 **1.7 s**，单次本地检索 p50 **28 ms**，缓存命中 p50 **0.24 ms**。
 
-## 文档
+## 3. 检索流水线（每一步都可见）
 
-设计文档存放在本地 `docs/` 目录，**暂不随本仓库公开**。包括：契约 v1（字段表、
-`chunk_id` 算法、不变式清单）、交接文档、上游数据源实测记录、RAGFlow 复用评估。
+1. **查询扩展**：中文问题按 224 条中英日贸易术语表追加等价表述（182 中→英、42 中→日）。
+2. **Filter-first**：`jurisdictions → applies_to → as_of → doc_ids → article_ids` 依次收窄候选，
+   每一步数量写入 `diagnostics.funnel`；空集时给出精确 `zero_reason`。
+3. **双路召回**：BM25（内存倒排，饱和归一，避免低 IDF 巧合压过向量）与向量（矩阵乘）；
+   两路按 `retrieval.vector_weight` 融合。
+4. **多查询融合**：`queries` 可传多路（≤16），同一 chunk 被多路命中时可加分（默认关闭）。
+5. **法域配额**：请求多个法域时，为每个法域保留 `min(2, top_k // n)` 个槽位，防止单一法域霸榜；
+   可指定 `per_jurisdiction_k`，也可用 `quota_min_ratio` 做软配额。
+6. **置信度**：`high / medium / low`，由 top-1 余弦与查询词的 IDF 加权覆盖率合成，
+   **不改变** `chunks` 的内容与顺序，供下游决定是否降级或拒答。
+7. **观测字段**：`timings_ms`（filter/embed/bm25/vector/rank/total）、`embedding_cache_hits`、
+   `degraded`、`warnings`、`quota_slots`。
 
-下面「三条最硬的约束」是其中对实现影响最大的部分，直接写在这里以免失传。
+## 4. 索引与写入
 
-## 三条最硬的约束
+- **Chunk id 内容派生**：`sha256(doc_id + "\x1f" + article_id + "\x1f" + normalize(text))[:16]`。
+  `text` 恒为原文，重建稳定（有单测锁定）。
+- **索引文本与原文解耦**：embedding 与 BM25 使用 `[法典 | 章节 | 条号]\n原文`，
+  返回值只给原文；`chunks.token_count` 记原文长度，`chunks.index_token_count` 供 BM25 归一化。
+- **向量复用**：重建时按每个 chunk 的 `index_text` 哈希逐条校验，只有完全相同的文本才复用向量，
+  避免“改了法典名但 chunk_id 没变”导致的脏向量。
+- **原子发布**：新索引写入 `index-<ts>-<hash>.db.tmp`，`os.replace` 落盘，
+  再写 `current.txt` 激活；服务 `reload()` 失败不影响旧索引。
+- **Schema 版本**：`meta.schema_version = 2`；旧库自动回退（缺列补默认），
+  新库打开时返回 503 并提示重建。
 
-这三点错了，故障会在**演示时**才暴露，且症状指向下游：
+## 5. 设计要义
 
-**1. `chunk_id` 必须内容派生且稳定**
+| 设计决策 | 为什么 | 可验证的证据 |
+|---|---|---|
+| 内容派生 `chunk_id` | 引用可复现、重建可比对、缓存可复用 | `test_chunk_ids_are_stable_across_rebuild` |
+| `index_text` 与 `text` 解耦 | 章节/法典名进入向量与 BM25，但返回仍是原文 | 消融 A2：真题 Hit@5 −1.7pp（关闭 header 时） |
+| Filter-first + 漏斗诊断 | 无命中时能证明是过滤空还是打分弱 | `zero_reason ∈ {no_jurisdiction, no_doc, no_article, no_match…}` |
+| 内存倒排 + 关闭连接 | 消除跨线程 SQLite 竞争；查询路径零 SQL | BM25 p50 2.3 ms；连接关闭单测 |
+| 查询向量 LRU + 持久化缓存 | 重复问题不打扰网关；线程安全 | 缓存命中 p50 0.24 ms；并发单测 |
+| 法域配额先扩池再截断 | 配额只有在候选池够宽时才有效 | 覆盖率 1/8 → 8/8 |
+| 置信度只读不改结果 | 下游需要“是否该拒答”，但不应被改写候选 | 真题 no_answer 低置信率 0.83 |
+| 评测与算法分提交 | 指标可归因 | A0/A1 消融：判分口径占 +2.04pp |
+| schema 版本化 | 灰度重建期间新旧索引并存 | 旧库回退 + 新库 503 单测 |
 
-```
-chunk_id = sha256(doc_id + "\x1f" + article_id + "\x1f" + normalize(text))[:16]
-```
-
-重新索引就变 ID → 已落库的引用全部失效 → Agent 4 `citation_check` 莫名 fail。
-
-**2. 过滤必须在召回之前**
-
-先召回 top-5 再过滤 → 实际有依据却返回空 → 被误判成「检索无结果」。
-
-**3. `text` 必须是原文，不得摘要**
-
-`cite_check` 做实体覆盖校验，摘要会让所有 claim 降级成「依据不足」。
-
-详见本地 `docs/contract.md`（暂不公开）。
-
-## 目录结构
-
-```text
-mercatoria/
-├── mercatoria/           轻量检索/问答服务（API、索引、分片）
-├── tools/                评测与导入工具链
-├── scripts/              环境重建脚本
-├── corpus/               抓取脚本、manifest 与说明（语料本身不入库）
-│   ├── README.md         语料来源与规模
-│   ├── manifest.json     稳定 doc_id + 法域/时效/业务类型
-│   └── fetch_*.py        从原始来源抓取
-├── docs/                 设计文档（本地保留，不公开）
-├── ragflow-src/          RAGFlow 源码副本（本地保留，不公开）
-└── openspec/             规格与变更管理（本地保留，不公开）
-```
-
-> [!IMPORTANT]
-> **本仓库包含工具链与服务代码，不包含语料与第三方源码。**
->
-> | 目录 | 是否入库 | 原因 | 如何重建 |
-> |---|---|---|---|
-> | `corpus/` 语料文件 | ❌ | 法规文本转载受各来源条款约束 | `bash scripts/setup-corpus.sh` |
-> | `ragflow-src/` | ❌ | Apache-2.0 第三方项目，67MB | `bash scripts/setup-ragflow-src.sh` |
-> | `docs/` | ❌ | 暂不公开 | — |
-> | `openspec/` | ❌ | 仅本地开发管理 | — |
->
-> 换机器或重新 clone 后，先跑两个 setup 脚本再跑评测。
-> 语料抓取约需 10 分钟；RAGFlow 源码重建后需按
-> `ragflow-src/UPSTREAM.md` 的表格手工重放我们的改动。
-
-## 快速开始
+## 6. 快速开始
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install -r requirements.txt      # Windows: .venv\Scripts\pip
+.venv/Scripts/pip install -r requirements.txt      # Windows
+# .venv/bin/pip install -r requirements.txt        # POSIX
 
-cp .env.example .env                            # 填入 RAGFlow 地址与 API Key
-bash scripts/setup-corpus.sh                    # 抓语料（约 10 分钟）
-bash scripts/setup-ragflow-src.sh               # 拉 RAGFlow 源码（仅需改源码时）
+# 1) 抓取/整理语料（可选，需要网络）
+bash scripts/setup-corpus.sh
 
-# 跑评测
-python tools/eval_retrieval.py --kb <kb_id> --tag baseline
+# 2) 生成 manifest（从 corpus/ 目录推导 doc_id 与元数据）
+python -m mercatoria.cli manifest
+
+# 3) 建索引（调用 embedding 网关；结束自动激活）
+python -m mercatoria.cli rebuild
+
+# 4) 启动服务
+python -m mercatoria.cli serve --host 127.0.0.1 --port 8080
 ```
 
-> [!NOTE]
-> API Key 通过环境变量或 `.env` 提供，不再硬编码在脚本里。
-> `.env` 已在 `.gitignore` 中。
+配置来源优先级：显式 `--config` > 仓库根 `config.json` > 内置默认值；密钥/端点可用环境变量覆盖
+（见第 8 节）。Docker 见根目录 `docker-compose.test.yml`。
 
-## 轻量 API 服务（推荐运行时）
+## 7. HTTP 接口参考
 
-RAGFlow 保留为评测基线；运行时使用本仓库的 `mercatoria` 包：
-一个 Python 进程 + SQLite 索引 + NumPy 暴力向量检索。embedding 与
-answer 走 OpenAI-compatible 外部网关，rerank 走 `gte-rerank-v2` 的 DashScope
-原生接口（可关闭），不在本地加载模型，不需要 GPU。
+### 7.1 通用约定
 
-```bash
-# 安装（numpy / fastapi / uvicorn）
-.venv/Scripts/pip install -e .
+- 所有请求与响应均为 JSON（上传接口为 `multipart/form-data`）。字符集 UTF-8。
+- 时间一律 `YYYY-MM-DD`；字符串比较为大小写不敏感（法域自动大写化）。
+- 错误体：`{"detail": "..."}`（FastAPI 默认），或 503 的 `{"error": "...", "corpus": {...}}`。
+- 无内建鉴权：生产环境请置于网关/反向代理之后。
 
-# 1. 生成稳定 doc_id + 法规元数据
-python -m mercatoria --config config.example.json manifest
+### 7.2 端点总表
 
-# 2. 建索引（--limit 用于冒烟；全量约 7.5k chunk）
-python -m mercatoria --config config.example.json rebuild --limit 2
-python -m mercatoria --config config.example.json rebuild
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/health` | 健康、活动索引、schema、配置摘要 |
+| GET / PUT | `/v1/config` | 读取 / 热更新配置 |
+| POST | `/retrieve`、`/v1/retrieve` | 纯检索 |
+| GET | `/v1/articles/{article_id}` | 完整法条 + 邻条 + 交叉引用 |
+| POST | `/v1/articles/batch` | 批量取法条（≤32） |
+| POST | `/chat`、`/v1/chat`、`/ask`、`/v1/ask` | 检索 + 可选生成（带引用） |
+| POST | `/v1/documents` | 批量上传并异步入库 |
+| GET | `/v1/documents` | 文档列表（可按 status 过滤） |
+| GET | `/v1/documents/{doc_id}` | 文档详情 |
+| PATCH | `/v1/documents/{doc_id}` | 修改元数据并重建 |
+| DELETE | `/v1/documents/{doc_id}` | 删除并重建 |
+| POST | `/v1/documents/{doc_id}/reindex` | 单文档重解析/重索引 |
+| GET | `/v1/documents/{doc_id}/chunks` | 分页查看该文档的 chunk |
+| POST | `/v1/admin/manifest` | 从语料目录重建 manifest |
+| POST | `/v1/admin/rebuild` | 重建索引（可后台、可同步冒烟） |
+| GET | `/v1/jobs/{job_id}` | 任意 job 状态 |
+| GET | `/v1/admin/rebuild/{job_id}` | 同上（别名） |
+| POST | `/v1/admin/activate/{version}` | 切换活动索引 |
+| GET | `/v1/admin/indexes` | 列出索引文件与当前活动版本 |
+| GET | `/` | 服务名与端点清单 |
 
-# 3. 启动 API（无前端；FastAPI 的 /docs 仅作调试）
-python -m mercatoria --config config.example.json serve --port 8080
-```
+### 7.3 `GET /health`
 
-```bash
-# 纯检索：返回 chunks + matched_terms / matched_fields + diagnostics
-curl -s localhost:8080/v1/retrieve \
-  -H 'Content-Type: application/json' \
-  -d '{"queries":["完税价格由哪些项目组成"],"top_k":5,
-       "fields":{"business_type":"customs","country":"CN"}}'
+成功（200）：
 
-# 检索 + 可选答案：answer.enabled=false 时只返回匹配信息
-curl -s localhost:8080/v1/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"question":"完税价格由哪些项目组成？","top_k":5}'
-```
-
-索引默认写到 `data/index/`，`current.txt` 指向活动版本；重建成功后才切换。
-改分片参数必须重建，改 `vector_weight/top_k` 不需要。当前默认
-`vector_weight=0.8`（本地 539 条：Hit@5 **0.8126**、Hit@10 **0.8794**、
-MRR **0.6890**；RAGFlow v2 基线为 0.783 / 0.859 / 0.656。59 条分层样本上
-0.5→0.8136、0.7→0.8983、0.8→0.9153 Hit@5。这是本地 BM25+cosine 的标定，
-不能直接套用 RAGFlow 的 0.5。正式使用前建议用自己的用例再扫一遍）。embedding 按
-`(model, text)` 缓存到 `data/embedding-cache.db`，重建时只算变化过的 chunk。
-完整配置见 `config.example.json`。
-
-### Rerank（gte-rerank-v2）
-
-默认关闭（no-rerank 检索 p50 约 32 ms）。请求体传 `"rerank": true`
-或设 `RERANK_ENABLED=true` 时，检索先取 `candidates`（默认 10）条候选，再交给
-cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失败不报错，
-自动回退到 BM25+cosine 顺序，原因写在 `diagnostics.rerank.error`。
-`gte-rerank-v2` 只提供在 DashScope 原生路径
-（`/api/v1/services/rerank/text-rerank/text-rerank`），不走 magpie 的
-`/v1/rerank`；key 用 `RERANK_API_KEY` 注入，不写入配置文件。
-每个 chunk 的 `score_parts` 同时给出 `first_stage`（混合分）和 `rerank`（原始分），
-两者不可直接比较。开启 rerank 时，`score` 默认用 weighted fusion：
-`0.5 * rerank_norm + 0.5 * first_stage_norm`；也可配置
-`fusion=max`（`max(first_stage_norm, weight * rerank_norm)`）或 `fusion=rerank`
-（纯 rerank 排序）。
-
-| 端点 | 用途 |
-|---|---|
-| `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
-| `GET /v1/articles/{article_id}?neighbors=0..5&follow_refs=0..2` | 按条号取完整法条（多 part 按 `src_start/src_end` 无缝拼接）、前后相邻法条、同文档交叉引用（`references.resolved/unresolved`），`follow_refs>=1` 时附被引用条文摘要（上限 20 条，超出置 `truncated`） |
-| `POST /v1/articles/batch` | 一次取最多 32 条（Agent 顺着交叉引用拉取），返回 `missing` 列表 |
-| `POST /chat`（别名 `/v1/chat`） | 对话式问答：接受 `messages` 历史，返回 answer + citations + **references 原文** |
-| `POST /ask`（别名 `/v1/ask`） | 单轮问答，与 `/chat` 同一实现；`answer.enabled=false` 只返回检索 + references |
-| `GET /v1/config` / `PUT /v1/config` | 查看/更新检索、生成、分片配置（更新后即时失效检索缓存） |
-| `POST /v1/admin/rebuild` | 后台重建索引；`background=false` 同步冒烟 |
-| `GET /v1/admin/rebuild/{job_id}` | 重建进度 |
-| `POST /v1/admin/activate/{version}` | 切换活动索引 |
-| `GET /health` | 活动索引、chunk 数、文档数 |
-
-检索请求的过滤与融合参数（都在请求体里，先过滤后打分）：
-
-- `filters.jurisdictions` / `filters.applies_to` / `filters.as_of`：法域、业务类型、生效日期。
-- `filters.doc_ids` / `filters.article_ids`（也可写在 `fields` 里）：把候选限定到若干文档/法条。
-- `per_jurisdiction_k`：为每个请求法域保留的槽位数；多法域比较查询在未指定时自动
-  保留 `min(2, top_k // 法域数)` 条，避免单一法域霸榜。
-- 多查询（`queries` 数组）融合：同一 chunk 被 k 个子查询命中时加
-  `0.03 * min(k-1, 2)` 的分，`score_parts.fusion_bonus` 里可见。
-- `rewrite_query: false`（`/chat`）：不再把上一轮问题拼进检索 query，供已经自行改写
-  问题的外部 Agent 使用。
-- `per_jurisdiction_k` 也可写在 `filters` 里；`diagnostics.quota_slots` 给出最终每个法域占用的槽位数，
-  `retrieval.quota_min_ratio > 0` 时启用软配额（某法域最高分低于全局 top-1 的该比例就不占名额）。
-- `rerank: true|false` 覆盖服务端默认；`score_parts.fusion_bonus` 显示多查询加分。
-
-`diagnostics` 里的运维字段：
-
-- `confidence`：`high | medium | low`。由 top-1 原文余弦与 IDF 加权查询词覆盖率合成
-  （`retrieval.confidence.*` 可调），**不改变 chunks 的内容与顺序**，供下游判断是否该低置信/拒答。
-- `embedding_cache_hits`：本次请求命中查询向量缓存的条数；`degraded=["embedding"]` 表示
-  embedding 网关失败且已按 `retrieval.fallback_bm25_on_embed_error` 降级为纯 BM25。
-- `timings_ms`：`filter / embed / bm25 / vector / rank / total` 各阶段耗时。
-- `warnings`：命中已被替代的法规时给出（chunk 上同时有 `superseded_by`）。
-
-### 法条交叉引用支持范围（`/v1/articles` 的 `references`）
-
-支持的引用形态：
-
-- 中文同文档：`本法/本条例/本办法/本规定/本章 第X条`（含 `第X条、第Y条` 并列）、
-  `第X条至第Y条`、`前条`/`上条`/`下条`、`前款`（映射到本条）。
-- 英文同文档：`section N`、`§ N`、`Article N`。
-- 跨文档：`《法规名》第X条`，仅当书名号里的名称与 manifest 的 `source_doc` 完全一致时解析。
-
-明确不支持：`第X项`/`paragraph (a)` 的项级引用、跨 CFR part/跨章且未在语料内的条文
-（会进入 `references.unresolved` 而不是猜）、WTO 附件编号引用。
-
-对话式请求与响应（`references` 是检索到的原文全文，不只是摘要）：
-
-```bash
-curl -s localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{
-  "messages": [
-    {"role": "user", "content": "进口货物的完税价格由哪些项目组成？"}
-  ],
-  "top_k": 5,
-  "filters": {"jurisdictions": ["CN"]}
-}'
-```
-
-```jsonc
+```json
 {
-  "question": "进口货物的完税价格由哪些项目组成？",
-  "retrieval_query": "进口货物的完税价格由哪些项目组成？",
-  "answer": "进口货物完税价格以成交价格为基础… [f583078a58c014ca]",
-  "answer_status": "answered",
-  "citations": [
-    {"chunk_id": "f583078a58c014ca", "article_id": "cn-customs-law-2021:55",
-     "article_label": "第五十五条", "quote": "…", "text": "第五十五条 进出口货物的完税价格…"}
-  ],
-  "references": [
-    {"chunk_id": "f583078a58c014ca", "rank": 1, "source_doc": "中华人民共和国海关法",
-     "article_id": "cn-customs-law-2021:55", "article_label": "第五十五条",
-     "jurisdiction": "CN", "score": 0.406691, "rerank_score": 0.406691,
-     "cited": true, "text": "第五十五条 进出口货物的完税价格…（原文全文）"}
-  ],
-  "chunks": ["…完整检索结果，含 matched_terms / score_parts…"],
-  "diagnostics": {"rerank": {"enabled": true, "applied": true}},
-  "coverage": {"unavailable": false, "notes": []}
+  "status": "ready",
+  "pending_rebuild": false,
+  "index": {
+    "version": "20261113-112706-384123-72d4a2df2417",
+    "chunks": 11562,
+    "documents": 143,
+    "embedding_model": "my-team-2k/qwen3.7-text-embedding",
+    "chunking_hash": "72d4a2df2417",
+    "built_at": "2026-11-13T03:27:19+00:00",
+    "schema_version": 2,
+    "index_schema_outdated": false
+  },
+  "config": { "retrieval": {"top_k": 5}, "rerank": {"enabled": false} }
 }
 ```
 
-多轮对话把之前轮次放进 `messages` 即可；最后一轮是短追问（如「它什么时候生效？」）时，
-服务会自动把上一轮用户问题拼进检索 query。也可以显式传 `retrieval_query` 覆盖。
+503：`{"status": "not_built" | "empty", "error": "...", "corpus": {...}?}`。
 
-## 文件入库（md / docx / pdf）
+### 7.4 `GET|PUT /v1/config`
 
-上传后后台解析、归一化为条文 Markdown、自动重建索引；同一批次只重建一次。
-支持 `.md` / `.markdown` / `.txt` / `.docx` / `.pdf`（PDF 必须有文本层）。
-旧版 `.doc` 需先转 `.docx`；扫描件不做 OCR，会以 `failed` 明确返回。
-限制：单文件 ≤ 20 MB、单批 ≤ 200 MB 且 ≤ 200 个文件；超出返回 413。
+`GET` → `{"config": {...}, "active_index": "...", "pending_rebuild": false}`。
 
-```bash
-curl -s -X POST localhost:8080/v1/documents \
-  -F "files=@法规.md" \
-  -F "files=@办法.docx" \
-  -F "files=@part-101.pdf" \
-  -F "jurisdiction=CN" \
-  -F "applies_to=customs,tariff" \
-  -F "effective_from=2026-01-01"
-```
+`PUT` 请求体为**部分更新**：只传要改的 section/key，未知 key 忽略；`"save": true` 时写入
+`config.json`。修改 `chunking`/`embedding` 会置 `pending_rebuild=true`；任何修改都会同步
+`rerank_enabled` 并清空检索缓存。
 
-返回 `job_id`，轮询进度：
-
-```bash
-curl -s localhost:8080/v1/jobs/<job_id>
-```
-
-```jsonc
+```json
 {
-  "status": "done",
-  "progress": {"stage": "index", "done": 95, "total": 95},
-  "result": {
-    "indexed": 3,
-    "chunks": 7202,
-    "documents_total": 95,
-    "documents": [{"doc_id": "cn-upload-…", "ok": true, "format": "docx"}]
+  "retrieval": {"top_k": 8, "query_stopwords": true, "confidence": {"medium": 0.6}},
+  "rerank": {"enabled": true, "candidates": 20},
+  "save": false
+}
+```
+
+### 7.5 `POST /v1/retrieve`
+
+请求字段：
+
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `queries` | `string[]` 或 `string` | — | 1–16 条；也接受 `question` |
+| `top_k` | int | 配置 `retrieval.top_k` | 1–100 |
+| `filters` | object | `{}` | 见下表 |
+| `fields` | object | `{}` | 兼容字段，见下 |
+| `rerank` | bool | 服务端 `rerank.enabled` | 单请求开关 |
+| `per_jurisdiction_k` | int | 无 | 0–100；0 表示关闭配额 |
+
+`filters` 明细：
+
+| key | 类型 | 语义 |
+|---|---|---|
+| `jurisdictions` | `string[]` | 法域集合（交集），如 `["CN","US","WTO"]` |
+| `applies_to` | `string[]` | 业务类型；空 `applies_to` 的文档视为“通用” |
+| `as_of` | `YYYY-MM-DD` | 生效时点；`degraded`/`snapshot` 法域不做日期过滤 |
+| `doc_ids` | `string[]` | 限定文档 |
+| `article_ids` | `string[]` | 限定条文，如 `["cn-customs-law-2021:55"]` |
+| `per_jurisdiction_k` | int | 同请求级参数 |
+
+`fields` 兼容映射：`business_type→applies_to`、`jurisdiction|country→jurisdictions`、
+`date|as_of→as_of`、`doc_ids`、`article_ids`。
+
+请求示例：
+
+```json
+{
+  "queries": ["进口货物的完税价格由哪些项目组成？"],
+  "top_k": 5,
+  "filters": {"jurisdictions": ["CN"]}
+}
+```
+
+响应（节选，字段全量）：
+
+```json
+{
+  "schema_version": "2",
+  "chunks": [
+    {
+      "chunk_id": "f583078a58c014ca",
+      "doc_id": "cn-customs-law-2021",
+      "source_doc": "中华人民共和国海关法",
+      "text": "第五十五条 进出口货物的完税价格……",
+      "score": 0.91,
+      "score_parts": {
+        "vector": 0.83, "keyword": 4.12,
+        "vector_norm": 0.97, "keyword_norm": 0.61,
+        "first_stage": 0.91, "hybrid": 0.91,
+        "rerank": null, "fusion_bonus": 0.0
+      },
+      "articles": ["第五十五条"],
+      "article_ids": ["cn-customs-law-2021:55"],
+      "article_offsets": [{"article_id": "cn-customs-law-2021:55", "start": 0, "end": 205}],
+      "effective_from": "2021-04-29",
+      "effective_to": null,
+      "jurisdictions": ["CN"],
+      "applies_to": ["customs", "declaration", "penalty"],
+      "superseded_by": null,
+      "matched_by": ["vec", "kw"],
+      "matched_queries": [0],
+      "matched_terms": [{"term": "完税价格", "start": 9, "end": 13, "query_index": 0}],
+      "matched_fields": {"doc_id": "cn-customs-law-2021", "article_id": "cn-customs-law-2021:55", "jurisdiction": "CN"},
+      "rank": 1
+    }
+  ],
+  "corpus": {"status": "ready", "version": "...", "documents": 143, "article_count": 8191,
+             "chunk_count": 11562, "jurisdictions": ["AU","CN","EU","INT","JP","US","WTO"],
+             "precision": {"CN": "exact"}, "built_at": "...", "embedding_model": "...", "snapshot_date": null},
+  "temporal": {"as_of": null, "by_jurisdiction": {"CN": {"mode": "exact", "note": null}}},
+  "diagnostics": {
+    "funnel": {"total": 11562, "after_jurisdiction": 1650, "after_applies_to": 1650,
+                "after_as_of": 1650, "after_doc": 1650, "after_article": 1650, "after_retrieval": 5},
+    "zero_reason": null,
+    "requested_uncovered": {"jurisdictions": [], "applies_to": []},
+    "rerank": {"enabled": false, "applied": false, "model": null, "candidates": 0,
+                "blend_weight": null, "fusion": null, "latency_ms": 0.0, "error": null},
+    "per_jurisdiction_k": null,
+    "embedding_cache_hits": 1,
+    "confidence": "high",
+    "warnings": [],
+    "timings_ms": {"filter": 0.6, "embed": 0.2, "bm25": 2.4, "vector": 11.2, "rank": 0.2, "total": 29.4}
+  },
+  "index": {"version": "...", "built_at": "...", "chunk_count": 11562,
+             "embedding_model": "...", "chunking_hash": "72d4a2df2417"},
+  "field_matches": {
+    "jurisdictions": {"requested": ["CN"], "matched": ["CN"], "uncovered": []},
+    "applies_to": {"requested": [], "matched": ["customs"], "uncovered": []},
+    "as_of": {"requested": null, "precision": {"CN": "exact"}}
   }
 }
 ```
 
-文档生命周期：
+`zero_reason` 取值：`no_jurisdiction`、`no_business_type`、`no_temporal`、`no_doc`、
+`no_article`、`no_match`；`null` 表示有结果。
 
-| 接口 | 用途 |
+### 7.6 `GET /v1/articles/{article_id}`
+
+`article_id` 形如 `cn-customs-law-2021:55`、`us-cfr-19-101:101.1`、`wto-dsu:art-17`。
+路径参数支持 `/`（`{article_id:path}`）。
+
+查询参数：
+
+| 参数 | 范围 | 默认 | 语义 |
+|---|---|---|---|
+| `neighbors` | 0–5 | 0 | 同文档前后各 k 条 |
+| `follow_refs` | 0–2 | 0 | 解析交叉引用并附被引条文摘要，1 跳/跳 |
+
+响应字段：`article_id`、`doc_id`、`source_doc`、`article_label`、`section`、`jurisdiction`、
+`applies_to`、`effective_from`、`effective_to`、`superseded_by`、`text`（多 part 去重叠拼接）、
+`chunks[]`（`chunk_id`/`part`/`ordinal`/`token_count`/`text`）、
+`neighbors.previous[]`/`neighbors.next[]`（`article_id`/`article_label`/`chunk_ids`/`text`）、
+`references.resolved[]`（`text`/`article_id`/`article_label`）、`references.unresolved[]`（`text`）、
+`followed[]`（同 neighbors 结构 + `superseded_by`，最多 20 条）、`truncated`。
+
+```json
+{
+  "article_id": "cn-customs-law-2021:58",
+  "references": {
+    "resolved": [
+      {"text": "第五十六条", "article_id": "cn-customs-law-2021:56", "article_label": "第五十六条"},
+      {"text": "第五十七条", "article_id": "cn-customs-law-2021:57", "article_label": "第五十七条"}
+    ],
+    "unresolved": []
+  },
+  "followed": [{"article_id": "cn-customs-law-2021:56", "chunk_ids": ["..."], "text": "..."}],
+  "truncated": false
+}
+```
+
+错误：`400`（`neighbors`/`follow_refs` 越界）、`404`（未知 id）、`503`（无索引）。
+
+### 7.7 `POST /v1/articles/batch`
+
+请求：`{"article_ids": ["...", "..."], "neighbors": 0, "follow_refs": 0}`（≤32 个）。
+响应：`{"articles": [...], "missing": ["..."], "count": 2}`；未知 id 进 `missing`，不报错。
+
+### 7.8 `POST /v1/chat`（别名 `/chat`、`/v1/ask`、`/ask`）
+
+请求字段：
+
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `messages` | `{role, content}[]` | — | 取最后一条 user；`question` 亦可 |
+| `retrieval_query` | string | — | 显式检索串，优先级最高 |
+| `rewrite_query` | bool | true | false 时不拼接历史问题 |
+| `queries` | string[] | — | 直接指定多路检索 |
+| `top_k` / `filters` / `fields` / `rerank` / `per_jurisdiction_k` | — | — | 同 `/v1/retrieve` |
+| `answer` | object | 服务端配置 | `{"enabled": false}` 只检索 |
+
+响应 = 检索响应 + 以下字段：`answer`、`answer_status`、`citations[]`、`references[]`、
+`error`、`question`、`retrieval_query`、`messages`、`coverage{unavailable, notes}`。
+
+`answer_status`：`answered`（有引用）、`partial`（提到依据不足但仍有引用）、
+`unsupported`（无引用）、`unavailable`（检索为空/拒答）、`skipped`（生成关闭）、`error`。
+
+`citations[]`：`chunk_id`、`doc_id`、`article_id`、`article_label`、`source_doc`、`quote`、`text`。
+`references[]`：`chunk_id`、`rank`、`doc_id`、`source_doc`、`article_id`、`article_label`、
+`jurisdiction`、`effective_from`、`effective_to`、`score`、`rerank_score`、`cited`、`text`、
+`article_offsets`。
+
+### 7.9 文档管理
+
+**上传** `POST /v1/documents`（`multipart/form-data`）
+
+| 表单字段 | 默认 | 说明 |
+|---|---|---|
+| `files` | 必填 | ≤200 个；md/markdown/txt/docx/pdf（无 OCR） |
+| `jurisdiction` | `CN` | 决定分块家族（CN/JP/US/AU/WTO/INT/EU/UK） |
+| `language` | CN→`zh`，JP→`ja`，其余 `en` | |
+| `precision` | CN→`exact`，其余 `degraded` | 影响 `as_of` 过滤 |
+| `applies_to` | 空 | 逗号/分号分隔 |
+| `effective_from` / `effective_to` | 空 | `YYYY-MM-DD` |
+| `source_doc` | 文件名 | 展示名 |
+
+响应：`{"job_id": "...", "status": "running", "documents": ["a.md"]}`；重复内容按 sha256 去重
+（`duplicate: true`）。限制：单文件 ≤20 MB、单批 ≤200 MB（可配置）；超限 `413`；有 job 在跑 `409`。
+
+**列表** `GET /v1/documents?status=ready` → `{"documents": [...], "count": n}`。
+
+文档记录字段：`doc_id`、`filename`、`source_doc`、`jurisdiction`、`language`、`precision`、
+`applies_to[]`、`effective_from`、`effective_to`、`sha256`、`status`
+（`queued|parsing|parsed|indexing|ready|failed`）、`chunk_count`、`parsed_path`、`original_path`、
+`error`、创建/更新时间。
+
+**详情** `GET /v1/documents/{doc_id}` → 上述记录；`404` 不存在。
+
+**改元数据** `PATCH /v1/documents/{doc_id}`：可改 `jurisdiction`、`language`、`precision`、
+`source_doc`、`effective_from`、`effective_to`、`applies_to`；随后触发重建，返回 job。
+
+**删除** `DELETE /v1/documents/{doc_id}` → job；**重索引** `POST /v1/documents/{doc_id}/reindex` → job。
+
+**chunk 列表** `GET /v1/documents/{doc_id}/chunks?limit=100&offset=0`（limit ≤500）→
+`{"doc_id","total","offset","limit","chunks":[{chunk_id,article_id,article_label,section,part,text,token_count,effective_from,effective_to}]}`。
+
+### 7.10 管理端点
+
+| 端点 | 请求 | 响应 |
+|---|---|---|
+| `POST /v1/admin/manifest` | 无 | `{"documents": n, "path": "corpus/manifest.json"}` |
+| `POST /v1/admin/rebuild` | `{"background": true, "activate": true, "chunking"?: {...}, "embedding"?: {...}}` | 后台：`{job_id,status,pending_rebuild}`；`background=false` 返回完整 job |
+| `GET /v1/jobs/{job_id}` | — | job 记录：`job_id`、`kind`（`rebuild|ingest|delete|reindex|update`）、`status`（`running|done|error`）、`started_at`、`finished_at`、`result`、`error`、`progress{stage,done,total}` |
+| `POST /v1/admin/activate/{version}` | — | `{"active": "<version>"}`；未知版本 `404` |
+| `GET /v1/admin/indexes` | — | `{"indexes": ["index-*.db"], "current": "..."}` |
+
+### 7.11 错误码
+
+| 码 | 场景 |
 |---|---|
-| `GET /v1/documents` | 列表 + 状态 + `chunk_count` |
-| `GET /v1/documents/{id}` | 详情 |
-| `PATCH /v1/documents/{id}` | 改 `applies_to`/`effective_from`/`source_doc` 等并重建 |
-| `DELETE /v1/documents/{id}` | 删除原文件/解析产物并重建索引 |
-| `POST /v1/documents/{id}/reindex` | 重新解析并重建 |
-| `GET /v1/documents/{id}/chunks` | 该文档的 chunk 列表 |
+| 400 | 参数非法（`queries` 为空/超 16、`top_k` 越界、日期格式、`neighbors`/`follow_refs` 越界、无文件） |
+| 404 | 未知 `article_id` / `doc_id` / job / 索引版本 |
+| 409 | 已有 ingest/rebuild job 在跑；文档重复处理中 |
+| 413 | 超过单文件/单批大小限制 |
+| 500 | embedding 网关返回不可恢复错误（未开启降级时） |
+| 503 | 索引未构建/为空/由更新版本写入 |
 
-同一文件重复上传按 `sha256` 幂等，返回已有 `doc_id`，不重复 embedding。
-索引重建只 embedding 新增 chunk：活动索引里 `chunk_id` 未变的向量直接复用。
+## 8. 配置参考
+
+默认值见 `config.example.json`；嵌套 section 可直接部分覆盖。
+
+| Section | Key | 默认 | 说明 |
+|---|---|---|---|
+| 顶层 | `corpus_dir` / `index_dir` / `manifest_path` | `corpus` / `data/index` / `corpus/manifest.json` | 路径 |
+| | `uploads_dir` / `documents_dir` | `data/uploads` / `data/documents` | 上传原文件 / 注册表 |
+| | `max_upload_bytes` / `max_batch_bytes` | 20 MB / 200 MB | 单文件 / 单批 |
+| | `ingest_workers` | 8 | 解析并发 |
+| `chunking` | `unit` | `article` | `article|section|fixed` |
+| | `max_chars` / `min_chars` / `overlap` | 2048 / 0 / 120 | 长条文切分 |
+| | `include_heading` / `strip_comments` / `drop_preamble` / `drop_sections` | true | 清洗 |
+| | `max_chunks_per_article` | 0（不限） | |
+| | `index_context_header` | true | 索引文本加 `[法典\|章节\|条号]` |
+| `embedding` | `base` / `model` / `api_key` | `http://localhost:3425/v1` / `my-team-2k/qwen3.7-text-embedding` / 空 | OpenAI 兼容 |
+| | `batch_size` / `max_batch` / `concurrency` / `timeout` / `retries` | 16 / 20 / 4 / 120 / 3 | |
+| | `dim` | 0（自动） | 期望维度 |
+| | `cache_path` | `data/embedding-cache.db` | 持久化向量缓存 |
+| | `query_cache_size` | 1024 | 查询向量 LRU；0 关闭 |
+| `retrieval` | `top_k` | 5 | |
+| | `vector_weight` | 0.8 | 融合权重 |
+| | `bm25_k1` / `bm25_b` | 1.5 / 0.75 | BM25 参数 |
+| | `similarity_threshold` | 0.0 | 低于阈值的候选丢弃 |
+| | `expand_cross_language` | true | 术语表扩展 |
+| | `query_stopwords` | true | 过滤法规虚词 |
+| | `bm25_saturation` | 8.0 | 归一化饱和点；0 关闭 |
+| | `multi_query_bonus` | 0.0 | 多查询加分（消融为负，默认关） |
+| | `quota_min_ratio` | 0.0 | 软配额阈值；0 为硬配额 |
+| | `fallback_bm25_on_embed_error` | false | 网关失败降级 BM25 |
+| | `confidence.high` / `.medium` / `.min_gap` / `.vector_weight` | 0.80 / 0.64 / 0.02 / 0.8 | 置信度 |
+| `rerank` | `enabled` | false | |
+| | `style` | `dashscope` | `dashscope|cohere` |
+| | `base` / `path` / `model` / `api_key` | DashScope / `gte-rerank-v2` / 空 | |
+| | `candidates` / `top_n` / `weight` / `fusion` / `min_score` | 10 / 0 / 0.5 / `weighted` / 0.0 | `fusion ∈ max|weighted|rerank` |
+| | `timeout` / `retries` | 30 / 2 | |
+| `answer` | `enabled` | true | |
+| | `base` / `model` / `api_key` | `http://localhost:3425/v1` / `local-wb/cn:deepseek-v4.1-flash` / 空 | |
+| | `max_tokens` / `temperature` / `timeout` / `max_context_chunks` | 8192 / 0.0 / 180 / 12 | |
+
+环境变量覆盖（只覆盖端点与密钥）：`MERCATORIA_CORPUS_DIR`、`MERCATORIA_INDEX_DIR`、
+`MERCATORIA_MANIFEST`、`MERCATORIA_UPLOADS_DIR`、`MERCATORIA_DOCUMENTS_DIR`、
+`MERCATORIA_MAX_UPLOAD_MB`、`MERCATORIA_MAX_BATCH_MB`、`MERCATORIA_INGEST_WORKERS`、
+`EMBEDDING_BASE`、`EMBEDDING_MODEL`、`EMBEDDING_API_KEY`、
+`RERANK_ENABLED`、`RERANK_STYLE`、`RERANK_BASE`、`RERANK_PATH`、`RERANK_MODEL`、
+`RERANK_API_KEY`、`RERANK_CANDIDATES`、`RERANK_WEIGHT`、`RERANK_TOP_N`、`RERANK_TIMEOUT`、
+`LLM_BASE`、`LLM_MODEL`、`LLM_API_KEY`、`MERCATORIA_ANSWER_ENABLED`。
+
+## 9. 数据模型
+
+**Chunk**
+
+```
+chunk_id        = sha256(doc_id | article_id | normalize(text))[:16]
+doc_id          文档标识（manifest 或上传时派生）
+article_id      <doc_id>:<条号>，如 cn-customs-law-2021:55 / wto-dsu:art-17
+article_label   人类可读条号（第五十五条 / § 101.1 / Article 17）
+text            法规原文（多 part 时按 src_start/src_end 去重叠）
+section         章节标题（用于索引头与展示）
+part/ordinal    part=长条文分片序号；ordinal=文档内总序
+token_count     原文 token 数
+index_token_count  索引文本 token 数（BM25 长度归一化）
+```
+
+**manifest 文档**：`doc_id`、`path`、`source_doc`、`jurisdiction`、`language`、
+`precision`（`exact|degraded|snapshot`）、`applies_to[]`、`effective_from`、`effective_to`、
+`snapshot_date`、`superseded_by`。
+
+**SQLite（schema v2）**：`docs`（+`superseded_by`）、`chunks`（+`index_token_count`）、
+`postings(term, chunk_id, tf)`、`terms(term, df)`、`vectors(chunk_id, dim, vec)`、
+`meta`（`version`、`built_at`、`schema_version`、`embedding_model`、`embedding_dim`、
+`chunking_hash`、`index_text_hash`、`avgdl`、`config` 等）。
+
+## 10. 语料与质量
+
+当前语料：**143 篇 / 11,562 chunks / 8,191 条文**（US 58、CN 39、WTO 14、JP 9、AU 5、EU 2、INT 1）。
+
+| 指标（当前代码 + 当前索引） | 数值 | 说明 |
+|---|---|---|
+| dev Hit@5（439 题） | **0.8610** | 冻结 hold-out 后 |
+| dev Hit@10 | 0.8884 | |
+| dev MRR | 0.7287 | |
+| hold-out Hit@5（100 题） | **0.9000** | 只在验收跑 |
+| hold-out MRR | 0.7857 | |
+| 真题 Hit@5（59 有答案） | **0.9831** | 60 题口径（含 FT-054）为 0.9667 |
+| 真题 MRR | 0.8446 | |
+| 跨法域覆盖率@5 | **1.0000**（配额开）/ 0.1250（关） | 8 道比较题 |
+| no_answer 低置信率 | 0.8333 | 18 题对抗样本 |
+| 有答案误标 low | 0.0678 | |
+| 引用解析准确率 | 32/32 | 人工核对样例 |
+| 本地检索 p50 / 缓存命中 p50 | **28 ms / 0.24 ms** | 11.5k chunks |
+| 并发 | 8 线程 60 rps、32 线程 57 rps，0 错误 | p99 311 / 908 ms |
+
+评测口径（重要）：`Hit@5` 指 top-5 内存在“条文块且命中全部 must_mention 关键词”。v2 把
+“长条文 `part>=1` 也视为条文块”，该口径变化单独记 +2.04pp Hit@5；消融矩阵见
+`docs/ablation-2026-11-13.md`（本地，不随仓库发布）。
+
+## 11. 运维
+
+- **健康**：`/health` 给出 index 版本、schema、chunk 数；`index_schema_outdated=true` 表示需重建。
+- **重建**：`POST /v1/admin/rebuild`（默认后台）→ `GET /v1/jobs/{job_id}` 看进度；
+  结束后自动 `reload()`。旧索引文件保留，可 `POST /v1/admin/activate/{version}` 回滚。
+- **热更新**：`PUT /v1/config`；检索/重排参数即时生效（缓存清空），分片/模型变更置
+  `pending_rebuild=true`。
+- **缓存**：响应缓存 256 条、查询向量 LRU 1024 条、embedding 持久化缓存 SQLite。
+- **降级**：`fallback_bm25_on_embed_error=true` 时网关失败退化为 BM25，并在
+  `diagnostics.degraded=["embedding"]` 标注。
+
+## 12. 目录结构
+
+```text
+mercatoria/          # 服务实现（api / retrieve / store / chunker / config / manifest / ingest …）
+corpus/              # 语料目录（抓取脚本 + manifest；法律原文不入库）
+  fetch_*.py         # eCFR / WTO / 日本 e-Gov / 澳洲 / EU Cellar / CISG / 中文镜像
+  cn/ wto/ ecfr/ …   # 抓取产物（gitignored）
+tools/               # 评测、profile、审计、压测、holdout 生成
+tests/               # 单测 + 真题 fixture + hold-out
+scripts/             # 语料重建、RAGFlow 源码准备
+data/                # 索引、上传、embedding 缓存（gitignored）
+```
+
+## 13. 边界与限制
+
+- 上传解析支持 md/txt/docx/pdf（有文本层），**无 OCR**、不支持旧版 `.doc`。
+- 引用解析覆盖：同文档 `本法/本条例…第X条`、`第X条至第Y条`、`前条/上条/下条/前款`；
+  英文 `section/§/Article`；跨文档仅解析书名号全名匹配的情形。项级引用（`第X项`、
+  `paragraph (a)`）不解析，进 `unresolved`。
+- `legislation.gov.uk` 对脚本返回 WAF 挑战，UK 语料需手工下载后用
+  `corpus/convert_uk_xml.py` 转换；`--check` 将 UK 视为可选源。
+- 无内建鉴权、无多租户；请置于网关之后。
+- 语料覆盖不等于法律意见：`低置信`/`corpus_gap` 是可靠性信号，不构成合规结论。
+
+---
+
+# English Documentation
+
+## 1. What this is
+
+Mercatoria is an **article-level retrieval backend** for cross-border trade compliance.
+Given a natural-language question it returns citable statutory text, whole articles,
+cross-references and a confidence signal. Design goals, in order:
+
+1. **Citable** — `text` is the raw statute; `chunk_id` is content-addressed, so the same
+   passage keeps the same id across rebuilds and citations are reproducible.
+2. **Explainable** — every response carries `diagnostics.funnel`, `zero_reason`,
+   `score_parts`, `matched_terms`, `warnings` and `timings_ms`.
+3. **Operable** — config hot-reload invalidates caches, index versions activate atomically,
+   ingestion/deletion/rebuild are async jobs, and the SQLite schema is versioned with a
+   compatibility path for older indexes.
+4. **Zero GPU** — embeddings come from an OpenAI-compatible gateway; retrieval is NumPy plus
+   an in-memory inverted index, so one CPU node is enough.
+
+## 2. Architecture
+
+| Layer | Component | Responsibility |
+|---|---|---|
+| Edge | FastAPI (`mercatoria/api.py`) | routing, validation, status codes; sync retrieval + async jobs |
+| Service | `Service` singleton | config hot-reload, index reload, document registry, job lock |
+| Retrieval | `Retriever` (`mercatoria/retrieve.py`) | query expansion, filter funnel, hybrid scoring, quotas, confidence, caches |
+| Index | `Index` (`mercatoria/store.py`) | in-memory postings + vector matrix + article aggregation + references; SQLite closed after load |
+| Corpus | `corpus/fetch_*.py`, `manifest.py` | fetch, normalise, derive `manifest.json` |
+| Evaluation | `tools/*.py`, `tests/*` | ablation, hold-out, coverage, profiling, stress, fixture audit |
+
+Scale: 143 statutes / 11,562 chunks / 8,191 articles; vectors 11,562 × 1024 (float32, ~45 MB).
+Index load ~**1.7 s**, local retrieval p50 **28 ms**, cache-hit p50 **0.24 ms**.
+
+## 3. Retrieval pipeline
+
+1. **Query expansion** — 224 trilingual trade terms (182 zh→en, 42 zh→ja) are appended.
+2. **Filter-first** — `jurisdictions → applies_to → as_of → doc_ids → article_ids`, each step
+   counted in `diagnostics.funnel`; an empty set yields a precise `zero_reason`.
+3. **Dual recall** — BM25 over an in-memory inverted index (saturated normalisation) and dense
+   vector matmul, blended by `retrieval.vector_weight`.
+4. **Multi-query fusion** — up to 16 sub-queries; a chunk hit by several can earn a bounded
+   bonus (off by default, the v2 ablation measured it negative).
+5. **Jurisdiction quota** — with several requested jurisdictions each keeps
+   `min(2, top_k // n)` slots; `per_jurisdiction_k` overrides, `quota_min_ratio` softens it.
+6. **Confidence** — `high | medium | low` from the top-1 cosine and the IDF-weighted share of
+   query terms present in that chunk. It never changes `chunks` order or content.
+7. **Observability** — `timings_ms` (filter/embed/bm25/vector/rank/total),
+   `embedding_cache_hits`, `degraded`, `warnings`, `quota_slots`.
+
+## 4. Index and ingestion
+
+- **Content-addressed ids**: `sha256(doc_id + "\x1f" + article_id + "\x1f" + normalize(text))[:16]`.
+  `text` is always the statute; rebuilds are stable (covered by tests).
+- **Index text decoupled from payload**: embedding and BM25 see
+  `[statute | chapter | article]\n<text>`; responses only expose `<text>`.
+  `chunks.token_count` is the raw length; `chunks.index_token_count` feeds BM25 length
+  normalisation.
+- **Vector reuse** is validated per chunk by hashing the exact `index_text`, so renaming a
+  statute cannot silently keep stale vectors.
+- **Atomic publish**: the new index is written to `*.tmp`, `os.replace`d, then `current.txt`
+  is switched; `reload()` failures leave the previous index serving.
+- **Schema versioning**: `meta.schema_version = 2`; older indexes load with fallbacks and
+  report `index_schema_outdated`; newer ones are refused with a 503 rebuild hint.
+
+## 5. Design decisions
+
+| Decision | Why | Evidence |
+|---|---|---|
+| Content-addressed `chunk_id` | reproducible citations, comparable rebuilds, reusable caches | `test_chunk_ids_are_stable_across_rebuild` |
+| `index_text` decoupled from `text` | chapter/statute names help recall without polluting the payload | ablation A2: trade Hit@5 −1.7pp when disabled |
+| Filter-first with funnel diagnostics | prove whether a miss is filtering or scoring | `zero_reason` enumerates the failing stage |
+| In-memory postings, closed connection | removes cross-thread SQLite races; zero SQL on the query path | BM25 p50 2.3 ms; connection-closed test |
+| Query-vector LRU + persistent cache | repeat questions never hit the gateway; thread-safe | cache-hit p50 0.24 ms; concurrency test |
+| Widen the pool before quota | a quota can only promote candidates the first stage offered | coverage 1/8 → 8/8 |
+| Confidence is read-only | downstream needs a reliability signal, not a rewritten result | no_answer low rate 0.83 |
+| Separate evaluation-changes from algorithm-changes | metrics stay attributable | A0/A1 ablation: scoring = +2.04pp |
+
+## 6. Quick start
 
 ```bash
-# 容器内跑全部测试（推荐，也是验收方式）
-docker build --target test -t mercatoria:test-suite .
-docker run --rm mercatoria:test-suite
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt
+bash scripts/setup-corpus.sh          # optional: fetch corpus
+python -m mercatoria.cli manifest
+python -m mercatoria.cli rebuild
+python -m mercatoria.cli serve --host 127.0.0.1 --port 8080
 ```
 
-Agent 也可以不走 HTTP，直接进程内调用：
+Config precedence: `--config` > `./config.json` > defaults; secrets/endpoints can be
+overridden by environment variables (section 8).
 
-```python
-from mercatoria import load_config, open_current, Retriever
+## 7. HTTP API
 
-cfg = load_config("config.example.json")
-retriever = Retriever(open_current(cfg.resolved_index_dir()), cfg)
-result = retriever.retrieve(["完税价格由哪些项目组成"], top_k=5)
+### 7.1 Conventions
+
+- JSON in/out (uploads use `multipart/form-data`), UTF-8.
+- Dates are `YYYY-MM-DD`; jurisdiction strings are upper-cased.
+- Errors are `{"detail": "..."}`, or `{"error": "...", "corpus": {...}}` for 503.
+- No built-in auth: deploy behind a gateway.
+
+### 7.2 Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/health` | health, active index, schema, config summary |
+| GET / PUT | `/v1/config` | read / hot-update configuration |
+| POST | `/retrieve`, `/v1/retrieve` | retrieval only |
+| GET | `/v1/articles/{article_id}` | full article + neighbours + references |
+| POST | `/v1/articles/batch` | batch fetch (≤32) |
+| POST | `/chat`, `/v1/chat`, `/ask`, `/v1/ask` | retrieval + optional generation with citations |
+| POST | `/v1/documents` | batch upload, async ingest |
+| GET | `/v1/documents` | list documents (`?status=`) |
+| GET | `/v1/documents/{doc_id}` | document record |
+| PATCH | `/v1/documents/{doc_id}` | update metadata, trigger rebuild |
+| DELETE | `/v1/documents/{doc_id}` | delete, trigger rebuild |
+| POST | `/v1/documents/{doc_id}/reindex` | re-parse/re-index one document |
+| GET | `/v1/documents/{doc_id}/chunks` | paginated chunks |
+| POST | `/v1/admin/manifest` | rebuild manifest from corpus dir |
+| POST | `/v1/admin/rebuild` | rebuild index (background or sync) |
+| GET | `/v1/jobs/{job_id}` | job status |
+| GET | `/v1/admin/rebuild/{job_id}` | alias |
+| POST | `/v1/admin/activate/{version}` | switch active index |
+| GET | `/v1/admin/indexes` | list index files and current |
+| GET | `/` | service info and endpoint list |
+
+### 7.3 `GET /health`
+
+```json
+{"status": "ready", "pending_rebuild": false,
+ "index": {"version": "20261113-...", "chunks": 11562, "documents": 143,
+           "embedding_model": "my-team-2k/qwen3.7-text-embedding",
+           "chunking_hash": "72d4a2df2417", "built_at": "...",
+           "schema_version": 2, "index_schema_outdated": false},
+ "config": {"retrieval": {"top_k": 5}}}
 ```
 
-> [!NOTE]
-> 跨语言检索仍是已知短板：中文问 WTO/CISG 等英文语料时，向量召回可能不足。
-> 服务保留了纯检索接口，后续可在 `retrieve` 前加语言路由/查询翻译，不影响本层契约。
+503 when the index is missing/empty or written by a newer schema.
 
-## Docker 测试镜像
+### 7.4 `GET|PUT /v1/config`
 
-镜像内置 `corpus/`（92 文档 / 7,196 chunks）和活动索引（`qwen3.7-text-embedding`，
-1024 维），启动即可检索。embedding 与 chat 通过 `host.docker.internal:3425`
-访问宿主 magpie；rerank 直连 DashScope。
+`PUT` is a partial merge; unknown keys are ignored; `"save": true` persists to `config.json`.
+Changing `chunking`/`embedding` sets `pending_rebuild=true`; every update clears the
+retrieval cache and re-syncs `rerank_enabled`.
 
-```bash
-# .env 提供 RERANK_API_KEY
-docker compose -f docker-compose.test.yml up -d --build
-curl -s localhost:8080/health
-
-# 改 embedding 模型或分片参数后重建内置索引
-docker run --rm --add-host host.docker.internal:host-gateway \
-  -e EMBEDDING_BASE=http://host.docker.internal:3425/v1 \
-  --entrypoint python mercatoria:test \
-  -m mercatoria --config config.json rebuild
+```json
+{"retrieval": {"top_k": 8, "confidence": {"medium": 0.6}},
+ "rerank": {"enabled": true, "candidates": 20}, "save": false}
 ```
 
-镜像只复制 `data/index/current.txt` 指向的活动索引，历史版本不会进入镜像。
-`data/` 挂在 `mercatoria-data` 命名卷上；首次启动会把镜像里的索引种子复制进去，
-上传的文档、注册表和后续重建都持久化在卷里。
+### 7.5 `POST /v1/retrieve`
 
-```bash
-# 用 60 道真实来源题目做检索验收（题目在 tests/eval/trade_law_questions.json）
-docker run --rm --add-host host.docker.internal:host-gateway \
-  mercatoria:test-suite \
-  python tests/eval_trade_questions.py \
-    --base http://host.docker.internal:8080 --answer-limit 5
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `queries` | `string[]`/`string` | — | 1–16; `question` also accepted |
+| `top_k` | int | `retrieval.top_k` | 1–100 |
+| `filters` | object | `{}` | below |
+| `fields` | object | `{}` | legacy mapping |
+| `rerank` | bool | server default | per-request override |
+| `per_jurisdiction_k` | int | none | 0–100, 0 disables |
 
-# 200 文件批量入库压测
-docker run --rm --add-host host.docker.internal:host-gateway \
-  mercatoria:test-suite \
-  python tests/bench_ingest.py \
-    --base http://host.docker.internal:8080 --files 200
-```
+`filters`: `jurisdictions[]`, `applies_to[]`, `as_of` (`YYYY-MM-DD`), `doc_ids[]`,
+`article_ids[]`, `per_jurisdiction_k`.
+`fields` aliases: `business_type→applies_to`, `jurisdiction|country→jurisdictions`,
+`date|as_of→as_of`, `doc_ids`, `article_ids`.
 
-### 策略 benchmark（300 题：60 真实 + 240 合成）
+Response keys: `schema_version`, `chunks[]`, `corpus`, `temporal`, `diagnostics`, `index`,
+`field_matches`. Chunk fields: `chunk_id`, `doc_id`, `source_doc`, `text`, `score`,
+`score_parts{vector,keyword,vector_norm,keyword_norm,first_stage,hybrid,rerank,fusion_bonus}`,
+`articles[]`, `article_ids[]`, `article_offsets[]`, `effective_from`, `effective_to`,
+`jurisdictions[]`, `applies_to[]`, `superseded_by`, `matched_by[]`, `matched_queries[]`,
+`matched_terms[]`, `matched_fields{}`, `rank`.
 
-| chunk 策略 | chunks | 重建 | Hit@5 | article Hit@5 | MRR |
-|---|---|---|---|---|---|
-| **article 2048 / overlap 120（默认）** | 7,196 | **3.0 s** | 0.9067 | 0.7267 | 0.7453 |
-| article 4096 / overlap 120 | 5,813 | 116 s | **0.9100** | 0.7233 | **0.7542** |
-| article 1024 / overlap 120 | 11,096 | 325 s | 0.8833 | 0.7100 | 0.7031 |
-| article 2048 / overlap 0 | 7,106 | 128 s | 0.8867 | 0.7200 | 0.7265 |
-| section 2048 | 6,670 | 198 s | 0.2500 | 0.0633 | 0.2372 |
+`diagnostics`: `funnel{total,after_jurisdiction,after_applies_to,after_as_of,after_doc,after_article,after_retrieval}`,
+`zero_reason`, `requested_uncovered`, `rerank`, `per_jurisdiction_k`, `quota_slots`,
+`embedding_cache_hits`, `degraded[]`, `confidence`, `warnings[]`, `timings_ms`, `cache_hit`.
+`zero_reason ∈ {no_jurisdiction, no_business_type, no_temporal, no_doc, no_article, no_match}`.
 
-结论：`article 2048 / overlap 120` 是默认值；4096 只多 +0.3 点 Hit@5、+0.9 点 MRR，
-但索引重建慢 39 倍、引用粒度更粗。1024 和 overlap 0 都更差；section 切法丢失
-`article_id`，不可用于法条引用。
+### 7.6 `GET /v1/articles/{article_id}`
 
-| rerank 策略（108 题子集） | Hit@5 | MRR（all） | MRR（real） | p50 |
-|---|---|---|---|---|
-| 关闭 | 0.8889 | 0.7549 | 0.8381 | 1.31 s |
-| max w0.5 | 0.8889 | 0.7597 | 0.8381 | 1.87 s |
-| max w0.8 | 0.8889 | 0.7613 | 0.8381 | 1.35 s |
-| max w1.0 | 0.8889 | 0.7665 | 0.8403 | 1.69 s |
-| **weighted w0.5（启用时默认）** | 0.8889 | **0.7914** | **0.8556** | 1.10 s |
-| rerank-pure | 0.8889 | 0.7722 | 0.8311 | 1.07 s |
-| max w0.8 c20 | 0.8889 | 0.7601 | 0.8381 | 1.21 s |
+Path accepts `/`; query: `neighbors` 0–5, `follow_refs` 0–2 (1/2 hops).
+Response adds: `references{resolved[{text,article_id,article_label}], unresolved[{text}]}`,
+`followed[]` (same shape as neighbours, capped at 20) and `truncated`.
 
-结论：rerank 不改变 Hit@5，但 weighted 0.5 把 MRR 从 0.755 提到 0.791；
-默认仍关闭以保 30 ms 级检索，需要更优排序时请求体传 `"rerank": true`。
+### 7.7 `POST /v1/articles/batch`
 
-### POC 实测（2026-11-12，CPU-only）
+`{"article_ids": [...], "neighbors": 0, "follow_refs": 0}` (≤32) →
+`{"articles": [...], "missing": [...], "count": n}`.
 
-| 指标 | 实测 |
+### 7.8 `POST /v1/chat`
+
+| Field | Type | Notes |
+|---|---|---|
+| `messages` / `question` | array / string | last user turn is the question |
+| `retrieval_query` | string | explicit query, highest precedence |
+| `rewrite_query` | bool (true) | false = do not concatenate history |
+| `queries`, `top_k`, `filters`, `fields`, `rerank`, `per_jurisdiction_k` | — | as `/v1/retrieve` |
+| `answer` | object | `{"enabled": false}` = retrieval only |
+
+Adds: `answer`, `answer_status` (`answered|partial|unsupported|unavailable|skipped|error`),
+`citations[]` (`chunk_id, doc_id, article_id, article_label, source_doc, quote, text`),
+`references[]` (full passage per retrieved chunk with `cited`, `score`, `rerank_score`),
+`error`, `question`, `retrieval_query`, `messages`, `coverage{unavailable, notes}`.
+
+### 7.9 Documents
+
+`POST /v1/documents` (multipart): `files` (≤200; md/markdown/txt/docx/pdf — no OCR),
+`jurisdiction` (`CN`), `language` (CN→zh, JP→ja, else en), `precision` (CN→exact, else
+degraded), `applies_to`, `effective_from`, `effective_to`, `source_doc`.
+Returns `{job_id,status:"running",documents:[...]}`; duplicates are detected by sha256.
+Limits 20 MB/file, 200 MB/batch (413); concurrent job → 409.
+
+`GET /v1/documents?status=ready` → `{documents, count}`. Records carry `doc_id`, `filename`,
+`source_doc`, `jurisdiction`, `language`, `precision`, `applies_to`, dates, `sha256`,
+`status` (`queued|parsing|parsed|indexing|ready|failed`), `chunk_count`, paths, `error`.
+`PATCH` updates metadata and rebuilds; `DELETE` and `/reindex` return jobs.
+`GET /v1/documents/{doc_id}/chunks?limit=100&offset=0` lists chunks (limit ≤500).
+
+### 7.10 Admin
+
+`POST /v1/admin/manifest`; `POST /v1/admin/rebuild` (`{background, activate, chunking?,
+embedding?}`); `GET /v1/jobs/{job_id}` (`kind`, `status`, `progress{stage,done,total}`,
+`result`, `error`); `POST /v1/admin/activate/{version}`; `GET /v1/admin/indexes`.
+
+### 7.11 Status codes
+
+400 invalid parameters; 404 unknown article/document/job/version; 409 job already running or
+duplicate in flight; 413 size limits; 500 unrecoverable embedding error (without fallback);
+503 index missing/empty/written by a newer schema.
+
+## 8. Configuration
+
+Defaults live in `config.example.json`. Sections: top-level paths and limits;
+`chunking` (`unit`, `max_chars`, `overlap`, `include_heading`, `index_context_header`, …);
+`embedding` (`base`, `model`, `batch_size`, `concurrency`, `dim`, `cache_path`,
+`query_cache_size`); `retrieval` (`top_k`, `vector_weight`, `bm25_k1/b`,
+`similarity_threshold`, `expand_cross_language`, `query_stopwords`, `bm25_saturation`,
+`multi_query_bonus`, `quota_min_ratio`, `fallback_bm25_on_embed_error`, `confidence.*`);
+`rerank` (`enabled`, `style`, `model`, `candidates`, `top_n`, `weight`, `fusion`, `min_score`);
+`answer` (`enabled`, `model`, `max_tokens`, `max_context_chunks`).
+
+Environment overrides (endpoints/secrets only): `MERCATORIA_*`, `EMBEDDING_*`, `RERANK_*`,
+`LLM_*` — the full list is in the Chinese section above (identical names).
+
+## 9. Data model
+
+- **Chunk**: `chunk_id = sha256(doc_id | article_id | normalize(text))[:16]`; `article_id`
+  `<doc_id>:<number>`; `text` raw; `section`, `part`, `ordinal`, `token_count`,
+  `index_token_count`.
+- **Manifest document**: `doc_id`, `path`, `source_doc`, `jurisdiction`, `language`,
+  `precision` (`exact|degraded|snapshot`), `applies_to`, `effective_from/to`,
+  `snapshot_date`, `superseded_by`.
+- **SQLite v2**: `docs`, `chunks`, `postings(term,chunk_id,tf)`, `terms(term,df)`,
+  `vectors(chunk_id,dim,vec)`, `meta` (`version`, `built_at`, `schema_version`,
+  `embedding_model`, `embedding_dim`, `chunking_hash`, `index_text_hash`, `avgdl`, `config`).
+
+## 10. Corpus and quality
+
+Corpus: **143 statutes / 11,562 chunks / 8,191 articles** (US 58, CN 39, WTO 14, JP 9,
+AU 5, EU 2, INT 1).
+
+| Metric (current code + index) | Value |
 |---|---|
-| 容器空闲内存 | 216 MiB |
-| 92 文档 / 7,196 chunks 启动 | 就绪，无重建 |
-| 200 个小文件批量入库（纯 md） | **8.6 s**（上传 0.02 s + 解析/索引 8.6 s，新增 600 chunks） |
-| 200 个混合文件（120 md + 40 docx + 40 pdf） | **10.7 s**（上传 0.1 s + 解析/索引 10.6 s） |
-| 60 题检索（默认 no-rerank，冷缓存） | p50 **32.5 ms**，p95 **81.4 ms** |
-| 300 题检索（可选 rerank weighted 0.5，`candidates=10`） | p50 **1.10 s**，p95 **3.82 s** |
-| 同一查询重复 | p50 **~4 ms**（LRU 命中） |
-| 60 题 Hit@5 | **0.9333**；剔除 6 道语料缺口后 **1.00（54/54）** |
-| 60 题 MRR | **0.8381** |
-| 真实问答（3 题） | 10.7–18.1 s，citations 4–5 条，references 5 条全文 |
-| Docker 测试 | **69 项全部通过** |
+| dev Hit@5 (439) / Hit@10 / MRR | **0.8610** / 0.8884 / 0.7287 |
+| hold-out Hit@5 (100) / MRR | **0.9000** / 0.7857 |
+| trade questions Hit@5 (59 answered) / MRR | **0.9831** / 0.8446 |
+| cross-jurisdiction coverage@5 (quota on/off) | **1.0000** / 0.1250 |
+| no_answer low-confidence rate / false-low | 0.8333 / 0.0678 |
+| reference resolution accuracy | 32/32 |
+| local p50 / cache-hit p50 | **28 ms** / **0.24 ms** |
+| concurrency (8 / 32 threads, 60 s) | 60 / 57 rps, 0 errors |
 
-6 道 `corpus_gap` 题是语料本身未覆盖：公式定价、出口加工区内销原产地、
-海关商品编号、出口收汇核销、WTO DSU、以及仅存在于已被《关税法》替代的
-2017 年关税条例中的境外修理规则。它们保留在测试集里，不计入 covered 指标。
+`Hit@5` means a top-5 chunk is an article block containing every `must_mention` keyword.
+The v2 scoring change (long-article `part>=1` counts as an article block) is reported
+separately: +2.04pp Hit@5.
 
-> [!IMPORTANT]
-> 调分片会改变 chunk 边界与 `chunk_id`。下游引用请同时保存
-> `article_id` + `index.version`；`chunk_id` 只代表某次索引里的段落。
+## 11. Operations
 
-## 评测
+`/health` exposes index version/schema; rebuild via `/v1/admin/rebuild` + `/v1/jobs/{id}`;
+rollback via `/v1/admin/activate/{version}`; `PUT /v1/config` applies immediately for
+retrieval/rerank and marks `pending_rebuild` for chunking/embedding changes.
+Caches: 256 responses, 1024 query vectors, persistent embedding cache.
+`fallback_bm25_on_embed_error=true` degrades to BM25 and reports
+`diagnostics.degraded=["embedding"]`.
 
-```bash
-# 纯检索评测（不调 LLM，539 条约 20 分钟）
-python tools/eval_retrieval.py --kb <kb_id> --vec-weight 0.5 --tag final
+## 12. Layout
 
-# 含生成质量与思考开关对比（慢）
-python tools/run_eval.py --kb <kb_id> --full --thinking-compare
-
-# 参数扫描
-python tools/param_sweep.py --kb <kb_id> --sweep
+```text
+mercatoria/   service implementation (api/retrieve/store/chunker/config/manifest/ingest)
+corpus/       fetchers + manifest (statute text is never committed)
+tools/        evaluation, profiling, audit, stress, hold-out generation
+tests/        unit tests + trade fixture + frozen hold-out
+scripts/      corpus bootstrap, RAGFlow source setup
+data/         indexes, uploads, embedding cache (gitignored)
 ```
 
-评测方法与失败分析见本地 `docs/eval-report.md`（暂不公开）。
+## 13. Boundaries
 
-> [!WARNING]
-> **单次评测不可信。** 检索存在分数并列，同一查询连续运行可能给出不同的
-> top-N。仓库中的排序已修正（并列时按 `chunk_id`），但**任何参数对比都应
-> 重复 3 次取均值**，而不是比较单次结果。
-
-## 下游对接
-
-`smart-edit` 的 Agent 3 在 `retrieve` 节点调用本服务。
-需要补齐的 `Chunk` 类型字段清单见本地 `docs/contract.md` §10（暂不公开）。
+- Parse md/txt/docx/pdf with a text layer; no OCR, no legacy `.doc`.
+- Reference forms: same-document `本法/本条例 … 第X条`, ranges, `前条/上条/下条/前款`;
+  English `section/§/Article`; cross-document only by exact 《title》. Item-level
+  references stay in `unresolved`.
+- `legislation.gov.uk` blocks scripted clients (WAF): download `data.xml` manually and run
+  `corpus/convert_uk_xml.py`; the corpus check treats UK as optional.
+- No auth, no multi-tenancy: put it behind a gateway.
+- Retrieval confidence and `corpus_gap` are reliability signals, not legal advice.
