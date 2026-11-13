@@ -143,7 +143,7 @@ def run(
 
     by_category: dict[str, dict] = {}
     groups: dict[str, list[dict]] = defaultdict(list)
-    for row in rows:
+    for row in answered_rows:
         groups[row["category"]].append(row)
     for category, items in sorted(groups.items()):
         hits = [r for r in items if r["hit"]]
