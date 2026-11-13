@@ -149,7 +149,13 @@ def main() -> int:
         f"{fake_summary['wall_ms']['p50']} ms，与优化前 32 ms 同量级；内存倒排把 BM25 "
         f"的 p50 压到 {fake_summary['bm25']['p50']} ms，SQLite 从来不是瓶颈。",
         f"- 真实网关下单次请求 p50 ≈ {real_summary['wall_ms']['p50']} ms，其中 "
-        f"embedding 阶段 p50 ≈ {real_summary['embed']['p50']} ms —— 线上延迟由网关决定。",
+        f"embedding 阶段 p50 ≈ {real_summary['embed']['p50']} ms（"
+        + (
+            "绝大多数查询命中了持久化 embedding 缓存，冷调用延迟取决于网关，不在本地 profile 内"
+            if real_summary["embed"]["p50"] < 5
+            else "未命中缓存，延迟由网关决定"
+        )
+        + "）。",
         f"- 命中缓存后本地 p50 = {percentile(hit_wall, 0.5)} ms。",
     ]
     out = Path(args.out) if args.out else ROOT / "docs" / f"profile-{date.today().isoformat()}.md"

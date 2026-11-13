@@ -284,6 +284,8 @@ class RetrievalTests(unittest.TestCase):
         self.assertTrue(all(c["doc_id"] == "us-test-101" for c in result["chunks"]))
 
     def test_multi_query_match_earns_a_bounded_bonus(self) -> None:
+        self.cfg.retrieval.multi_query_bonus = 0.03
+        self.retriever.clear_cache()
         result = self.retriever.retrieve(["关税", "关税的征收适用本法"], top_k=5)
         hit = next(c for c in result["chunks"] if c["article_ids"] == ["cn-test-law:1"])
         self.assertEqual(len(hit["matched_queries"]), 2)

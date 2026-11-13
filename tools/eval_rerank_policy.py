@@ -52,6 +52,9 @@ def chunks_of(result: dict) -> list[dict]:
 
 
 def measure(retriever: Retriever, cases: list[dict], policy: str, top_n: int = 5) -> dict:
+    # Drop the response cache so every policy pays the first-stage cost; the
+    # query-vector cache stays warm (it is independent of the policy).
+    retriever.clear_cache()
     hits = 0
     rr: list[float] = []
     latency: list[float] = []

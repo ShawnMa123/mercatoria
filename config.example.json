@@ -38,7 +38,7 @@
     "bm25_saturation": 8.0,
     "quota_min_ratio": 0.0,
     "fallback_bm25_on_embed_error": false,
-    "multi_query_bonus": 0.03,
+    "multi_query_bonus": 0.0,
     "confidence": {
       "high": 0.8,
       "medium": 0.64,

@@ -32,10 +32,15 @@ def main() -> int:
 
     cfg = load_config(args.config)
     path = args.index or cfg.resolved_index_dir()
-    tracemalloc.start()
+    # Time the load without tracing overhead, then load again to attribute
+    # memory (tracemalloc roughly triples the wall time).
     started = time.perf_counter()
-    index = open_index(path) if str(path).endswith(".db") else open_current(path)
+    warm = open_index(path) if str(path).endswith(".db") else open_current(path)
     load_s = time.perf_counter() - started
+    del warm
+
+    tracemalloc.start()
+    index = open_index(path) if str(path).endswith(".db") else open_current(path)
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 

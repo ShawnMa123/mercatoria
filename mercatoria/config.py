@@ -104,9 +104,9 @@ class RetrievalConfig:
     bm25_k1: float = 1.5
     bm25_b: float = 0.75
     similarity_threshold: float = 0.0
-    # Multi-query fusion: a chunk hit by several sub-queries is more likely to
-    # answer the whole question, so it earns a small bounded bonus.
-    multi_query_bonus: float = 0.03
+    # Multi-query fusion bonus. The v2 ablation (A6) measured -0.37pp Hit@5 /
+    # -0.85pp MRR, so it defaults to off; the knob stays for future tuning.
+    multi_query_bonus: float = 0.0
     # Append English equivalents of known Chinese legal terms so a Chinese
     # question can reach WTO/CISG English text without a translation call.
     expand_cross_language: bool = True

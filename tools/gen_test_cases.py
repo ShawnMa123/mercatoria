@@ -22,8 +22,17 @@ CN, US, WTO, CISG, AU, JP = "cn-laws", "ecfr", "wto", "uncitral", "au", "jp"
 CASES: list[dict] = []
 
 
-def add(cat, sub, zh, en, jurisdiction, keywords, expect="answer"):
-    CASES.append({
+def add(
+    cat,
+    sub,
+    zh,
+    en,
+    jurisdiction,
+    keywords,
+    expect="answer",
+    expected_jurisdictions=None,
+):
+    case = {
         "id": len(CASES) + 1,
         "category": cat,
         "subcategory": sub,
@@ -32,7 +41,10 @@ def add(cat, sub, zh, en, jurisdiction, keywords, expect="answer"):
         "jurisdiction": jurisdiction,
         "must_mention": keywords,
         "expect": expect,
-    })
+    }
+    if expected_jurisdictions:
+        case["expected_jurisdictions"] = expected_jurisdictions
+    CASES.append(case)
 
 
 # ══ 1. 报关与申报 ══════════════════════════════════════════════
@@ -425,25 +437,32 @@ for en in [
     add("澳洲", "出口管制", en, en, [AU], ["export"])
 
 # ══ 13. 跨法域比较 ════════════════════════════════════════════
-for cat, zh, en in [
+for cat, zh, en, expected in [
     ("报关", "中国海关法和美国 CFR 对报关代理人资格的要求有什么不同？",
-     "How do Chinese customs law and the US CFR differ on customs broker licensing?"),
+     "How do Chinese customs law and the US CFR differ on customs broker licensing?", ["CN", "US"]),
     ("关税", "中国、美国与 WTO 对完税价格中运费保险费的处理规则有何差异？",
-     "How do China, the US and the WTO differ on treatment of freight and insurance in customs valuation?"),
+     "How do China, the US and the WTO differ on treatment of freight and insurance in customs valuation?",
+     ["CN", "US", "WTO"]),
     ("原产地", "中国原产地条例与 WTO 原产地规则协定在实质性改变标准上有何差异？",
-     "How do China's origin regulations and the WTO ROO Agreement differ on substantial transformation?"),
+     "How do China's origin regulations and the WTO ROO Agreement differ on substantial transformation?",
+     ["CN", "WTO"]),
     ("出口管制", "中国出口管制法和美国 EAR 在许可要求上的主要差异是什么？",
-     "What are the main differences between China's Export Control Law and the US EAR licensing regime?"),
+     "What are the main differences between China's Export Control Law and the US EAR licensing regime?",
+     ["CN", "US"]),
     ("检验检疫", "中国和澳洲对进境动植物产品的检疫审批要求有何不同？",
-     "How do China and Australia differ on quarantine approval for imported animal and plant products?"),
+     "How do China and Australia differ on quarantine approval for imported animal and plant products?",
+     ["CN", "AU"]),
     ("贸易救济", "中国反倾销条例与 WTO 反倾销协定在倾销认定上的差异是什么？",
-     "How does China's anti-dumping regulation differ from the WTO Anti-Dumping Agreement on dumping determination?"),
+     "How does China's anti-dumping regulation differ from the WTO Anti-Dumping Agreement on dumping determination?",
+     ["CN", "WTO"]),
     ("国际货物买卖", "CISG 与国内法在货物瑕疵担保责任上有何区别？",
-     "How does the CISG differ from domestic law on liability for defective goods?"),
+     "How does the CISG differ from domestic law on liability for defective goods?", ["INT", "CN"]),
     ("关税", "日本的課税価格認定与中国的完税价格审定规则有何不同？",
-     "How does Japan's dutiable value determination differ from China's customs valuation rules?"),
+     "How does Japan's dutiable value determination differ from China's customs valuation rules?",
+     ["JP", "CN"]),
 ]:
-    add("跨法域比较", cat, zh, en, [CN, US, WTO, CISG], ["差异"])
+    add("跨法域比较", cat, zh, en, [CN, US, WTO, CISG], ["差异"],
+        expected_jurisdictions=expected)
 
 # ══ 14. 边界/拒答（超出语料范围）══════════════════════════════
 for zh, en in [
