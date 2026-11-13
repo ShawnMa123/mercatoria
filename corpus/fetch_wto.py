@@ -46,6 +46,12 @@ DOCS = {
     # GATT 1994 的正文即 GATT 1947 原文（经 1994 年谅解修订）。
     # 注意：gatt94_e.htm 只是索引页，正文在 gatt47_e.htm。
     "gatt47_e": "General Agreement on Tariffs and Trade 1994",
+    # 早期文件的站点路径不统一：TRIPS 分页存于 27-trips_01_e.htm，
+    # 保障措施是 sg_e.htm，农业协定是 ag_e.htm（fetch_document 负责跟进）。
+    "dsu_e": "Understanding on Rules and Procedures Governing the Settlement of Disputes (DSU)",
+    "sg_e": "Agreement on Safeguards",
+    "ag_e": "Agreement on Agriculture",
+    "27-trips_e": "Agreement on Trade-Related Aspects of Intellectual Property Rights",
 }
 
 
@@ -60,6 +66,39 @@ def fetch(url: str, retries: int = 3, timeout: int = 60) -> str:
             last = e
             time.sleep(2 * (attempt + 1))
     raise RuntimeError(f"抓取失败 {url}: {last}")
+
+
+def _is_stub(html: str) -> bool:
+    """WTO answers 200 with a generic nav shell for a missing legal text."""
+    return len(html) <= 12_000 and "Article" not in html
+
+
+def fetch_document(doc: str) -> tuple[str, list[str]]:
+    """Fetch one legal text, following the `_01_e`/`_02_e` pagination.
+
+    Several agreements (TRIPS, Agriculture, Safeguards) have no single-page
+    URL: the unsuffixed path returns the site's generic "not found" shell,
+    while the text is split across ``{stem}_01_e.htm``, ``_02_e``, ...
+    """
+    html = fetch(f"{BASE}/{doc}.htm")
+    if not _is_stub(html):
+        return html, [f"{BASE}/{doc}.htm"]
+    stem = doc[:-2] if doc.endswith("_e") else doc  # 27-trips_e -> 27-trips
+    pages: list[str] = []
+    urls: list[str] = []
+    for index in range(1, 31):
+        url = f"{BASE}/{stem}_{index:02d}_e.htm"
+        try:
+            page = fetch(url)
+        except Exception:  # noqa: BLE001
+            break
+        if _is_stub(page):
+            break
+        pages.append(page)
+        urls.append(url)
+    if not pages:
+        return html, [f"{BASE}/{doc}.htm"]
+    return "\n".join(pages), urls
 
 
 class TextExtractor(HTMLParser):
@@ -237,9 +276,8 @@ def main() -> int:
     for doc, title in DOCS.items():
         if only and doc not in only:
             continue
-        url = f"{BASE}/{doc}.htm"
         try:
-            html = fetch(url)
+            html, sources = fetch_document(doc)
         except Exception as e:  # noqa: BLE001
             print(f"  {doc}: {e}", file=sys.stderr)
             index["missing"].append({"doc": doc, "error": str(e)})
@@ -254,7 +292,10 @@ def main() -> int:
         fname = f"{doc}.md"
         (out_dir / fname).write_text(md, encoding="utf-8")
         print(f"  {doc}: {n_art} articles, {len(md):,} chars -> {fname}")
-        index["fetched"].append({"doc": doc, "file": fname, "articles": n_art, "chars": len(md)})
+        index["fetched"].append(
+            {"doc": doc, "file": fname, "url": sources[0], "pages": len(sources),
+             "articles": n_art, "chars": len(md)}
+        )
 
     (out_dir / "index.json").write_text(
         json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8"

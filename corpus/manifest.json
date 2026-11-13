@@ -1,8 +1,23 @@
 {
   "manifest_version": "2026-11-09.1",
   "corpus_dir": ".",
-  "documents": 92,
+  "documents": 122,
   "docs": [
+    {
+      "doc_id": "au-autonomous-sanctions-act-2011",
+      "path": "au/autonomous-sanctions-act-2011.md",
+      "source_doc": "Autonomous Sanctions Act 2011（自主制裁法）",
+      "jurisdiction": "AU",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control"
+      ],
+      "effective_from": "2026-10-30",
+      "effective_to": null,
+      "snapshot_date": "2026-10-30"
+    },
     {
       "doc_id": "au-customs-act-1901",
       "path": "au/customs-act-1901.md",
@@ -13,9 +28,24 @@
       "applies_to": [
         "customs"
       ],
-      "effective_from": "2026-10-27",
+      "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-10-27"
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "au-customs-regulation-2015",
+      "path": "au/customs-regulation-2015.md",
+      "source_doc": "Customs Regulation 2015（海关条例）",
+      "jurisdiction": "AU",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff"
+      ],
+      "effective_from": "2026-07-01",
+      "effective_to": null,
+      "snapshot_date": "2026-07-01"
     },
     {
       "doc_id": "au-customs-tariff-act-1995",
@@ -28,9 +58,9 @@
         "tariff",
         "customs"
       ],
-      "effective_from": "2026-07-04",
+      "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-07-04"
+      "snapshot_date": "2026-11-01"
     },
     {
       "doc_id": "au-export-control-act-2020",
@@ -42,9 +72,9 @@
       "applies_to": [
         "export_control"
       ],
-      "effective_from": "2026-05-21",
+      "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-05-21"
+      "snapshot_date": "2026-11-01"
     },
     {
       "doc_id": "cisg",
@@ -90,6 +120,22 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "cn-comprehensive-bonded-zone-2022",
+      "path": "cn/海关综合保税区管理办法(2022-01-01).md",
+      "source_doc": "中华人民共和国海关综合保税区管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "bonded",
+        "origin"
+      ],
+      "effective_from": "2022-01-01",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
       "doc_id": "cn-countervailing-2004",
       "path": "cn/反补贴条例(2004-03-31).md",
       "source_doc": "中华人民共和国反补贴条例",
@@ -100,6 +146,111 @@
         "trade_remedy"
       ],
       "effective_from": "2004-06-01",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-advance-ruling-2017",
+      "path": "cn/海关预裁定管理暂行办法(2017-12-26).md",
+      "source_doc": "中华人民共和国海关预裁定管理暂行办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "advance_ruling"
+      ],
+      "effective_from": "2017-12-26",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-audit-2022",
+      "path": "cn/海关稽查条例(2022-03-29).md",
+      "source_doc": "中华人民共和国海关稽查条例",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "audit"
+      ],
+      "effective_from": "2022-03-29",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-broker-filing-2021",
+      "path": "cn/海关报关单位备案管理规定(2021-11-19).md",
+      "source_doc": "中华人民共和国海关报关单位备案管理规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "declaration"
+      ],
+      "effective_from": "2021-11-19",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-classification-2021",
+      "path": "cn/海关进出口货物商品归类管理规定(2021-09-06).md",
+      "source_doc": "中华人民共和国海关进出口货物商品归类管理规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "classification"
+      ],
+      "effective_from": "2021-09-06",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-credit-2021",
+      "path": "cn/海关注册登记和备案企业信用管理办法(2021-09-13).md",
+      "source_doc": "中华人民共和国海关注册登记和备案企业信用管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "credit"
+      ],
+      "effective_from": "2021-09-13",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-declaration-2018",
+      "path": "cn/海关进出口货物申报管理规定(2018-11-23).md",
+      "source_doc": "中华人民共和国海关进出口货物申报管理规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "declaration"
+      ],
+      "effective_from": "2018-11-23",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-customs-duty-collection-2024",
+      "path": "cn/海关进出口货物征税管理办法(2024-10-28).md",
+      "source_doc": "海关进出口货物征税管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "tariff",
+        "customs"
+      ],
+      "effective_from": "2024-10-28",
       "effective_to": null,
       "snapshot_date": null
     },
@@ -179,6 +330,22 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "cn-customs-valuation-measures-2013",
+      "path": "cn/海关审定进出口货物完税价格办法(2013-12-25).md",
+      "source_doc": "中华人民共和国海关审定进出口货物完税价格办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "tariff",
+        "customs",
+        "customs_valuation"
+      ],
+      "effective_from": "2013-12-25",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
       "doc_id": "cn-dual-use-export-control-2024",
       "path": "cn/两用物项出口管制条例(2024-09-30).md",
       "source_doc": "中华人民共和国两用物项出口管制条例",
@@ -189,6 +356,35 @@
         "export_control"
       ],
       "effective_from": "2024-12-01",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-dual-use-general-license-2009",
+      "path": "cn/两用物项和技术出口通用许可管理办法(2009-05-13).md",
+      "source_doc": "两用物项和技术出口通用许可管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2009-05-13",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-dual-use-license-measures-2005",
+      "path": "cn/两用物项和技术进出口许可证管理办法(2005-12-31).md",
+      "source_doc": "两用物项和技术进出口许可证管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "export_control",
+        "customs"
+      ],
+      "effective_from": "2005-12-31",
       "effective_to": null,
       "snapshot_date": null
     },
@@ -265,6 +461,22 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "cn-independent-guarantee-2020",
+      "path": "cn/最高人民法院关于审理独立保函纠纷案件若干问题的规定(2020-12-29).md",
+      "source_doc": "最高人民法院关于审理独立保函纠纷案件若干问题的规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "settlement",
+        "guarantee",
+        "trade_finance"
+      ],
+      "effective_from": "2020-12-29",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
       "doc_id": "cn-inspection-law-2021",
       "path": "cn/进出口商品检验法(2021-04-29).md",
       "source_doc": "中华人民共和国进出口商品检验法",
@@ -293,6 +505,36 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "cn-ipr-border-2018",
+      "path": "cn/知识产权海关保护条例(2018-03-19).md",
+      "source_doc": "中华人民共和国知识产权海关保护条例",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "customs",
+        "intellectual_property"
+      ],
+      "effective_from": "2018-03-19",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-lc-dispute-2020",
+      "path": "cn/最高人民法院关于审理信用证纠纷案件若干问题的规定(2020-12-29).md",
+      "source_doc": "最高人民法院关于审理信用证纠纷案件若干问题的规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "settlement",
+        "trade_finance"
+      ],
+      "effective_from": "2020-12-29",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
       "doc_id": "cn-missile-export-control-2002",
       "path": "cn/导弹及相关物项和技术出口管制条例(2002-08-22).md",
       "source_doc": "中华人民共和国导弹及相关物项和技术出口管制条例",
@@ -303,6 +545,21 @@
         "export_control"
       ],
       "effective_from": "2002-08-22",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-nonpreferential-origin-2018",
+      "path": "cn/关于非优惠原产地规则中实质性改变标准的规定(2018-04-28).md",
+      "source_doc": "关于非优惠原产地规则中实质性改变标准的规定",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "origin",
+        "customs"
+      ],
+      "effective_from": "2018-04-28",
       "effective_to": null,
       "snapshot_date": null
     },
@@ -349,6 +606,36 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "cn-rcep-origin-2021",
+      "path": "cn/海关RCEP项下进出口货物原产地管理办法(2021-11-23).md",
+      "source_doc": "中华人民共和国海关《区域全面经济伙伴关系协定》项下进出口货物原产地管理办法",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "origin",
+        "customs",
+        "rcep"
+      ],
+      "effective_from": "2021-11-23",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
+      "doc_id": "cn-safeguard-2004",
+      "path": "cn/保障措施条例(2004-03-31).md",
+      "source_doc": "中华人民共和国保障措施条例",
+      "jurisdiction": "CN",
+      "language": "zh",
+      "precision": "exact",
+      "applies_to": [
+        "trade_remedy"
+      ],
+      "effective_from": "2004-03-31",
+      "effective_to": null,
+      "snapshot_date": null
+    },
+    {
       "doc_id": "cn-tariff-law-2024",
       "path": "cn/关税法(2024-04-26).md",
       "source_doc": "中华人民共和国关税法",
@@ -379,6 +666,36 @@
       "snapshot_date": null
     },
     {
+      "doc_id": "eu-dual-use-2021",
+      "path": "eu/eu-dual-use-2021.md",
+      "source_doc": "Regulation (EU) 2021/821 (dual-use export controls)",
+      "jurisdiction": "EU",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "eu-ucc-2013",
+      "path": "eu/eu-ucc-2013.md",
+      "source_doc": "Regulation (EU) No 952/2013 (Union Customs Code)",
+      "jurisdiction": "EU",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "jp-gaiamei-hou",
       "path": "jp/gaiamei-hou.md",
       "source_doc": "外国為替及び外国貿易法",
@@ -388,6 +705,65 @@
       "applies_to": [
         "foreign_exchange",
         "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "jp-gaikoku-kawase-rei",
+      "path": "jp/gaikoku-kawase-rei.md",
+      "source_doc": "外国為替令",
+      "jurisdiction": "JP",
+      "language": "ja",
+      "precision": "degraded",
+      "applies_to": [
+        "foreign_exchange",
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "jp-kanzei-hou-sekourei",
+      "path": "jp/kanzei-hou-sekourei.md",
+      "source_doc": "関税法施行令",
+      "jurisdiction": "JP",
+      "language": "ja",
+      "precision": "degraded",
+      "applies_to": [
+        "customs"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "jp-kanzei-teiritsu-hou-sekourei",
+      "path": "jp/kanzei-teiritsu-hou-sekourei.md",
+      "source_doc": "関税定率法施行令",
+      "jurisdiction": "JP",
+      "language": "ja",
+      "precision": "degraded",
+      "applies_to": [
+        "tariff",
+        "customs"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "jp-kanzei-zantei-sochi-hou",
+      "path": "jp/kanzei-zantei-sochi-hou.md",
+      "source_doc": "関税暫定措置法",
+      "jurisdiction": "JP",
+      "language": "ja",
+      "precision": "degraded",
+      "applies_to": [
+        "tariff",
+        "origin"
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
@@ -416,6 +792,21 @@
       "precision": "degraded",
       "applies_to": [
         "tariff",
+        "customs"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "jp-yunyu-boueki-kanri-rei",
+      "path": "jp/yunyu-boueki-kanri-rei.md",
+      "source_doc": "輸入貿易管理令",
+      "jurisdiction": "JP",
+      "language": "ja",
+      "precision": "degraded",
+      "applies_to": [
+        "import_export",
         "customs"
       ],
       "effective_from": "2026-11-01",
@@ -1312,6 +1703,21 @@
       "snapshot_date": "2026-11-01"
     },
     {
+      "doc_id": "wto-ag",
+      "path": "wto/ag_e.md",
+      "source_doc": "Agreement on Agriculture",
+      "jurisdiction": "WTO",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "wto",
+        "agriculture"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "wto-cv",
       "path": "wto/cv_e.md",
       "source_doc": "Agreement on Implementation of Article VII (Customs Valuation)",
@@ -1321,6 +1727,21 @@
       "applies_to": [
         "wto",
         "customs_valuation"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "wto-dsu",
+      "path": "wto/dsu_e.md",
+      "source_doc": "Understanding on Rules and Procedures Governing the Settlement of Disputes (DSU)",
+      "jurisdiction": "WTO",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "wto",
+        "dispute_settlement"
       ],
       "effective_from": null,
       "effective_to": null,
@@ -1367,6 +1788,21 @@
       "applies_to": [
         "wto",
         "origin"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "wto-safeg",
+      "path": "wto/sg_e.md",
+      "source_doc": "Agreement on Safeguards",
+      "jurisdiction": "WTO",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "wto",
+        "trade_remedy"
       ],
       "effective_from": null,
       "effective_to": null,
@@ -1442,6 +1878,21 @@
       "applies_to": [
         "wto",
         "investment"
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "wto-trips",
+      "path": "wto/27-trips_e.md",
+      "source_doc": "Agreement on Trade-Related Aspects of Intellectual Property Rights",
+      "jurisdiction": "WTO",
+      "language": "en",
+      "precision": "snapshot",
+      "applies_to": [
+        "wto",
+        "intellectual_property"
       ],
       "effective_from": null,
       "effective_to": null,

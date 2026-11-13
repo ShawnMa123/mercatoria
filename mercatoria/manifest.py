@@ -39,6 +39,30 @@ CN_SLUGS = {
     "进出口商品检验法(2021-04-29).md": "cn-inspection-law-2021",
     "进出口商品检验法实施条例(2026-08-08).md": "cn-inspection-regulations-2026",
     "进出口货物原产地条例(2019-03-02).md": "cn-origin-2019",
+    # 海关监管、估价、归类与信用管理
+    "海关稽查条例(2022-03-29).md": "cn-customs-audit-2022",
+    "知识产权海关保护条例(2018-03-19).md": "cn-ipr-border-2018",
+    "海关审定进出口货物完税价格办法(2013-12-25).md": "cn-customs-valuation-measures-2013",
+    "海关进出口货物征税管理办法(2024-10-28).md": "cn-customs-duty-collection-2024",
+    "海关进出口货物申报管理规定(2018-11-23).md": "cn-customs-declaration-2018",
+    "海关进出口货物商品归类管理规定(2021-09-06).md": "cn-customs-classification-2021",
+    "海关预裁定管理暂行办法(2017-12-26).md": "cn-customs-advance-ruling-2017",
+    "海关综合保税区管理办法(2022-01-01).md": "cn-comprehensive-bonded-zone-2022",
+    "海关注册登记和备案企业信用管理办法(2021-09-13).md": "cn-customs-credit-2021",
+    "海关报关单位备案管理规定(2021-11-19).md": "cn-customs-broker-filing-2021",
+    # 原产地、自贸协定与贸易救济
+    "关于非优惠原产地规则中实质性改变标准的规定(2018-04-28).md":
+        "cn-nonpreferential-origin-2018",
+    "海关RCEP项下进出口货物原产地管理办法(2021-11-23).md": "cn-rcep-origin-2021",
+    "保障措施条例(2004-03-31).md": "cn-safeguard-2004",
+    # 出口管制许可
+    "两用物项和技术进出口许可证管理办法(2005-12-31).md":
+        "cn-dual-use-license-measures-2005",
+    "两用物项和技术出口通用许可管理办法(2009-05-13).md": "cn-dual-use-general-license-2009",
+    # 国际结算
+    "最高人民法院关于审理信用证纠纷案件若干问题的规定(2020-12-29).md": "cn-lc-dispute-2020",
+    "最高人民法院关于审理独立保函纠纷案件若干问题的规定(2020-12-29).md":
+        "cn-independent-guarantee-2020",
 }
 
 CN_APPLIES_TO = {
@@ -64,6 +88,23 @@ CN_APPLIES_TO = {
     "cn-inspection-law-2021": ["inspection"],
     "cn-inspection-regulations-2026": ["inspection"],
     "cn-origin-2019": ["origin"],
+    "cn-customs-audit-2022": ["customs", "audit"],
+    "cn-ipr-border-2018": ["customs", "intellectual_property"],
+    "cn-customs-valuation-measures-2013": ["tariff", "customs", "customs_valuation"],
+    "cn-customs-duty-collection-2024": ["tariff", "customs"],
+    "cn-customs-declaration-2018": ["customs", "declaration"],
+    "cn-customs-classification-2021": ["customs", "classification"],
+    "cn-customs-advance-ruling-2017": ["customs", "advance_ruling"],
+    "cn-comprehensive-bonded-zone-2022": ["customs", "bonded", "origin"],
+    "cn-customs-credit-2021": ["customs", "credit"],
+    "cn-customs-broker-filing-2021": ["customs", "declaration"],
+    "cn-nonpreferential-origin-2018": ["origin", "customs"],
+    "cn-rcep-origin-2021": ["origin", "customs", "rcep"],
+    "cn-safeguard-2004": ["trade_remedy"],
+    "cn-dual-use-license-measures-2005": ["export_control", "customs"],
+    "cn-dual-use-general-license-2009": ["export_control"],
+    "cn-lc-dispute-2020": ["settlement", "trade_finance"],
+    "cn-independent-guarantee-2020": ["settlement", "guarantee", "trade_finance"],
 }
 
 # Passage date is not always the effective date. Override the few laws where
@@ -96,11 +137,23 @@ WTO_APPLIES_TO = {
     "lic_e": ["wto", "import_licensing"],
     "scm_e": ["wto", "trade_remedy"],
     "trims_e": ["wto", "investment"],
+    "dsu_e": ["wto", "dispute_settlement"],
+    "sg_e": ["wto", "trade_remedy"],
+    "ag_e": ["wto", "agriculture"],
+    "27-trips_e": ["wto", "intellectual_property"],
+}
+
+# Stems whose generated doc_id would be unreadable (wto-27-trips, wto-sg).
+WTO_DOC_IDS = {
+    "gatt47_e": "wto-gatt-1994",
+    "sg_e": "wto-safeg",
+    "27-trips_e": "wto-trips",
 }
 
 ECFR_APPLIES_TO = {
     "15": ["export_control"],
     "19": ["customs", "tariff", "origin", "entry"],
+    "31": ["sanctions", "export_control", "foreign_exchange"],
 }
 
 JP_APPLIES_TO = {
@@ -108,12 +161,28 @@ JP_APPLIES_TO = {
     "kazei-teiritsu-hou": ["tariff", "customs"],
     "gaiamei-hou": ["foreign_exchange", "export_control"],
     "yushutsu-boueki-kanri-rei": ["export_control"],
+    "kanzei-hou-sekourei": ["customs"],
+    "kanzei-teiritsu-hou-sekourei": ["tariff", "customs"],
+    "kanzei-zantei-sochi-hou": ["tariff", "origin"],
+    "gaikoku-kawase-rei": ["foreign_exchange", "export_control"],
+    "yunyu-boueki-kanri-rei": ["import_export", "customs"],
 }
 
 AU_APPLIES_TO = {
     "customs-act-1901": ["customs"],
     "customs-tariff-act-1995": ["tariff", "customs"],
     "export-control-act-2020": ["export_control"],
+    "customs-regulation-2015": ["customs", "tariff"],
+    "autonomous-sanctions-act-2011": ["sanctions", "export_control"],
+}
+
+EU_APPLIES_TO = {
+    "eu-ucc-2013": ["customs", "tariff", "origin"],
+    "eu-dual-use-2021": ["export_control"],
+}
+
+UK_APPLIES_TO = {
+    "uk-cross-border-trade-2018": ["customs", "tariff"],
 }
 
 RE_DOC_COMMENT = re.compile(r"<!--\s*document:\s*(.*?)\s*-->", re.I | re.S)
@@ -173,7 +242,7 @@ def _wto_docs(corpus_dir: Path) -> list[dict[str, Any]]:
     out = []
     for path in sorted((corpus_dir / "wto").glob("*.md")):
         stem = path.stem
-        doc_id = "wto-gatt-1994" if stem == "gatt47_e" else f"wto-{stem.replace('_e', '')}"
+        doc_id = WTO_DOC_IDS.get(stem) or f"wto-{stem.replace('_e', '')}"
         out.append(
             _doc(
                 path,
@@ -286,6 +355,46 @@ def _cn_docs(corpus_dir: Path) -> list[dict[str, Any]]:
     return out
 
 
+def _eu_docs(corpus_dir: Path) -> list[dict[str, Any]]:
+    out = []
+    for path in sorted((corpus_dir / "eu").glob("*.md")):
+        slug = path.stem
+        out.append(
+            _doc(
+                path,
+                corpus_dir,
+                doc_id=slug,
+                jurisdiction="EU",
+                language="en",
+                precision="snapshot",
+                applies_to=EU_APPLIES_TO.get(slug, ["customs"]),
+                effective_from=None,
+                snapshot_date="2026-11-01",
+            )
+        )
+    return out
+
+
+def _uk_docs(corpus_dir: Path) -> list[dict[str, Any]]:
+    out = []
+    for path in sorted((corpus_dir / "uk").glob("*.md")):
+        slug = path.stem
+        out.append(
+            _doc(
+                path,
+                corpus_dir,
+                doc_id=slug,
+                jurisdiction="UK",
+                language="en",
+                precision="degraded",
+                applies_to=UK_APPLIES_TO.get(slug, ["customs"]),
+                effective_from="2026-11-01",
+                snapshot_date="2026-11-01",
+            )
+        )
+    return out
+
+
 def _cisg_docs(corpus_dir: Path) -> list[dict[str, Any]]:
     out = []
     for path in sorted((corpus_dir / "uncitral").glob("*.md")):
@@ -308,7 +417,16 @@ def _cisg_docs(corpus_dir: Path) -> list[dict[str, Any]]:
 def build_manifest(corpus_dir: str | Path) -> dict[str, Any]:
     corpus = Path(corpus_dir).resolve()
     docs: list[dict[str, Any]] = []
-    for part in (_cn_docs, _ecfr_docs, _wto_docs, _au_docs, _jp_docs, _cisg_docs):
+    for part in (
+        _cn_docs,
+        _ecfr_docs,
+        _wto_docs,
+        _au_docs,
+        _jp_docs,
+        _eu_docs,
+        _uk_docs,
+        _cisg_docs,
+    ):
         docs.extend(part(corpus))
     docs.sort(key=lambda d: d["doc_id"])
     return {

@@ -169,13 +169,26 @@ cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失
 | 端点 | 用途 |
 |---|---|
 | `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
+| `GET /v1/articles/{article_id}?neighbors=0..5` | 按条号取完整法条（多 part 按 `src_start/src_end` 无缝拼接），并返回前后相邻法条 |
+| `POST /v1/articles/batch` | 一次取最多 32 条（Agent 顺着交叉引用拉取），返回 `missing` 列表 |
 | `POST /chat`（别名 `/v1/chat`） | 对话式问答：接受 `messages` 历史，返回 answer + citations + **references 原文** |
 | `POST /ask`（别名 `/v1/ask`） | 单轮问答，与 `/chat` 同一实现；`answer.enabled=false` 只返回检索 + references |
-| `GET /v1/config` / `PUT /v1/config` | 查看/更新检索、生成、分片配置 |
+| `GET /v1/config` / `PUT /v1/config` | 查看/更新检索、生成、分片配置（更新后即时失效检索缓存） |
 | `POST /v1/admin/rebuild` | 后台重建索引；`background=false` 同步冒烟 |
 | `GET /v1/admin/rebuild/{job_id}` | 重建进度 |
 | `POST /v1/admin/activate/{version}` | 切换活动索引 |
 | `GET /health` | 活动索引、chunk 数、文档数 |
+
+检索请求的过滤与融合参数（都在请求体里，先过滤后打分）：
+
+- `filters.jurisdictions` / `filters.applies_to` / `filters.as_of`：法域、业务类型、生效日期。
+- `filters.doc_ids` / `filters.article_ids`（也可写在 `fields` 里）：把候选限定到若干文档/法条。
+- `per_jurisdiction_k`：为每个请求法域保留的槽位数；多法域比较查询在未指定时自动
+  保留 `min(2, top_k // 法域数)` 条，避免单一法域霸榜。
+- 多查询（`queries` 数组）融合：同一 chunk 被 k 个子查询命中时加
+  `0.03 * min(k-1, 2)` 的分，`score_parts.fusion_bonus` 里可见。
+- `rewrite_query: false`（`/chat`）：不再把上一轮问题拼进检索 query，供已经自行改写
+  问题的外部 Agent 使用。
 
 对话式请求与响应（`references` 是检索到的原文全文，不只是摘要）：
 

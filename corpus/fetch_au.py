@@ -46,6 +46,8 @@ TITLES = {
     # /v1/titles?$filter=contains(name,'...') 查出来
     "C2004A04997": ("customs-tariff-act-1995", "Customs Tariff Act 1995（关税税率法）"),
     "C2020A00012": ("export-control-act-2020", "Export Control Act 2020（出口管制法）"),
+    "F2015L00375": ("customs-regulation-2015", "Customs Regulation 2015（海关条例）"),
+    "C2011A00038": ("autonomous-sanctions-act-2011", "Autonomous Sanctions Act 2011（自主制裁法）"),
 }
 
 

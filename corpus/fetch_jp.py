@@ -36,6 +36,11 @@ LAWS = {
     "143AC0000000054": ("kazei-teiritsu-hou", "関税定率法（关税定率法）"),
     "324AC0000000228": ("gaiamei-hou", "外国為替及び外国貿易法（外汇及外贸法 / 外為法）"),
     "324CO0000000378": ("yushutsu-boueki-kanri-rei", "輸出貿易管理令（出口贸易管理令）"),
+    "329CO0000000150": ("kanzei-hou-sekourei", "関税法施行令（关税法施行令）"),
+    "329CO0000000155": ("kanzei-teiritsu-hou-sekourei", "関税定率法施行令（关税定率法施行令）"),
+    "335AC0000000036": ("kanzei-zantei-sochi-hou", "関税暫定措置法（关税暂定措施法）"),
+    "355CO0000000260": ("gaikoku-kawase-rei", "外国為替令（外汇令）"),
+    "324CO0000000414": ("yunyu-boueki-kanri-rei", "輸入貿易管理令（进口贸易管理令）"),
 }
 
 

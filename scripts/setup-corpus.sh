@@ -26,7 +26,8 @@ fi
 if [ "${1:-}" = "--check" ]; then
     echo "检查语料完整性…"
     missing=0
-    for spec in "ecfr/title-19:44" "ecfr/title-15:8" "wto:10" "au:3" "jp:4" "uncitral:1"; do
+    for spec in "ecfr/title-19:47" "ecfr/title-15:16" "ecfr/title-31:7" \
+                "wto:14" "au:5" "jp:9" "eu:2" "uk:1" "cn:39" "uncitral:1"; do
         dir="${spec%%:*}"; want="${spec##*:}"
         got=$(find "$CORPUS/$dir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
         got=${got:-0}
@@ -37,24 +38,23 @@ if [ "${1:-}" = "--check" ]; then
         fi
         printf "  %-16s %3s/%-3s %s\n" "$dir" "$got" "$want" "$status"
     done
-    cn=$(find "$CORPUS/cn" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
-    cn=${cn:-0}
-    printf "  %-16s %3s      %s\n" "cn" "$cn" "（需自行从 LawRefBook 获取）"
     exit "$missing"
 fi
 
-echo "抓取外文语料（约 10 分钟，视网络）…"
+echo "抓取语料（约 15 分钟，视网络）…"
 cd "$CORPUS"
 "$PY" fetch_ecfr.py --title 19
 "$PY" fetch_ecfr.py --title 15
+"$PY" fetch_ecfr.py --title 31
 "$PY" fetch_wto.py
 "$PY" fetch_au.py
 "$PY" fetch_jp.py
+"$PY" fetch_eu_uk.py
+"$PY" fetch_cn.py
 "$PY" fetch_cisg.py
 
 echo
-echo "完成。中文法规（corpus/cn/）不在此脚本范围内："
-echo "  法规原文需从 LawRefBook 或其他来源自行获取，"
-echo "  放到 corpus/cn/ 后可用 tools/normalize_cn_corpus.py 规范化。"
+echo "完成。若 uk/ 为空：legislation.gov.uk 对非浏览器客户端返回 AWS WAF"
+echo "挑战（HTTP 202 空 body），需在可访问的网络用浏览器下载 data.xml 后手工转换。"
 echo
 bash "$0" --check
