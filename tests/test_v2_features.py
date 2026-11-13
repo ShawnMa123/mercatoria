@@ -325,6 +325,41 @@ class ConcurrencyTests(unittest.TestCase):
             self.assertTrue(all(len(seen) == 1 for seen in by_prompt.values()))
 
 
+class VectorReuseTests(unittest.TestCase):
+    """A header-content change must invalidate vectors even with equal chunk ids."""
+
+    def test_source_doc_change_forces_reembedding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            calls: list[int] = []
+
+            def counting(texts: list[str]) -> np.ndarray:
+                calls.append(len(texts))
+                return fake_embed(texts)
+
+            corpus, manifest_path = write_corpus(
+                root, {"cn/a.md": "第一条 关税的征收适用本法。\n"}, [doc_entry("cn-a", "cn/a.md", source_doc="旧名")]
+            )
+            cfg = AppConfig(
+                corpus_dir=str(corpus),
+                index_dir=str(root / "index"),
+                manifest_path=str(manifest_path),
+            )
+            cfg.embedding.dim = EMBED_DIM
+            build_index(load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=counting)
+            self.assertEqual(sum(calls), 1)
+            calls.clear()
+            # Same text + same config: vectors are reused.
+            build_index(load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=counting)
+            self.assertEqual(sum(calls), 0)
+            # Renaming the law changes the header text only.
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["docs"][0]["source_doc"] = "新名"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            build_index(load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=counting)
+            self.assertEqual(sum(calls), 1)
+
+
 class SchemaCompatTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()

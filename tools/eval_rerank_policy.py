@@ -132,8 +132,9 @@ def main() -> int:
         "## 结论",
         "",
         "- rerank 对 Hit@5 基本无效，MRR 有小幅提升；代价是 p50 由几十毫秒升到秒级。",
-        "- `gated` 只在第一阶段非 high 置信时触发，是延迟与排序质量之间较优的折中；"
-        "`topN` 能把重排成本压到 N/candidates。",
+        "- `gated` 在当前语料上几乎省不下延迟：confidence=high 只占约 1/3 样本，"
+        "其余请求照样重排（实测 448ms vs 462ms）。只有当 high 占比很高时门控才有意义。",
+        "- `topN` 与 `always` 的 MRR 相同，p95 略低（686ms vs 820ms），是更直接的降本手段。",
         "- 默认仍保持 `rerank.enabled=false`：检索服务的主要调用方是 Agent，延迟更敏感。",
     ]
     out = Path(args.out) if args.out else ROOT / "docs" / f"rerank-policy-{date.today().isoformat()}.md"
