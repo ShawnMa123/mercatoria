@@ -210,3 +210,11 @@ Title 15 取 EAR 核心 16 个 part（新增 740 许可例外、742 管制政策
 申请与审批、758 清关与 EEI、760 反抵制、762 记录保存、772 术语定义）；
 Title 31 新增 OFAC 6 个 part（501 程序与处罚、510/535/560/587/591 制裁条例；
 part 542 在该快照日期 404）。
+
+## 已知缺口（v2 复核）
+
+| 缺口 | Real-world 来源 | 处理方式 |
+|---|---|---|
+| FT-008 公式定价公告 | 海关总署公告 2021 年第 44 号《关于公式定价进口货物完税价格确定有关问题的公告》。`customs.gov.cn` 对脚本返回瑞数 JS 反爬壳，LawRefBook 不镜像公告 | **人工下载**公告正文 → 存为 `corpus/cn/公式定价公告(2021-09-01).md`（首行 `<!-- document: ... -->`）→ `python tools/normalize_cn_corpus.py` 规整 → `python -m mercatoria.cli manifest` 重建 manifest → 重建索引。完成后把 fixture 里该题 `corpus_gap` 改回 `false` 并复核 |
+| 英国 legislation.gov.uk | AWS WAF JS 挑战（HTTP 202 空 body） | 浏览器下载 `ukpga/2018/22/data.xml` → `python corpus/convert_uk_xml.py --input data.xml --slug uk-cross-border-trade-2018 --title "Taxation (Cross-border Trade) Act 2018"`。`check_corpus.py` 把 `uk/` 视为可选源 |
+| 出口收汇核销（FT-054） | 2012-08-01 起取消核销单，2012 年公告已于 2025 年废止，现行法无正向条文 | 已改为 `no_answer` 用例，不再计入 `corpus_gap` |

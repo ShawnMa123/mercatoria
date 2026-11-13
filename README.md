@@ -169,7 +169,7 @@ cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失
 | 端点 | 用途 |
 |---|---|
 | `POST /retrieve`（别名 `/v1/retrieve`） | 纯检索：chunks + matched_terms/matched_fields + diagnostics |
-| `GET /v1/articles/{article_id}?neighbors=0..5` | 按条号取完整法条（多 part 按 `src_start/src_end` 无缝拼接），并返回前后相邻法条 |
+| `GET /v1/articles/{article_id}?neighbors=0..5&follow_refs=0..2` | 按条号取完整法条（多 part 按 `src_start/src_end` 无缝拼接）、前后相邻法条、同文档交叉引用（`references.resolved/unresolved`），`follow_refs>=1` 时附被引用条文摘要（上限 20 条，超出置 `truncated`） |
 | `POST /v1/articles/batch` | 一次取最多 32 条（Agent 顺着交叉引用拉取），返回 `missing` 列表 |
 | `POST /chat`（别名 `/v1/chat`） | 对话式问答：接受 `messages` 历史，返回 answer + citations + **references 原文** |
 | `POST /ask`（别名 `/v1/ask`） | 单轮问答，与 `/chat` 同一实现；`answer.enabled=false` 只返回检索 + references |
@@ -189,6 +189,30 @@ cross-encoder 逐对打分，最终 `top_k` 按 rerank 分数排序。rerank 失
   `0.03 * min(k-1, 2)` 的分，`score_parts.fusion_bonus` 里可见。
 - `rewrite_query: false`（`/chat`）：不再把上一轮问题拼进检索 query，供已经自行改写
   问题的外部 Agent 使用。
+- `per_jurisdiction_k` 也可写在 `filters` 里；`diagnostics.quota_slots` 给出最终每个法域占用的槽位数，
+  `retrieval.quota_min_ratio > 0` 时启用软配额（某法域最高分低于全局 top-1 的该比例就不占名额）。
+- `rerank: true|false` 覆盖服务端默认；`score_parts.fusion_bonus` 显示多查询加分。
+
+`diagnostics` 里的运维字段：
+
+- `confidence`：`high | medium | low`。由 top-1 原文余弦与 IDF 加权查询词覆盖率合成
+  （`retrieval.confidence.*` 可调），**不改变 chunks 的内容与顺序**，供下游判断是否该低置信/拒答。
+- `embedding_cache_hits`：本次请求命中查询向量缓存的条数；`degraded=["embedding"]` 表示
+  embedding 网关失败且已按 `retrieval.fallback_bm25_on_embed_error` 降级为纯 BM25。
+- `timings_ms`：`filter / embed / bm25 / vector / rank / total` 各阶段耗时。
+- `warnings`：命中已被替代的法规时给出（chunk 上同时有 `superseded_by`）。
+
+### 法条交叉引用支持范围（`/v1/articles` 的 `references`）
+
+支持的引用形态：
+
+- 中文同文档：`本法/本条例/本办法/本规定/本章 第X条`（含 `第X条、第Y条` 并列）、
+  `第X条至第Y条`、`前条`/`上条`/`下条`、`前款`（映射到本条）。
+- 英文同文档：`section N`、`§ N`、`Article N`。
+- 跨文档：`《法规名》第X条`，仅当书名号里的名称与 manifest 的 `source_doc` 完全一致时解析。
+
+明确不支持：`第X项`/`paragraph (a)` 的项级引用、跨 CFR part/跨章且未在语料内的条文
+（会进入 `references.unresolved` 而不是猜）、WTO 附件编号引用。
 
 对话式请求与响应（`references` 是检索到的原文全文，不只是摘要）：
 

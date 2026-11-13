@@ -27,7 +27,19 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from ragflow_config import api_key, base_url  # noqa: E402
+
+try:  # single source of truth for "is this chunk a legal article?"
+    from mercatoria.store import is_synthetic_article  # noqa: E402
+except Exception:  # pragma: no cover - offline tool fallback
+    def is_synthetic_article(article_id: str) -> bool:  # type: ignore[misc]
+        return any(
+            marker in article_id for marker in (":doc", ":preamble", ":section-", ":chunk-")
+        )
 
 BASE = base_url()
 CASES_FILE = Path(__file__).resolve().parent.parent / "corpus" / "eval" / "test_cases.json"
@@ -123,10 +135,12 @@ def is_real_article_id(article_id: str) -> bool:
     Long articles are split into ``part>=1`` chunks whose text no longer starts
     with 第X条; the structural article id is the reliable signal there.
     """
-    return not article_id.endswith(":doc") and not article_id.endswith(":preamble")
+    return not is_synthetic_article(article_id)
 
 
-def score_case(case: dict, chunks: list[dict]) -> dict:
+def score_case(
+    case: dict, chunks: list[dict], legacy_article_head: bool = False
+) -> dict:
     """计算命中情况。
 
     判据设计（按严格程度分三级，分别统计）：
@@ -148,8 +162,11 @@ def score_case(case: dict, chunks: list[dict]) -> dict:
         doc = c.get("document_keyword") or c.get("docnm_kwd") or ""
         k = article_key(doc, content)
         chunk_article_ids = [str(a) for a in (c.get("article_ids") or []) if str(a)]
-        is_article_head = k is not None or any(
-            is_real_article_id(a) for a in chunk_article_ids
+        # legacy_article_head reproduces the pre-v2 rule (article_key only),
+        # so the ablation can isolate the scoring change.
+        is_article_head = k is not None or (
+            not legacy_article_head
+            and any(is_real_article_id(a) for a in chunk_article_ids)
         )
         if k and k not in keys:
             keys.append(k)
@@ -180,6 +197,35 @@ def score_case(case: dict, chunks: list[dict]) -> dict:
         "hit5_loose": hit5_loose,
         "rr": round(rr, 4),
         "has_any": len(chunks) > 0,
+    }
+
+
+def score_jurisdiction_coverage(
+    case: dict, chunks: list[dict], k: int = 5
+) -> dict | None:
+    """Cross-jurisdiction coverage for comparison questions.
+
+    ``expected_jurisdictions`` is the set of legal systems the answer must
+    draw on; the metric asks whether all of them appear in the top-k chunks.
+    Returns None for cases that do not declare it.
+    """
+    expected = [str(j).upper() for j in (case.get("expected_jurisdictions") or [])]
+    if not expected:
+        return None
+    seen: list[str] = []
+    for chunk in chunks[:k]:
+        for jurisdiction in chunk.get("jurisdictions") or []:
+            value = str(jurisdiction).upper()
+            if value not in seen:
+                seen.append(value)
+    missing = [j for j in expected if j not in seen]
+    covered = len(expected) - len(missing)
+    return {
+        "expected": expected,
+        "seen": seen,
+        "covered": not missing,
+        "ratio": round(covered / len(expected), 4) if expected else 0.0,
+        "missing": missing,
     }
 
 

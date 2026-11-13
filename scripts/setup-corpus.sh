@@ -11,9 +11,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CORPUS="$ROOT/corpus"
-PY="$ROOT/.venv/Scripts/python.exe"
-[ -x "$PY" ] || PY="$ROOT/.venv/bin/python"
+CORPUS="${CORPUS_DIR:-$ROOT/corpus}"
+PY="${PYTHON:-$ROOT/.venv/Scripts/python.exe}"
+[ -x "$PY" ] || [ -n "${PYTHON:-}" ] || PY="$ROOT/.venv/bin/python"
 
 if [ ! -x "$PY" ]; then
     echo "找不到虚拟环境：$ROOT/.venv" >&2
@@ -24,21 +24,7 @@ if [ ! -x "$PY" ]; then
 fi
 
 if [ "${1:-}" = "--check" ]; then
-    echo "检查语料完整性…"
-    missing=0
-    for spec in "ecfr/title-19:51" "ecfr/title-15:16" "ecfr/title-31:6" \
-                "wto:14" "au:5" "jp:9" "eu:2" "uk:1" "cn:39" "uncitral:1"; do
-        dir="${spec%%:*}"; want="${spec##*:}"
-        got=$(find "$CORPUS/$dir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
-        got=${got:-0}
-        status="OK"
-        if [ "$got" -lt "$want" ]; then
-            status="缺 $((want - got)) 个"
-            missing=1
-        fi
-        printf "  %-16s %3s/%-3s %s\n" "$dir" "$got" "$want" "$status"
-    done
-    exit "$missing"
+    exec "$PY" "$ROOT/tools/check_corpus.py" --corpus "$CORPUS"
 fi
 
 echo "抓取语料（约 15 分钟，视网络）…"

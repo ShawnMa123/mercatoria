@@ -8,13 +8,16 @@ document with zero articles.
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "corpus"))
+sys.path.insert(0, str(ROOT / "tools"))
 
 import fetch_eu_uk  # noqa: E402
+import check_corpus  # noqa: E402
 
 EU_HTML = """<html><body>
 <p class="oj-ti-section-1">CHAPTER 1</p>
@@ -61,6 +64,37 @@ class UKConverterTests(unittest.TestCase):
         self.assertIn("## Section 2 — Commencement", md)
         self.assertIn("This Act comes into force on exit day.", md)
         self.assertNotIn("<Text>", md)
+
+
+class CorpusCheckTests(unittest.TestCase):
+    """`scripts/setup-corpus.sh --check` delegates here (P0-4)."""
+
+    def _make(self, root: Path, skip: set[str] = frozenset()) -> None:
+        for relative, want, _optional in check_corpus.SPECS:
+            if relative in skip:
+                continue
+            directory = root / relative
+            directory.mkdir(parents=True, exist_ok=True)
+            for index in range(want):
+                (directory / f"doc-{index}.md").write_text("x", encoding="utf-8")
+
+    def test_uk_is_optional(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._make(root, skip={"uk"})
+            ok, lines = check_corpus.check(root)
+            self.assertTrue(ok, lines)
+            self.assertTrue(any("optional" in line for line in lines))
+            self.assertEqual(check_corpus.main(["--corpus", tmp]), 0)
+
+    def test_missing_required_source_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._make(root, skip={"cn"})
+            ok, lines = check_corpus.check(root)
+            self.assertFalse(ok)
+            self.assertTrue(any("cn" in line and "缺" in line for line in lines))
+            self.assertEqual(check_corpus.main(["--corpus", tmp]), 1)
 
 
 if __name__ == "__main__":

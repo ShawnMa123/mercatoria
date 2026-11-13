@@ -1,67 +1,27 @@
-# 工具
+# tools/ 使用约定
 
-## 导入
+## 评测纪律（v2 起）
 
-```bash
-# 建 laws 解析器知识库（一次性）。
-# 仓库不提供建库脚本：在 RAGFlow 界面新建知识库，解析方法选 `laws`；
-# import_to_ragflow.py 会校验目标库的 parser_id，不匹配会拒绝导入。
+| 集合 | 文件 | 用途 | 纪律 |
+|---|---|---|---|
+| dev | `corpus/eval/test_cases.json` | 调参、消融 | 可以反复跑，可以据此改代码 |
+| hold-out | `tests/eval/holdout_cases.json` | 里程碑验收 | **只看不改**；每次运行往 `docs/holdout-log.md` 追加一行（日期 / commit / 指标） |
+| 真题 | `tests/eval/trade_law_questions.json` | 业务口径验收 | fixture 改动必须附原文依据（题号 / 变更 / `doc_id:article_id`） |
 
-# 导入语料（先 dry-run 看清单）
-python tools/import_to_ragflow.py --kb <kb_id> --dry-run
-python tools/import_to_ragflow.py --kb <kb_id> --go
+- hold-out 由 `python tools/make_holdout.py` 按类别分层抽样生成（固定 seed），生成后 dev 运行默认排除这些 id；
+  `python tools/eval_local.py --holdout` 才读它们。
+- 禁止用 hold-out 的失败样本反推调参；发现问题的题应写进 `docs/holdout-log.md` 而不是直接改代码。
+- 任何会改变指标口径的改动（判分规则、fixture、语料）必须与检索算法改动分开提交，并在 commit message 里写明"是否改变评测口径"。
 
-# 轮询进度
-python tools/check_import.py --kb <kb_id> --wait
-```
+## 常用工具
 
-## 评测
-
-## 本地服务（推荐）
-
-```bash
-# 先建索引（见根 README），然后直接跑本地检索评测
-python tools/eval_local.py --config config.example.json --limit 50
-python tools/eval_local.py --config config.example.json --tag local-final
-
-# 参数扫描（不需要重建索引）
-for w in 0.3 0.5 0.7; do
-  python tools/eval_local.py --limit 50 --vec-weight $w --tag w$w
-done
-```
-
-`eval_retrieval.py` 保留为 RAGFlow 基线；`eval_local.py` 走
-`mercatoria.retrieve`，复用同一批用例和 strict/loose 判据。
-
-## RAGFlow 基线
-
-```bash
-# 生成用例
-python tools/gen_test_cases.py
-
-# 冒烟
-python tools/run_eval.py --kb <id> --limit 5
-
-# 思考开关对比
-python tools/run_eval.py --kb <id> --limit 20 --thinking-compare
-
-# 全量
-python tools/run_eval.py --kb <id> --full --thinking-compare
-```
-
-## 关键设计
-
-**语料准备必须用 `laws` 解析器。**
-`general`（别名 `naive`）是 512 token 窗口切块，会把一条法条切散、跨条合并，
-导致下游无法判断某个 chunk 对应哪一条。实测《海关法》用 `general` 切出 33 块
-（切在句中、跨 4 条），用 `laws` 切出 117 块且 98.3% 是完整法条。
-
-**测试用例不要用「情形N」等无语义后缀凑数。**
-实测这类后缀会被模型当作实体去匹配，把检索带偏，
-然后模型看到不相关的内容就拒答 —— 表现为「检索失败」，实际是用例构造错误。
-
-**思考开关（`llm_setting.thinking`）的真实影响：**
-- 耗时约 3.5–4 倍（19s vs 5s）
-- 开思考时 `max_tokens` 必须给足（≥8192），否则 reasoning 内容吃光配额，
-  `completion_tokens=0`、answer 为空
-- 准确率差异在小样本下不稳定，需 ≥50 条才能看出趋势
+| 工具 | 用途 |
+|---|---|
+| `eval_local.py` | 本地检索评测（`--legacy-scoring` 旧口径 / `--fusion` 多查询 / `--workers N` 并发 / `--no-quota` 关配额 / `--jurisdiction-filter` 走法域过滤） |
+| `eval_retrieval.py` | RAGFlow 侧评测（`score_case` 被 `eval_local` 复用） |
+| `profile_retrieve.py` | 分阶段耗时 profile，输出 `docs/profile-<日期>.md` |
+| `audit_fixture.py` | 只读审计真题 fixture 的 top-5 命中，输出 `docs/fixture-audit-<日期>.md` |
+| `make_holdout.py` | 生成冻结 hold-out |
+| `make_quota_cases.py` | 生成配额精度评测用例 |
+| `eval_quota.py` | 配额策略对比（off / hard / soft） |
+| `check_corpus.py` | 语料完整性检查（`scripts/setup-corpus.sh --check` 的实现） |

@@ -11,7 +11,8 @@
     "strip_comments": true,
     "drop_preamble": true,
     "drop_sections": true,
-    "max_chunks_per_article": 0
+    "max_chunks_per_article": 0,
+    "index_context_header": true
   },
   "embedding": {
     "base": "http://localhost:3425/v1",
@@ -23,7 +24,8 @@
     "timeout": 120,
     "dim": 1024,
     "retries": 3,
-    "cache_path": "data/embedding-cache.db"
+    "cache_path": "data/embedding-cache.db",
+    "query_cache_size": 1024
   },
   "retrieval": {
     "top_k": 5,
@@ -31,7 +33,18 @@
     "bm25_k1": 1.5,
     "bm25_b": 0.75,
     "similarity_threshold": 0.0,
-    "expand_cross_language": true
+    "expand_cross_language": true,
+    "query_stopwords": true,
+    "bm25_saturation": 8.0,
+    "quota_min_ratio": 0.0,
+    "fallback_bm25_on_embed_error": false,
+    "multi_query_bonus": 0.03,
+    "confidence": {
+      "high": 0.8,
+      "medium": 0.64,
+      "min_gap": 0.02,
+      "vector_weight": 0.8
+    }
   },
   "rerank": {
     "enabled": false,

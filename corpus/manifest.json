@@ -16,7 +16,8 @@
       ],
       "effective_from": "2026-10-30",
       "effective_to": null,
-      "snapshot_date": "2026-10-30"
+      "snapshot_date": "2026-10-30",
+      "superseded_by": ""
     },
     {
       "doc_id": "au-customs-act-1901",
@@ -30,7 +31,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "au-customs-regulation-2015",
@@ -45,7 +47,8 @@
       ],
       "effective_from": "2026-07-01",
       "effective_to": null,
-      "snapshot_date": "2026-07-01"
+      "snapshot_date": "2026-07-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "au-customs-tariff-act-1995",
@@ -60,7 +63,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "au-export-control-act-2020",
@@ -74,7 +78,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "cisg",
@@ -89,7 +94,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "1988-01-01"
+      "snapshot_date": "1988-01-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-ad-cvd-1997",
@@ -103,7 +109,8 @@
       ],
       "effective_from": "1997-03-25",
       "effective_to": "2004-03-31",
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": "cn-anti-dumping-2004"
     },
     {
       "doc_id": "cn-anti-dumping-2004",
@@ -117,7 +124,8 @@
       ],
       "effective_from": "2004-06-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-comprehensive-bonded-zone-2022",
@@ -133,7 +141,8 @@
       ],
       "effective_from": "2022-01-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-countervailing-2004",
@@ -147,7 +156,8 @@
       ],
       "effective_from": "2004-06-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-advance-ruling-2017",
@@ -162,7 +172,8 @@
       ],
       "effective_from": "2017-12-26",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-audit-2022",
@@ -177,7 +188,8 @@
       ],
       "effective_from": "2022-03-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-broker-filing-2021",
@@ -192,7 +204,8 @@
       ],
       "effective_from": "2021-11-19",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-classification-2021",
@@ -207,7 +220,8 @@
       ],
       "effective_from": "2021-09-06",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-credit-2021",
@@ -222,7 +236,8 @@
       ],
       "effective_from": "2021-09-13",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-declaration-2018",
@@ -237,7 +252,8 @@
       ],
       "effective_from": "2018-11-23",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-duty-collection-2024",
@@ -252,7 +268,8 @@
       ],
       "effective_from": "2024-10-28",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-guarantee-2018",
@@ -267,7 +284,8 @@
       ],
       "effective_from": "2018-03-19",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-law-2021",
@@ -283,7 +301,8 @@
       ],
       "effective_from": "2021-04-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-penalty-2022",
@@ -298,7 +317,8 @@
       ],
       "effective_from": "2022-03-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-penalty-rules-2004",
@@ -313,7 +333,8 @@
       ],
       "effective_from": "2004-11-01",
       "effective_to": "2022-03-29",
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": "cn-customs-penalty-2022"
     },
     {
       "doc_id": "cn-customs-reward-2010",
@@ -327,7 +348,8 @@
       ],
       "effective_from": "2010-11-26",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-customs-valuation-measures-2013",
@@ -343,7 +365,8 @@
       ],
       "effective_from": "2013-12-25",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-dual-use-export-control-2024",
@@ -357,7 +380,8 @@
       ],
       "effective_from": "2024-12-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-dual-use-general-license-2009",
@@ -371,7 +395,8 @@
       ],
       "effective_from": "2009-05-13",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-dual-use-license-measures-2005",
@@ -386,7 +411,8 @@
       ],
       "effective_from": "2005-12-31",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-export-control-law-2020",
@@ -400,7 +426,8 @@
       ],
       "effective_from": "2020-12-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-foreign-exchange-2008",
@@ -414,7 +441,8 @@
       ],
       "effective_from": "2008-08-05",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-foreign-trade-law-2025",
@@ -428,7 +456,8 @@
       ],
       "effective_from": "2025-12-27",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-goods-import-export-2024",
@@ -443,7 +472,8 @@
       ],
       "effective_from": "2024-03-10",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-import-export-tariff-2017",
@@ -458,7 +488,8 @@
       ],
       "effective_from": "2017-03-01",
       "effective_to": "2024-12-01",
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": "cn-tariff-law-2024"
     },
     {
       "doc_id": "cn-independent-guarantee-2020",
@@ -474,7 +505,8 @@
       ],
       "effective_from": "2020-12-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-inspection-law-2021",
@@ -488,7 +520,8 @@
       ],
       "effective_from": "2021-04-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-inspection-regulations-2026",
@@ -502,7 +535,8 @@
       ],
       "effective_from": "2026-08-08",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-ipr-border-2018",
@@ -517,7 +551,8 @@
       ],
       "effective_from": "2018-03-19",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-lc-dispute-2020",
@@ -532,7 +567,8 @@
       ],
       "effective_from": "2020-12-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-missile-export-control-2002",
@@ -546,7 +582,8 @@
       ],
       "effective_from": "2002-08-22",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-nonpreferential-origin-2018",
@@ -561,7 +598,8 @@
       ],
       "effective_from": "2018-04-28",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-nuclear-dual-use-2007",
@@ -575,7 +613,8 @@
       ],
       "effective_from": "2007-01-26",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-nuclear-export-control-2006",
@@ -589,7 +628,8 @@
       ],
       "effective_from": "2006-11-09",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-origin-2019",
@@ -603,7 +643,8 @@
       ],
       "effective_from": "2019-03-02",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-rcep-origin-2021",
@@ -619,7 +660,8 @@
       ],
       "effective_from": "2021-11-23",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-safeguard-2004",
@@ -633,7 +675,8 @@
       ],
       "effective_from": "2004-03-31",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-tariff-law-2024",
@@ -648,7 +691,8 @@
       ],
       "effective_from": "2024-12-01",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "cn-tech-import-export-2020",
@@ -663,7 +707,8 @@
       ],
       "effective_from": "2020-11-29",
       "effective_to": null,
-      "snapshot_date": null
+      "snapshot_date": null,
+      "superseded_by": ""
     },
     {
       "doc_id": "eu-dual-use-2021",
@@ -677,7 +722,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "eu-ucc-2013",
@@ -693,7 +739,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-gaiamei-hou",
@@ -708,7 +755,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-gaikoku-kawase-rei",
@@ -723,7 +771,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-kanzei-hou-sekourei",
@@ -737,7 +786,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-kanzei-teiritsu-hou-sekourei",
@@ -752,7 +802,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-kanzei-zantei-sochi-hou",
@@ -767,7 +818,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-kazei-hou",
@@ -781,7 +833,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-kazei-teiritsu-hou",
@@ -796,7 +849,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-yunyu-boueki-kanri-rei",
@@ -811,7 +865,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "jp-yushutsu-boueki-kanri-rei",
@@ -825,7 +880,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-730",
@@ -839,7 +895,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-732",
@@ -853,7 +910,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-734",
@@ -867,7 +925,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-736",
@@ -881,7 +940,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-738",
@@ -895,7 +955,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-740",
@@ -909,7 +970,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-742",
@@ -923,7 +985,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-744",
@@ -937,7 +1000,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-746",
@@ -951,7 +1015,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-748",
@@ -965,7 +1030,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-750",
@@ -979,7 +1045,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-758",
@@ -993,7 +1060,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-760",
@@ -1007,7 +1075,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-762",
@@ -1021,7 +1090,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-764",
@@ -1035,7 +1105,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-15-772",
@@ -1049,7 +1120,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-0",
@@ -1066,7 +1138,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-10",
@@ -1083,7 +1156,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-101",
@@ -1100,7 +1174,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-102",
@@ -1117,7 +1192,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-103",
@@ -1134,7 +1210,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-11",
@@ -1151,7 +1228,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-111",
@@ -1168,7 +1246,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-112",
@@ -1185,7 +1264,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-113",
@@ -1202,7 +1282,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-114",
@@ -1219,7 +1300,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-115",
@@ -1236,7 +1318,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-118",
@@ -1253,7 +1336,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-12",
@@ -1270,7 +1354,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-122",
@@ -1287,7 +1372,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-123",
@@ -1304,7 +1390,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-125",
@@ -1321,7 +1408,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-127",
@@ -1338,7 +1426,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-128",
@@ -1355,7 +1444,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-132",
@@ -1372,7 +1462,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-133",
@@ -1389,7 +1480,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-134",
@@ -1406,7 +1498,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-141",
@@ -1423,7 +1516,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-142",
@@ -1440,7 +1534,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-143",
@@ -1457,7 +1552,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-144",
@@ -1474,7 +1570,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-145",
@@ -1491,7 +1588,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-146",
@@ -1508,7 +1606,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-147",
@@ -1525,7 +1624,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-148",
@@ -1542,7 +1642,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-149",
@@ -1559,7 +1660,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-151",
@@ -1576,7 +1678,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-152",
@@ -1593,7 +1696,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-158",
@@ -1610,7 +1714,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-159",
@@ -1627,7 +1732,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-161",
@@ -1644,7 +1750,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-162",
@@ -1661,7 +1768,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-163",
@@ -1678,7 +1786,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-165",
@@ -1695,7 +1804,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-171",
@@ -1712,7 +1822,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-172",
@@ -1729,7 +1840,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-173",
@@ -1746,7 +1858,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-174",
@@ -1763,7 +1876,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-177",
@@ -1780,7 +1894,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-18",
@@ -1797,7 +1912,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-181",
@@ -1814,7 +1930,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-182",
@@ -1831,7 +1948,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-19",
@@ -1848,7 +1966,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-190",
@@ -1865,7 +1984,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-24",
@@ -1882,7 +2002,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-54",
@@ -1899,7 +2020,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-19-7",
@@ -1916,7 +2038,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-501",
@@ -1932,7 +2055,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-510",
@@ -1948,7 +2072,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-535",
@@ -1964,7 +2089,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-560",
@@ -1980,7 +2106,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-587",
@@ -1996,7 +2123,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "us-cfr-31-591",
@@ -2012,7 +2140,8 @@
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-adp",
@@ -2027,7 +2156,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-ag",
@@ -2042,7 +2172,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-cv",
@@ -2057,7 +2188,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-dsu",
@@ -2072,7 +2204,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-gatt-1994",
@@ -2088,7 +2221,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-lic",
@@ -2103,7 +2237,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-ro",
@@ -2118,7 +2253,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-safeg",
@@ -2133,7 +2269,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-scm",
@@ -2148,7 +2285,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-sps",
@@ -2163,7 +2301,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-tbt",
@@ -2178,7 +2317,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-tfa",
@@ -2193,7 +2333,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-trims",
@@ -2208,7 +2349,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     },
     {
       "doc_id": "wto-trips",
@@ -2223,7 +2365,8 @@
       ],
       "effective_from": null,
       "effective_to": null,
-      "snapshot_date": "2026-11-01"
+      "snapshot_date": "2026-11-01",
+      "superseded_by": ""
     }
   ]
 }

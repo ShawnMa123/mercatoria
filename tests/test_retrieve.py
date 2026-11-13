@@ -293,10 +293,10 @@ class RetrievalTests(unittest.TestCase):
 
     def test_quota_keeps_each_jurisdiction_represented(self) -> None:
         ordered = [
-            ("a1", {"jurisdiction": "CN"}),
-            ("a2", {"jurisdiction": "CN"}),
-            ("a3", {"jurisdiction": "CN"}),
-            ("b1", {"jurisdiction": "US"}),
+            ("a1", {"jurisdiction": "CN", "score": 0.9}),
+            ("a2", {"jurisdiction": "CN", "score": 0.8}),
+            ("a3", {"jurisdiction": "CN", "score": 0.7}),
+            ("b1", {"jurisdiction": "US", "score": 0.6}),
         ]
         stub = type(
             "Stub",
@@ -310,6 +310,11 @@ class RetrievalTests(unittest.TestCase):
             [cid for cid, _ in _apply_jurisdiction_quota(ordered, 2, ["CN", "US"], 0, stub)],
             ["a1", "a2"],
         )
+        # Soft quota: a jurisdiction far below the global top-1 gives up its slot.
+        soft = _apply_jurisdiction_quota(ordered, 2, ["CN", "US"], 1, stub, 0.9)
+        self.assertEqual([cid for cid, _ in soft], ["a1", "a2"])
+        soft_ok = _apply_jurisdiction_quota(ordered, 2, ["CN", "US"], 1, stub, 0.5)
+        self.assertEqual([cid for cid, _ in soft_ok], ["a1", "b1"])
         # A single requested jurisdiction never reserves slots.
         self.assertEqual(_quota_for(["CN"], 5, None), 0)
         self.assertEqual(_quota_for(["CN", "US"], 4, None), 2)

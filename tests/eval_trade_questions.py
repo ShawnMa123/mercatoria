@@ -77,6 +77,7 @@ def run(
         row = {
             "id": case["id"],
             "category": case["category"],
+            "type": case.get("type", "answer"),
             "language": case.get("language", "zh"),
             "question": case["question"],
             "source": case.get("source"),
@@ -88,6 +89,7 @@ def run(
             "hit": rank > 0,
             "doc_hit": doc_hit,
             "keyword_hit": keyword_hit,
+            "confidence": payload.get("diagnostics", {}).get("confidence"),
             "rerank": payload.get("diagnostics", {}).get("rerank", {}),
             "top": [
                 {
@@ -153,11 +155,24 @@ def run(
             "p50_ms": round(statistics.median([r["latency_ms"] for r in items]), 1),
         }
 
-    covered = [r for r in rows if not r.get("corpus_gap")]
-    gaps = [r for r in rows if r.get("corpus_gap")]
+    answered_rows = [r for r in rows if r.get("type") != "no_answer"]
+    no_answer_rows = [r for r in rows if r.get("type") == "no_answer"]
+    covered = [r for r in answered_rows if not r.get("corpus_gap")]
+    gaps = [r for r in answered_rows if r.get("corpus_gap")]
     summary = {
-        "n": len(rows),
-        "hit5": round(sum(1 for r in rows if r["hit"]) / len(rows), 4),
+        "n": len(answered_rows),
+        "no_answer_n": len(no_answer_rows),
+        "no_answer_low_rate": round(
+            sum(1 for r in no_answer_rows if r["confidence"] == "low") / len(no_answer_rows), 4
+        )
+        if no_answer_rows
+        else None,
+        "answer_false_low_rate": round(
+            sum(1 for r in answered_rows if r["confidence"] == "low") / len(answered_rows), 4
+        )
+        if answered_rows
+        else None,
+        "hit5": round(sum(1 for r in answered_rows if r["hit"]) / len(answered_rows), 4),
         "hit5_covered": round(
             sum(1 for r in covered if r["hit"]) / len(covered), 4
         )
@@ -169,10 +184,16 @@ def run(
             for r in gaps
         ],
         "mrr": round(
-            sum((1.0 / r["rank"] if r["rank"] else 0.0) for r in rows) / len(rows), 4
+            sum((1.0 / r["rank"] if r["rank"] else 0.0) for r in answered_rows)
+            / len(answered_rows),
+            4,
         ),
-        "doc_hit": round(sum(1 for r in rows if r["doc_hit"]) / len(rows), 4),
-        "keyword_hit": round(sum(1 for r in rows if r["keyword_hit"]) / len(rows), 4),
+        "doc_hit": round(
+            sum(1 for r in answered_rows if r["doc_hit"]) / len(answered_rows), 4
+        ),
+        "keyword_hit": round(
+            sum(1 for r in answered_rows if r["keyword_hit"]) / len(answered_rows), 4
+        ),
         "p50_ms": round(statistics.median([r["latency_ms"] for r in rows]), 1),
         "p95_ms": round(
             sorted(r["latency_ms"] for r in rows)[max(0, int(len(rows) * 0.95) - 1)], 1
@@ -184,8 +205,8 @@ def run(
                 "hit5": round(sum(1 for r in items if r["hit"]) / len(items), 4),
             }
             for lang, items in {
-                "zh": [r for r in rows if r["language"] == "zh"],
-                "en": [r for r in rows if r["language"] == "en"],
+                "zh": [r for r in answered_rows if r["language"] == "zh"],
+                "en": [r for r in answered_rows if r["language"] == "en"],
             }.items()
             if items
         },

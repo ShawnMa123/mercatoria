@@ -143,7 +143,7 @@
       "source": "2015年报关水平测试预测试题（改编）",
       "source_url": "http://m-51test-net-bucket.bj.bcebos.com/show/5020673.html",
       "corpus_gap": true,
-      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
+      "coverage_note": "语料未收录海关总署公告 2021 年第 44 号（公式定价）；customs.gov.cn 有反爬，需人工下载后放入 corpus/cn/ 并跑 tools/normalize_cn_corpus.py（见 corpus/README.md「已知缺口」）"
     },
     {
       "id": "FT-009",
@@ -290,7 +290,8 @@
       "question": "出口加工区企业使用台湾产原料加工成服装后内销，原产国应当如何申报？",
       "expected_doc_ids": [
         "cn-origin-2019",
-        "cn-customs-law-2021"
+        "cn-customs-law-2021",
+        "cn-rcep-origin-2021"
       ],
       "expected_keywords": [
         "原产国",
@@ -299,7 +300,7 @@
       "source": "2004年报关员考试真题（改编）",
       "source_url": "http://edu.newdu.com/Official/Class984/Class991/200705/8668.html",
       "corpus_gap": false,
-      "coverage_note": "《海关进出口货物申报管理规定》与《进出口货物原产地条例》已覆盖内销申报要求"
+      "coverage_note": "命中依赖《海关进出口货物申报管理规定》与《海关RCEP项下原产地管理办法》（第15条：原产国/加工）"
     },
     {
       "id": "FT-018",
@@ -401,7 +402,7 @@
       "source": "商务部出口管制信息网常见问题",
       "source_url": "https://exportcontrol.mofcom.gov.cn/article/cjwt/202504/1130.html",
       "corpus_gap": false,
-      "coverage_note": "《海关进出口货物商品归类管理规定》与《两用物项出口管制条例》已覆盖"
+      "coverage_note": "命中为《海关进出口货物商品归类管理规定》（第27/2条）与《两用物项出口管制条例》第14条（管制清单）"
     },
     {
       "id": "FT-024",
@@ -916,8 +917,9 @@
       ],
       "source": "《中华人民共和国外汇管理条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm",
-      "corpus_gap": true,
-      "coverage_note": "语料未收录该具体规则，保留为覆盖缺口样本"
+      "coverage_note": "出口收汇核销自 2012-08-01 起取消，现行法无正向条文；应低置信/拒答",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence"
     },
     {
       "id": "FT-055",
@@ -1016,6 +1018,227 @@
       ],
       "source": "《中华人民共和国货物进出口管理条例》（改编）",
       "source_url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm"
+    },
+    {
+      "id": "FT-101",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "英国脱欧后，北爱尔兰议定书第 16 条保障措施如何启动？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-102",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "欧盟碳边境调节机制（CBAM）下进口商申报排放的期限是多久？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-103",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "美国《维吾尔强迫劳动预防法》的可反驳推定如何适用于服装进口？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-104",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "《数字经济伙伴关系协定》（DEPA）对跨境数据流动有哪些义务？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-105",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "《新加坡调解公约》下国际商事调解协议的执行条件是什么？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-106",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "ICSID 仲裁裁决的撤销程序由哪个机构受理？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-107",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "WTO《渔业补贴协定》何时生效、对远洋渔业补贴有何限制？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-108",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "《海牙取消外国公文书认证公约》的附加证明书如何办理？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-109",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "《中华人民共和国海关导弹出口管制条例》第八十八条如何处罚？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-110",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "《中华人民共和国海关法》第九百九十九条规定了什么？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-111",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "股票期权行权所得的个人所得税如何计算？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-112",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "劳动合同试用期的最长期限是多少？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-113",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "zh",
+      "question": "机动车交通事故责任认定书的复核期限是多久？",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-114",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "en",
+      "question": "Which article of the EU AI Act governs customs risk scoring?",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-115",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "en",
+      "question": "What is the Basel III leverage ratio reporting deadline for importers?",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-116",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "en",
+      "question": "Under the Basel Convention, how are e-waste shipments classified?",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
+    },
+    {
+      "id": "FT-117",
+      "category": "无答案",
+      "type": "no_answer",
+      "expected_behavior": "low_confidence",
+      "language": "en",
+      "question": "What does Article 999 of the Union Customs Code require?",
+      "expected_doc_ids": [],
+      "expected_keywords": [],
+      "source": "对抗性构造（语料外主题/编造条文/非贸易法）",
+      "source_url": null,
+      "coverage_note": "语料未收录且不属于跨境贸易法检索范围，应返回低置信/空结果"
     }
   ]
 }
