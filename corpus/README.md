@@ -1,6 +1,6 @@
 # 外文语料
 
-> 抓取日期：**2026-11-07**
+> 抓取日期：**2026-11-13**（eCFR 快照 2026-11-01）
 > 用途：导入 RAGFlow，与中文法规一起做跨境业务场景测试
 > 抓取脚本可直接重跑，保证可复现
 
@@ -8,33 +8,39 @@
 
 | 法域 | 源 | 文档 | 条文 | 字符 |
 |---|---|---|---|---|
-| 🇺🇸 US | eCFR Title 19（海关） | 44 parts | **2072** | 5.4 M |
-| 🇺🇸 US | eCFR Title 15（EAR 出口管制） | 8 parts | 81 | 0.44 M |
-| 🇺🇸 US | WTO 协定（GATT/TFA/SPS/TBT/ADP/CV/RO/LIC/SCM/TRIMS） | 10 docs | 192 | 0.71 M |
-| 🇦🇺 AU | Customs Act 1901 | 1 act | **376** | 365 K |
-| 🇦🇺 AU | Customs Tariff Act 1995 | 1 act | 54 | 38 K |
-| 🇦🇺 AU | Export Control Act 2020 | 1 act | **464** | 520 K |
-| 🇯🇵 JP | 関税法 | 1 law | **530** | 225 K |
-| 🇯🇵 JP | 関税定率法 | 1 law | 139 | 60 K |
-| 🇯🇵 JP | 外為法（外国為替及び外国貿易法） | 1 law | 213 | 75 K |
-| 🇯🇵 JP | 輸出貿易管理令 | 1 law | 63 | 12 K |
-| 🌐 | UNCITRAL CISG | 1 doc | 101 | 82 K |
-| **合计** | | **72** | **4285** | **7.5 M** |
+| 🇺🇸 US | eCFR Title 19（CBP 海关实务） | 51 parts | **2373** | 5.6 M |
+| 🇺🇸 US | eCFR Title 15（EAR 出口管制） | 16 parts | 179 | 1.5 M |
+| 🇺🇸 US | eCFR Title 31（OFAC 制裁） | 6 parts | 440 | 0.7 M |
+| 🌐 WTO | 协定正文（GATT/TFA/SPS/TBT/ADP/CV/RO/LIC/SCM/TRIMS/DSU/SG/AG/TRIPS） | 14 docs | 308 | 0.9 M |
+| 🇦🇺 AU | 海关法、关税税率法、出口管制法、海关条例、自主制裁法 | 5 acts | **1126** | 1.1 M |
+| 🇯🇵 JP | 关税法、关税定率法、外為法、通关/进口贸易管理令及 3 部配套政令 | 9 laws | **1828** | 2.1 M |
+| 🇪🇺 EU | 欧盟海关法典 952/2013、两用物项条例 2021/821 | 2 regs | 320 | 0.9 M |
+| 🇨🇳 CN | 法律、行政法规、海关总署/商务部规章、司法解释 | 39 docs | 1650 | 0.6 M |
+| 🌐 | UNCITRAL CISG | 1 doc | 101 | 0.08 M |
+| **合计** | | **143** | **8325** | **13.6 M** |
+
+UK 目前为 0 篇：`legislation.gov.uk` 对非浏览器客户端返回 AWS WAF 挑战
+（HTTP 202 + 空 body），脚本会如实记录为 missing，见 `fetch_eu_uk.py`。
 
 ## 目录结构
 
 ```text
 corpus/
-├── fetch_ecfr.py       eCFR 抓取（--title N --parts a,b,c）
-├── fetch_wto.py        WTO 抓取
+├── fetch_ecfr.py       eCFR 抓取（--title N [--parts a,b,c]，省略 parts 用默认清单）
+├── fetch_wto.py        WTO 抓取（自动跟进 _01_e/_02_e 分页）
 ├── fetch_cisg.py       CISG 抓取（PDF 抽取）
 ├── fetch_jp.py         日本 e-Gov 抓取
 ├── fetch_au.py         澳洲 Federal Register 抓取
-├── ecfr/title-19/      44 个 part-*.md
-├── ecfr/title-15/      8 个 part-*.md
-├── wto/                10 个 *_e.md
-├── jp/                 4 个法令 md
-├── au/                 3 个法案 md（+ 原始 PDF 存档）
+├── fetch_eu_uk.py      欧盟 Cellar 抓取 / 英国 legislation.gov.uk
+├── fetch_cn.py         中文法规（LawRefBook 镜像）抓取 + 规整
+├── ecfr/title-19/      51 个 part-*.md
+├── ecfr/title-15/      16 个 part-*.md
+├── ecfr/title-31/      6 个 part-*.md
+├── wto/                14 个 *_e.md
+├── jp/                 9 个法令 md
+├── au/                 5 个法案 md（+ 原始 PDF 存档）
+├── eu/                 2 个条例 md
+├── cn/                 39 个法规 md
 └── uncitral/           cisg.md（+ 原始 PDF）
 ```
 
@@ -72,9 +78,10 @@ group 4: ["PART ...", "Chapter ...", "Section N", "Article N"]  ← 英美法/�
 cd corpus
 PY=../.venv/Scripts/python.exe
 
-# 美国 eCFR
-$PY fetch_ecfr.py --title 19 --parts 0,7,10,11,12,18,19,24,54,101,102,103,111,112,113,114,115,118,122,123,125,127,128,132,133,134,141,142,143,144,145,146,147,148,149,151,152,158,159,161,162,163,165,172
-$PY fetch_ecfr.py --title 15 --parts 730,732,734,736,738,744,746,764
+# 美国 eCFR（省略 --parts 时使用脚本内 DEFAULT_PARTS）
+$PY fetch_ecfr.py --title 19
+$PY fetch_ecfr.py --title 15
+$PY fetch_ecfr.py --title 31
 
 # WTO
 $PY fetch_wto.py
@@ -87,6 +94,15 @@ $PY fetch_jp.py
 
 # 澳洲
 $PY fetch_au.py
+
+# 欧盟 / 英国
+$PY fetch_eu_uk.py
+
+# 中文法规（LawRefBook 镜像）
+$PY fetch_cn.py
+
+# 或者一次跑完并检查数量
+bash ../scripts/setup-corpus.sh
 ```
 
 ## 各源的坑（均为实测踩到）
@@ -121,6 +137,14 @@ $PY fetch_au.py
 | 関税定率法 | `143AC0000000054` |
 | 外国為替及び外国貿易法 | `324AC0000000228` |
 | 輸出貿易管理令 | `324CO0000000378` |
+| 関税法施行令 | `329CO0000000150` |
+| 関税定率法施行令 | `329CO0000000155` |
+| 関税暫定措置法 | `335AC0000000036`（**不是** `341AC…`，会 404） |
+| 外国為替令 | `355CO0000000260` |
+| 輸入貿易管理令 | `324CO0000000414` |
+
+另有坑：`/api/2/laws?law_title=...` 搜索可用，但返回的 `law_id` 才是
+`/law_data/{id}` 的合法输入；按年份臆造的 ID 一律 404。
 
 ### 澳洲 Federal Register
 
@@ -161,13 +185,28 @@ PDF 文本解析的坑：
 
 | 源 | 原因 |
 |---|---|
-| UK legislation.gov.uk | 实测 202 空响应，反爬（见 `docs/upstream-legal-sources.md`） |
-| EU EUR-Lex | 同上；正确路径是 CELLAR SPARQL，成本高 |
+| UK legislation.gov.uk | `data.xml` 返回 202 + 空 body（AWS WAF JS 挑战），换 UA/Accept 均无效；需在可访问网络用浏览器下载后手工转换 |
 | ICC 规则（UCP 600 / URDG 758） | 付费出版物，有版权，公开源不存在 |
+| 国家法律法规数据库 flk.npc.gov.cn | 返回 SPA 空壳，正文要执行 JS；中文语料改走 LawRefBook 镜像（`fetch_cn.py`） |
+
+EU 不再是缺口：`publications.europa.eu/resource/celex/{celex}.ENG.xhtml`
+是官方直连（303 → Cellar 对象存储），无 WAF，`fetch_eu_uk.py` 可直接抓。
+
+### 欧盟 Cellar / 中文镜像的坑
+
+| 坑 | 处理 |
+|---|---|
+| EU XHTML 是 CONVEX 排版，条文在 `p.oj-ti-art`，正文在 `p.oj-normal` | 按 class 抽取块，`## Article N` / `### 章节` |
+| UCC 的 288 条分散在 chapter/section 层级里 | 章节用 `###`，条文用 `##`，与其它法域一致 |
+| LawRefBook 的文件名带发布日期 | 保留 `名称(YYYY-MM-DD).md`，manifest 从文件名取生效日期 |
+| LawRefBook 文件以 H1 + INFO END 开头 | `normalize_cn_corpus.normalize()` 转成 HTML 注释 |
 
 ## 语料范围说明
 
-US 部分刻意**不是全量**。Title 19 共 83 个 part，取了 44 个与贸易单据审核相关的；
+US 部分刻意**不是全量**。Title 19 共 83 个 part，取了 51 个与贸易单据审核相关的；
 排除的是船只、岛国领地、政府雇员等无关内容（全量灌入会稀释召回信号）。
 
-Title 15 只取 EAR 核心 8 个 part，Title 31（OFAC 制裁）尚未抓取。
+Title 15 取 EAR 核心 16 个 part（新增 740 许可例外、742 管制政策、748/750 许可
+申请与审批、758 清关与 EEI、760 反抵制、762 记录保存、772 术语定义）；
+Title 31 新增 OFAC 6 个 part（501 程序与处罚、510/535/560/587/591 制裁条例；
+part 542 在该快照日期 404）。

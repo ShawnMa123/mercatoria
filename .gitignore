@@ -244,7 +244,9 @@ corpus/eval/cases_crosslang.json
 #    scripts/setup-corpus.sh 自行重建。
 corpus/au/
 corpus/ecfr/
+corpus/eu/
 corpus/jp/
+corpus/uk/
 corpus/uncitral/
 corpus/wto/
 

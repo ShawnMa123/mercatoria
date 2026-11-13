@@ -1,7 +1,7 @@
 {
   "manifest_version": "2026-11-09.1",
   "corpus_dir": ".",
-  "documents": 122,
+  "documents": 143,
   "docs": [
     {
       "doc_id": "au-autonomous-sanctions-act-2011",
@@ -898,6 +898,34 @@
       "snapshot_date": "2026-11-01"
     },
     {
+      "doc_id": "us-cfr-15-740",
+      "path": "ecfr/title-15/part-740.md",
+      "source_doc": "19 CFR Part 740 — PART 740—LICENSE EXCEPTIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-742",
+      "path": "ecfr/title-15/part-742.md",
+      "source_doc": "19 CFR Part 742 — PART 742—CONTROL POLICY—CCL BASED CONTROLS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "us-cfr-15-744",
       "path": "ecfr/title-15/part-744.md",
       "source_doc": "19 CFR Part 744 — PART 744—CONTROL POLICY: END-USER AND END-USE BASED",
@@ -926,9 +954,93 @@
       "snapshot_date": "2026-11-01"
     },
     {
+      "doc_id": "us-cfr-15-748",
+      "path": "ecfr/title-15/part-748.md",
+      "source_doc": "19 CFR Part 748 — PART 748—APPLICATIONS (CLASSIFICATION, ADVISORY, AND LICENSE) AND DOCUMENTATION",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-750",
+      "path": "ecfr/title-15/part-750.md",
+      "source_doc": "19 CFR Part 750 — PART 750—APPLICATION PROCESSING, ISSUANCE, AND DENIAL",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-758",
+      "path": "ecfr/title-15/part-758.md",
+      "source_doc": "19 CFR Part 758 — PART 758—EXPORT CLEARANCE REQUIREMENTS AND AUTHORITIES",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-760",
+      "path": "ecfr/title-15/part-760.md",
+      "source_doc": "19 CFR Part 760 — PART 760—RESTRICTIVE TRADE PRACTICES OR BOYCOTTS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-762",
+      "path": "ecfr/title-15/part-762.md",
+      "source_doc": "19 CFR Part 762 — PART 762—RECORDKEEPING",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "us-cfr-15-764",
       "path": "ecfr/title-15/part-764.md",
       "source_doc": "19 CFR Part 764 — PART 764—ENFORCEMENT AND PROTECTIVE MEASURES",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "export_control"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-15-772",
+      "path": "ecfr/title-15/part-772.md",
+      "source_doc": "19 CFR Part 772 — PART 772—DEFINITIONS OF TERMS",
       "jurisdiction": "US",
       "language": "en",
       "precision": "degraded",
@@ -1586,9 +1698,77 @@
       "snapshot_date": "2026-11-01"
     },
     {
+      "doc_id": "us-cfr-19-171",
+      "path": "ecfr/title-19/part-171.md",
+      "source_doc": "19 CFR Part 171 — PART 171—FINES, PENALTIES, AND FORFEITURES",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "us-cfr-19-172",
       "path": "ecfr/title-19/part-172.md",
       "source_doc": "19 CFR Part 172 — PART 172—CLAIMS FOR LIQUIDATED DAMAGES; PENALTIES SECURED BY BONDS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-19-173",
+      "path": "ecfr/title-19/part-173.md",
+      "source_doc": "19 CFR Part 173 — PART 173—ADMINISTRATIVE REVIEW IN GENERAL",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-19-174",
+      "path": "ecfr/title-19/part-174.md",
+      "source_doc": "19 CFR Part 174 — PART 174—PROTESTS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-19-177",
+      "path": "ecfr/title-19/part-177.md",
+      "source_doc": "19 CFR Part 177 — PART 177—ADMINISTRATIVE RULINGS",
       "jurisdiction": "US",
       "language": "en",
       "precision": "degraded",
@@ -1620,9 +1800,60 @@
       "snapshot_date": "2026-11-01"
     },
     {
+      "doc_id": "us-cfr-19-181",
+      "path": "ecfr/title-19/part-181.md",
+      "source_doc": "19 CFR Part 181 — PART 181—NORTH AMERICAN FREE TRADE AGREEMENT",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-19-182",
+      "path": "ecfr/title-19/part-182.md",
+      "source_doc": "19 CFR Part 182 — PART 182—UNITED STATES-MEXICO-CANADA AGREEMENT",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
       "doc_id": "us-cfr-19-19",
       "path": "ecfr/title-19/part-19.md",
       "source_doc": "19 CFR Part 19 — PART 19—CUSTOMS WAREHOUSES, CONTAINER STATIONS AND CONTROL OF MERCHANDISE THEREIN",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "customs",
+        "tariff",
+        "origin",
+        "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-19-190",
+      "path": "ecfr/title-19/part-190.md",
+      "source_doc": "19 CFR Part 190 — PART 190—MODERNIZED DRAWBACK",
       "jurisdiction": "US",
       "language": "en",
       "precision": "degraded",
@@ -1682,6 +1913,102 @@
         "tariff",
         "origin",
         "entry"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-501",
+      "path": "ecfr/title-31/part-501.md",
+      "source_doc": "19 CFR Part 501 — PART 501—REPORTING, PROCEDURES AND PENALTIES REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-510",
+      "path": "ecfr/title-31/part-510.md",
+      "source_doc": "19 CFR Part 510 — PART 510—NORTH KOREA SANCTIONS REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-535",
+      "path": "ecfr/title-31/part-535.md",
+      "source_doc": "19 CFR Part 535 — PART 535—IRANIAN ASSETS CONTROL REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-560",
+      "path": "ecfr/title-31/part-560.md",
+      "source_doc": "19 CFR Part 560 — PART 560—IRANIAN TRANSACTIONS AND SANCTIONS REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-587",
+      "path": "ecfr/title-31/part-587.md",
+      "source_doc": "19 CFR Part 587 — PART 587—RUSSIAN HARMFUL FOREIGN ACTIVITIES SANCTIONS REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
+      ],
+      "effective_from": "2026-11-01",
+      "effective_to": null,
+      "snapshot_date": "2026-11-01"
+    },
+    {
+      "doc_id": "us-cfr-31-591",
+      "path": "ecfr/title-31/part-591.md",
+      "source_doc": "19 CFR Part 591 — PART 591—VENEZUELA SANCTIONS REGULATIONS",
+      "jurisdiction": "US",
+      "language": "en",
+      "precision": "degraded",
+      "applies_to": [
+        "sanctions",
+        "export_control",
+        "foreign_exchange"
       ],
       "effective_from": "2026-11-01",
       "effective_to": null,

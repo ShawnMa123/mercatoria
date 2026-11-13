@@ -26,7 +26,7 @@ fi
 if [ "${1:-}" = "--check" ]; then
     echo "检查语料完整性…"
     missing=0
-    for spec in "ecfr/title-19:47" "ecfr/title-15:16" "ecfr/title-31:7" \
+    for spec in "ecfr/title-19:51" "ecfr/title-15:16" "ecfr/title-31:6" \
                 "wto:14" "au:5" "jp:9" "eu:2" "uk:1" "cn:39" "uncitral:1"; do
         dir="${spec%%:*}"; want="${spec##*:}"
         got=$(find "$CORPUS/$dir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ' || true)
