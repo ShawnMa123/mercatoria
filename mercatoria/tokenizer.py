@@ -70,15 +70,18 @@ def extract_matches(query: str, text: str, limit: int = 12) -> list[dict[str, ob
     return matches
 
 
-def query_terms(query: str, max_terms: int = 96) -> list[str]:
+def query_terms(
+    query: str, max_terms: int = 96, use_stopwords: bool = True
+) -> list[str]:
     """Deduplicated terms in first-seen order, capped for SQL comfort.
 
     Boilerplate terms are dropped so a five-word legal question is scored on
     its distinguishing words. If the query is nothing but boilerplate, keep
-    the raw tokens: better a noisy search than an empty one.
+    the raw tokens: better a noisy search than an empty one. ``use_stopwords``
+    exists so the ablation run can measure the filter's contribution.
     """
     tokens = tokenize(query)
-    useful = [term for term in tokens if term not in STOPWORDS]
+    useful = [term for term in tokens if term not in STOPWORDS] if use_stopwords else tokens
     seen: set[str] = set()
     out: list[str] = []
     for term in useful or tokens:

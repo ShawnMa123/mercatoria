@@ -8,8 +8,10 @@ running Elasticsearch/FAISS. If the corpus grows past ~100k chunks, replace
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,9 +19,13 @@ from typing import Any, Callable, Iterable
 
 import numpy as np
 
-from .chunker import ChunkRecord, chunk_document
+from .chunker import ChunkRecord, chunk_document, cn_to_int
 from .config import AppConfig
 from .tokenizer import term_counts, tokenize
+
+# Bump when a table/column the reader relies on changes. Opening an older
+# index is supported (missing columns fall back), a newer one is refused.
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE docs (
@@ -32,7 +38,8 @@ CREATE TABLE docs (
     effective_from TEXT,
     effective_to TEXT,
     snapshot_date TEXT,
-    path TEXT NOT NULL
+    path TEXT NOT NULL,
+    superseded_by TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE chunks (
     chunk_id TEXT PRIMARY KEY,
@@ -46,6 +53,7 @@ CREATE TABLE chunks (
     src_start INTEGER NOT NULL,
     src_end INTEGER NOT NULL,
     token_count INTEGER NOT NULL,
+    index_token_count INTEGER,
     jurisdiction TEXT NOT NULL,
     precision TEXT NOT NULL,
     applies_to TEXT NOT NULL,
@@ -83,6 +91,10 @@ class IndexNotFound(RuntimeError):
 
 class CorpusUnavailable(RuntimeError):
     pass
+
+
+class SchemaTooNew(RuntimeError):
+    """The index was written by a newer mercatoria build."""
 
 
 def _json(value: Any) -> str:
@@ -123,6 +135,25 @@ def _meta_get(conn: sqlite3.Connection, key: str, default: Any = None) -> Any:
 
 SYNTHETIC_ARTICLE_MARKERS = (":doc", ":preamble", ":section-", ":chunk-")
 
+# Cap on articles returned by follow_refs so one densely referenced article
+# cannot blow up a response.
+ARTICLE_FOLLOW_LIMIT = 20
+
+_CN_NUM = r"[零〇一二三四五六七八九十百千0-9]+"
+# "本法第五十六条、第五十七条第一款": one prefix, several article numbers.
+RE_CN_SELF_GROUP = re.compile(
+    rf"(?:本法|本条例|本办法|本规定|本章)\s*"
+    rf"((?:第{_CN_NUM}条(?:之{_CN_NUM})?)"
+    rf"(?:\s*[、和及与]\s*第{_CN_NUM}条(?:之{_CN_NUM})?)*)"
+)
+RE_CN_ONE = re.compile(rf"第({_CN_NUM})条(?:之({_CN_NUM}))?")
+RE_CN_RANGE = re.compile(rf"第({_CN_NUM})条\s*(?:至|－|-|~|～)\s*第({_CN_NUM})条")
+RE_CN_RELATIVE = re.compile(r"(前条|上条|下条|前款)")
+RE_CN_TITLED = re.compile(rf"《([^》]{{2,60}})》\s*(第({_CN_NUM})条(?:之({_CN_NUM}))?)")
+RE_EN_SECTION = re.compile(r"(?:^|[^A-Za-z])[Ss]ection\s+(\d+(?:\.\d+)*[A-Za-z]?)")
+RE_EN_SECTION_MARK = re.compile(r"§\s*(\d+(?:\.\d+)*[A-Za-z]?)")
+RE_EN_ARTICLE = re.compile(r"\bArticle\s+(\d+[A-Za-z]?)\b")
+
 
 def is_synthetic_article(article_id: str) -> bool:
     """True for fallback chunks that are not legal articles."""
@@ -130,6 +161,12 @@ def is_synthetic_article(article_id: str) -> bool:
 
 
 def _row_to_chunk(row: sqlite3.Row) -> dict[str, Any]:
+    keys = row.keys()
+    token_count = int(row["token_count"] or 0)
+    # Older indexes (schema < 2) indexed the raw text, so one count means both.
+    index_token_count = (
+        int(row["index_token_count"] or 0) if "index_token_count" in keys else token_count
+    )
     return {
         "chunk_id": row["chunk_id"],
         "doc_id": row["doc_id"],
@@ -141,7 +178,8 @@ def _row_to_chunk(row: sqlite3.Row) -> dict[str, Any]:
         "ordinal": row["ordinal"],
         "src_start": row["src_start"],
         "src_end": row["src_end"],
-        "token_count": row["token_count"],
+        "token_count": token_count,
+        "index_token_count": index_token_count,
         "jurisdiction": row["jurisdiction"],
         "precision": row["precision"],
         "applies_to": _loads(row["applies_to"], []),
@@ -160,6 +198,16 @@ class Index:
         self.embedding_model = str(_meta_get(conn, "embedding_model", ""))
         self.chunking_hash = str(_meta_get(conn, "chunking_hash", ""))
         self.snapshot_date = _meta_get(conn, "snapshot_date", None)
+        self.schema_version = int(_meta_get(conn, "schema_version", 1) or 1)
+        if self.schema_version > SCHEMA_VERSION:
+            conn.close()
+            raise SchemaTooNew(
+                f"index schema {self.schema_version} is newer than this build "
+                f"({SCHEMA_VERSION}); upgrade mercatoria or rebuild the index"
+            )
+        # schema < 2 stored the indexed token count (header included) in
+        # token_count and had no index_token_count column.
+        self.schema_outdated = self.schema_version < SCHEMA_VERSION
         self.avgdl = float(_meta_get(conn, "avgdl", 0.0) or 0.0)
         self.docs = {
             row["doc_id"]: dict(row)
@@ -210,6 +258,12 @@ class Index:
         self.known_applies_to = sorted(
             {value for c in self.chunks for value in c["applies_to"]}
         )
+        self._references: dict[str, dict[str, list[dict[str, Any]]]] = {}
+        self._doc_id_by_source_doc: dict[str, str] = {
+            str(doc.get("source_doc") or "").strip(): doc_id
+            for doc_id, doc in self.docs.items()
+            if str(doc.get("source_doc") or "").strip()
+        }
         self.config = _loads(_meta_get(self.conn, "config", "{}"), {})
         # Everything is in memory now; a closed connection cannot be raced by
         # concurrent request threads.
@@ -274,7 +328,7 @@ class Index:
             for chunk_id, tf in postings:
                 if chunk_id not in candidate_ids:
                     continue
-                dl = self.chunk_by_id[chunk_id]["token_count"] or 1
+                dl = self.chunk_by_id[chunk_id]["index_token_count"] or 1
                 denom = tf + k1 * (1.0 - b + b * dl / avgdl)
                 scores[chunk_id] = scores.get(chunk_id, 0.0) + idf * tf * (k1 + 1.0) / denom
         return scores
@@ -302,12 +356,15 @@ class Index:
             cursor = max(cursor, start + len(text))
         return "".join(pieces)
 
-    def article_payload(self, article_id: str, neighbors: int = 0) -> dict[str, Any] | None:
+    def article_payload(
+        self, article_id: str, neighbors: int = 0, follow_refs: int = 0
+    ) -> dict[str, Any] | None:
         article_chunks = self.article_chunks(article_id)
         if not article_chunks:
             return None
         first = article_chunks[0]
         doc = self.docs.get(first["doc_id"], {})
+        followed = self.article_followed(article_id, follow_refs)
         return {
             "article_id": article_id,
             "doc_id": first["doc_id"],
@@ -318,6 +375,7 @@ class Index:
             "applies_to": first["applies_to"],
             "effective_from": first["effective_from"],
             "effective_to": first["effective_to"],
+            "superseded_by": doc.get("superseded_by") or None,
             "text": self.article_text(article_chunks),
             "chunks": [
                 {
@@ -330,7 +388,169 @@ class Index:
                 for chunk in article_chunks
             ],
             "neighbors": self.article_neighbors(article_id, neighbors),
+            "references": self.article_references(article_id),
+            "followed": followed,
+            "truncated": len(followed) >= ARTICLE_FOLLOW_LIMIT,
         }
+
+    def article_summary(self, article_id: str) -> dict[str, Any] | None:
+        chunks = self.article_chunks(article_id)
+        if not chunks:
+            return None
+        return {
+            "article_id": article_id,
+            "doc_id": chunks[0]["doc_id"],
+            "article_label": chunks[0]["article_label"],
+            "chunk_ids": [chunk["chunk_id"] for chunk in chunks],
+            "superseded_by": self.docs.get(chunks[0]["doc_id"], {}).get("superseded_by") or None,
+            "text": self.article_text(chunks),
+        }
+
+    def article_followed(self, article_id: str, depth: int) -> list[dict[str, Any]]:
+        """Summaries of the articles this one references (1 hop per depth).
+
+        The result is capped so a densely cross-referenced article cannot
+        explode the response; ``truncated`` on the payload reports the cap.
+        """
+        if depth <= 0:
+            return []
+        seen: set[str] = {article_id}
+        frontier = [article_id]
+        out: list[dict[str, Any]] = []
+        for _ in range(min(2, depth)):
+            next_frontier: list[str] = []
+            for aid in frontier:
+                refs = self.article_references(aid)["resolved"]
+                for ref in refs:
+                    target = ref["article_id"]
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    summary = self.article_summary(target)
+                    if summary is not None:
+                        out.append(summary)
+                    next_frontier.append(target)
+                    if len(out) >= ARTICLE_FOLLOW_LIMIT:
+                        return out
+            frontier = next_frontier
+        return out
+
+    def article_references(self, article_id: str) -> dict[str, list[dict[str, Any]]]:
+        """Same-document (and unambiguous cross-document) article references."""
+        cached = self._references.get(article_id)
+        if cached is not None:
+            return cached
+        result: dict[str, list[dict[str, Any]]] = {"resolved": [], "unresolved": []}
+        chunks = self.article_chunks(article_id)
+        if chunks:
+            text = self.article_text(chunks)
+            doc_id = chunks[0]["doc_id"]
+            seen: set[tuple[str, str]] = set()
+
+            def add(target: str | None, snippet: str) -> None:
+                if target is None:
+                    if (snippet, "") not in seen:
+                        seen.add((snippet, ""))
+                        result["unresolved"].append({"text": snippet})
+                    return
+                if target == article_id and not snippet.endswith("前款"):
+                    return
+                if (snippet, target) in seen:
+                    return
+                seen.add((snippet, target))
+                if any(item["article_id"] == target for item in result["resolved"]):
+                    return
+                label_chunks = self.article_chunks(target)
+                if not label_chunks:
+                    result["unresolved"].append({"text": snippet})
+                    return
+                result["resolved"].append(
+                    {
+                        "text": snippet,
+                        "article_id": target,
+                        "article_label": label_chunks[0]["article_label"],
+                    }
+                )
+
+            for group in RE_CN_SELF_GROUP.finditer(text):
+                for match in RE_CN_ONE.finditer(group.group(1)):
+                    add(
+                        self._resolve_number(doc_id, match.group(1), match.group(2)),
+                        match.group(0),
+                    )
+            for match in RE_CN_RANGE.finditer(text):
+                start = cn_to_int(match.group(1))
+                end = cn_to_int(match.group(2))
+                if start is None or end is None or end < start or end - start > 30:
+                    result["unresolved"].append({"text": match.group(0)})
+                    continue
+                for number in range(start, end + 1):
+                    add(self._resolve_number(doc_id, str(number), None), match.group(0))
+            for match in RE_CN_TITLED.finditer(text):
+                title, snippet, number, suffix = match.group(1), match.group(2), match.group(3), match.group(4)
+                target_doc = self._doc_id_by_source_doc.get(title.strip())
+                add(
+                    self._resolve_number(target_doc, number, suffix) if target_doc else None,
+                    snippet,
+                )
+            for match in RE_CN_RELATIVE.finditer(text):
+                snippet = match.group(1)
+                if snippet == "前款":
+                    add(article_id, snippet)
+                else:
+                    add(self._relative_article(article_id, snippet), snippet)
+            for match in RE_EN_SECTION.finditer(text):
+                add(self._resolve_number(doc_id, match.group(1), None), match.group(0).strip())
+            for match in RE_EN_SECTION_MARK.finditer(text):
+                add(self._resolve_number(doc_id, match.group(1), None), match.group(0))
+            for match in RE_EN_ARTICLE.finditer(text):
+                add(self._resolve_number(doc_id, match.group(1), None), match.group(0))
+
+        self._references[article_id] = result
+        return result
+
+    def _resolve_number(
+        self, doc_id: str | None, number: str, suffix: str | None
+    ) -> str | None:
+        if not doc_id:
+            return None
+        number = number.strip()
+        raw = number
+        if number.isdigit() and suffix:
+            suffix_int = cn_to_int(suffix)
+            candidate = f"{doc_id}:{int(number)}.{suffix_int if suffix_int is not None else suffix}"
+            if candidate in self.articles:
+                return candidate
+        if re.fullmatch(r"[零〇一二三四五六七八九十百千]+", number):
+            value = cn_to_int(number)
+            if value is None:
+                return None
+            number = str(value)
+        for candidate in (
+            f"{doc_id}:{number}",
+            f"{doc_id}:sec-{number}",
+            f"{doc_id}:art-{number}",
+        ):
+            if candidate in self.articles:
+                return candidate
+        return None
+
+    def _relative_article(self, article_id: str, keyword: str) -> str | None:
+        chunks = self.article_chunks(article_id)
+        if not chunks:
+            return None
+        sequence = [
+            aid
+            for aid in self.doc_articles.get(chunks[0]["doc_id"], [])
+            if not is_synthetic_article(aid)
+        ]
+        if article_id not in sequence:
+            return None
+        position = sequence.index(article_id)
+        index = position - 1 if keyword in {"前条", "上条"} else position + 1
+        if 0 <= index < len(sequence):
+            return sequence[index]
+        return None
 
     def article_neighbors(self, article_id: str, count: int) -> dict[str, list[dict[str, Any]]]:
         """Previous/next legal articles in the same document, in source order."""
@@ -372,7 +592,11 @@ class Index:
 
 
 def _reusable_vectors(
-    index_dir: Path, model: str, chunking_hash: str, wanted: set[str]
+    index_dir: Path,
+    model: str,
+    chunking_hash: str,
+    wanted: set[str],
+    hashes: dict[str, str],
 ) -> dict[str, np.ndarray]:
     """Vectors from the active index for unchanged chunk IDs.
 
@@ -397,10 +621,20 @@ def _reusable_vectors(
         row = conn.execute("SELECT value FROM meta WHERE key='chunking_hash'").fetchone()
         if not row or str(row[0]) != chunking_hash:
             return {}
+        # The header text comes from document metadata (source_doc/section),
+        # which chunking_hash does not cover, so compare the per-chunk hash of
+        # the exact indexed text before reusing a vector.
+        row = conn.execute("SELECT value FROM meta WHERE key='index_text_hash'").fetchone()
+        old_hashes = _loads(row[0], {}) if row else {}
+        if not isinstance(old_hashes, dict) or not old_hashes:
+            return {}
         out: dict[str, np.ndarray] = {}
         for chunk_id, blob in conn.execute("SELECT chunk_id, vec FROM vectors"):
-            if chunk_id in wanted:
-                out[str(chunk_id)] = np.frombuffer(blob, dtype=np.float32)
+            if chunk_id not in wanted:
+                continue
+            if old_hashes.get(str(chunk_id)) != hashes.get(str(chunk_id)):
+                continue
+            out[str(chunk_id)] = np.frombuffer(blob, dtype=np.float32)
         return out
     finally:
         conn.close()
@@ -448,8 +682,9 @@ def build_index(
         conn.execute(
             """INSERT OR REPLACE INTO docs
                (doc_id, source_doc, jurisdiction, language, precision,
-                applies_to, effective_from, effective_to, snapshot_date, path)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                applies_to, effective_from, effective_to, snapshot_date, path,
+                superseded_by)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 doc["doc_id"],
                 doc["source_doc"],
@@ -461,6 +696,7 @@ def build_index(
                 doc.get("effective_to"),
                 doc.get("snapshot_date"),
                 doc["path"],
+                doc.get("superseded_by") or "",
             ),
         )
         records = chunk_document(doc, raw, cfg.chunking)
@@ -473,6 +709,7 @@ def build_index(
     posting_rows: list[tuple[str, str, int]] = []
     texts: list[str] = []
     chunk_ids: list[str] = []
+    index_hashes: dict[str, str] = {}
     seen_chunk_ids: set[str] = set()
     for doc, rec in all_chunks:
         if rec.chunk_id in seen_chunk_ids:
@@ -487,7 +724,11 @@ def build_index(
             )
             if header:
                 index_text = f"[{header}]\n{rec.text}"
+        index_hashes[rec.chunk_id] = hashlib.sha1(
+            index_text.encode("utf-8")
+        ).hexdigest()[:16]
         token_counts = term_counts(index_text)
+        raw_token_count = sum(term_counts(rec.text).values())
         chunk_rows.append(
             (
                 rec.chunk_id,
@@ -500,6 +741,7 @@ def build_index(
                 rec.ordinal,
                 rec.start,
                 rec.end,
+                raw_token_count,
                 sum(token_counts.values()),
                 doc["jurisdiction"],
                 doc["precision"],
@@ -516,9 +758,9 @@ def build_index(
     conn.executemany(
         """INSERT OR REPLACE INTO chunks
            (chunk_id, doc_id, article_id, article_label, text, section, part,
-            ordinal, src_start, src_end, token_count, jurisdiction, precision,
-            applies_to, effective_from, effective_to)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ordinal, src_start, src_end, token_count, index_token_count,
+            jurisdiction, precision, applies_to, effective_from, effective_to)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         chunk_rows,
     )
     # Keep SQLite parameter/transaction sizes reasonable.
@@ -538,7 +780,11 @@ def build_index(
             matrix = np.zeros((0, 0), dtype=np.float32)
         else:
             reuse = _reusable_vectors(
-                out.parent, cfg.embedding.model, cfg.chunking_hash(), set(chunk_ids)
+                out.parent,
+                cfg.embedding.model,
+                cfg.chunking_hash(),
+                set(chunk_ids),
+                index_hashes,
             )
             missing = [i for i, cid in enumerate(chunk_ids) if cid not in reuse]
             fresh = embed([texts[i] for i in missing]) if missing else None
@@ -574,7 +820,7 @@ def build_index(
     )
 
     avgdl = (
-        conn.execute("SELECT AVG(token_count) FROM chunks").fetchone()[0] or 0.0
+        conn.execute("SELECT AVG(index_token_count) FROM chunks").fetchone()[0] or 0.0
     )
     article_count = conn.execute("SELECT COUNT(DISTINCT article_id) FROM chunks").fetchone()[0]
     jurisdictions = [
@@ -590,6 +836,8 @@ def build_index(
         "SELECT MAX(snapshot_date) FROM docs WHERE snapshot_date IS NOT NULL"
     ).fetchone()[0]
     _meta_set(conn, "version", version)
+    _meta_set(conn, "schema_version", SCHEMA_VERSION)
+    _meta_set(conn, "index_text_hash", json.dumps(index_hashes, sort_keys=True))
     _meta_set(conn, "built_at", _now())
     _meta_set(conn, "embedding_model", cfg.embedding.model)
     _meta_set(conn, "embedding_dim", dim)

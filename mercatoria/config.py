@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, is_dataclass
 from pathlib import Path
 from typing import Any
 
@@ -72,6 +72,29 @@ class EmbeddingConfig:
     dim: int = 0
     retries: int = 3
     cache_path: str = "data/embedding-cache.db"
+    # LRU cache for query vectors: (model, normalized query) -> vector.
+    # 0 disables it. Shared by every request of a Retriever.
+    query_cache_size: int = 1024
+
+
+@dataclass
+class ConfidenceConfig:
+    """Thresholds for the retrieval confidence label (diagnostics only).
+
+    Calibrated on the dev trade-law set: score = (1-w)*idf_coverage +
+    w*top1_cosine, where idf_coverage is the IDF-weighted share of query
+    terms that literally occur in the top-1 chunk. 0.64 marks the boundary
+    between "the corpus talks about this" and "it does not".
+    """
+
+    # score at or above which a hit may be labelled "high".
+    high: float = 0.80
+    # below this score the answer is "low".
+    medium: float = 0.64
+    # minimum top1-top2 gap for "high".
+    min_gap: float = 0.02
+    # weight of the raw cosine in the score (1-w goes to term coverage).
+    vector_weight: float = 0.8
 
 
 @dataclass
@@ -87,6 +110,17 @@ class RetrievalConfig:
     # Append English equivalents of known Chinese legal terms so a Chinese
     # question can reach WTO/CISG English text without a translation call.
     expand_cross_language: bool = True
+    # Drop regulatory boilerplate ("本法", "shall", ...) from query terms.
+    query_stopwords: bool = True
+    # Scale BM25 normalisation by magnitude, saturating at this raw score.
+    # 0 restores the plain _minmax behaviour (kept for ablation runs).
+    bm25_saturation: float = 8.0
+    # Soft quota (P1-7): a jurisdiction keeps its reserved slot only when its
+    # best score is at least this fraction of the global top-1. 0 = hard quota.
+    quota_min_ratio: float = 0.0
+    # Degrade to BM25-only when the embedding gateway fails.
+    fallback_bm25_on_embed_error: bool = False
+    confidence: ConfidenceConfig = field(default_factory=ConfidenceConfig)
 
 
 @dataclass
@@ -188,7 +222,12 @@ class AppConfig:
 def _merge_dataclass(cls, data: dict[str, Any] | None):
     obj = cls()
     for key, value in (data or {}).items():
-        if hasattr(obj, key):
+        if not hasattr(obj, key):
+            continue
+        current = getattr(obj, key)
+        if is_dataclass(current) and isinstance(value, dict):
+            setattr(obj, key, _merge_dataclass(type(current), value))
+        else:
             setattr(obj, key, value)
     return obj
 

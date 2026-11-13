@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import json
+import threading
+import time
 from collections import OrderedDict
 from typing import Any, Callable
 
@@ -87,10 +89,29 @@ def _apply_jurisdiction_quota(
     requested_j: list[str],
     quota: int,
     index: "Index",
+    min_ratio: float = 0.0,
 ) -> list[tuple[str, dict[str, Any]]]:
+    """Keep up to ``quota`` slots per requested jurisdiction, then fill.
+
+    ``min_ratio`` softens the reservation: a jurisdiction only keeps its slot
+    when its best candidate scores at least ``min_ratio`` times the global
+    top-1. 0 keeps the hard quota.
+    """
     if quota <= 0 or len(ordered) <= top_k:
         return ordered[:top_k]
     wanted = set(requested_j)
+    best: dict[str, float] = {}
+    for cid, hit in ordered:
+        jurisdiction = index.chunk_by_id[cid]["jurisdiction"]
+        if jurisdiction in wanted and jurisdiction not in best:
+            best[jurisdiction] = float(hit.get("score", 0.0))
+    top_score = float(ordered[0][1].get("score", 0.0)) if ordered else 0.0
+    if min_ratio > 0:
+        wanted = {
+            jurisdiction
+            for jurisdiction in wanted
+            if best.get(jurisdiction, 0.0) >= min_ratio * top_score and top_score > 0
+        }
     picked: list[tuple[str, dict[str, Any]]] = []
     taken: set[str] = set()
     counts: dict[str, int] = {j: 0 for j in requested_j}
@@ -130,6 +151,13 @@ class Retriever:
         self.rerank_enabled = bool(self._rerank_forced or cfg.rerank.enabled)
         self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._cache_size = 256
+        # Query-vector LRU. /v1/retrieve is a sync route, so concurrent
+        # requests share one Retriever: guard every mutation.
+        # Response+vector caches are touched from request threads.
+        self._cache_lock = threading.Lock()
+        self._embed_cache: OrderedDict[str, np.ndarray] = OrderedDict()
+        self._embed_cache_size = max(0, int(cfg.embedding.query_cache_size))
+        self._embed_lock = threading.Lock()
 
     def _cache_key(
         self,
@@ -153,6 +181,14 @@ class Retriever:
             "bm25_k1": self.cfg.retrieval.bm25_k1,
             "bm25_b": self.cfg.retrieval.bm25_b,
             "expand_cross_language": self.cfg.retrieval.expand_cross_language,
+            "query_stopwords": self.cfg.retrieval.query_stopwords,
+            "bm25_saturation": self.cfg.retrieval.bm25_saturation,
+            "quota_min_ratio": self.cfg.retrieval.quota_min_ratio,
+            "confidence": {
+                "high": self.cfg.retrieval.confidence.high,
+                "medium": self.cfg.retrieval.confidence.medium,
+                "min_gap": self.cfg.retrieval.confidence.min_gap,
+            },
             "multi_query_bonus": self.cfg.retrieval.multi_query_bonus,
             "rerank": rerank,
             "candidates": self.cfg.rerank.candidates,
@@ -166,20 +202,25 @@ class Retriever:
         return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
 
     def clear_cache(self) -> None:
-        self._cache.clear()
+        with self._cache_lock:
+            self._cache.clear()
+        with self._embed_lock:
+            self._embed_cache.clear()
 
     def _cache_get(self, key: str) -> dict[str, Any] | None:
-        cached = self._cache.get(key)
-        if cached is None:
-            return None
-        self._cache.move_to_end(key)
-        return copy.deepcopy(cached)
+        with self._cache_lock:
+            cached = self._cache.get(key)
+            if cached is None:
+                return None
+            self._cache.move_to_end(key)
+            return copy.deepcopy(cached)
 
     def _cache_put(self, key: str, response: dict[str, Any]) -> None:
-        self._cache[key] = copy.deepcopy(response)
-        self._cache.move_to_end(key)
-        while len(self._cache) > self._cache_size:
-            self._cache.popitem(last=False)
+        with self._cache_lock:
+            self._cache[key] = copy.deepcopy(response)
+            self._cache.move_to_end(key)
+            while len(self._cache) > self._cache_size:
+                self._cache.popitem(last=False)
 
     def _select(
         self, filters: dict[str, Any]
@@ -312,6 +353,102 @@ class Retriever:
             "as_of": {"requested": as_of, "precision": precision},
         }
 
+    def _embed_queries(self, queries: list[str]) -> tuple[np.ndarray, int, bool]:
+        """Embed queries through the per-Retriever LRU.
+
+        Returns (matrix aligned with ``queries``, cache_hits, degraded).
+        ``degraded`` is True only when the gateway failed and the caller
+        opted into the BM25-only fallback.
+        """
+        model = self.cfg.embedding.model
+        keys = [f"{model}\x1f{query}" for query in queries]
+        vectors: dict[str, np.ndarray] = {}
+        missing: list[str] = []
+        hits = 0
+        with self._embed_lock:
+            for key in keys:
+                if key in vectors or key in missing:
+                    continue
+                cached = self._embed_cache.get(key)
+                if cached is None:
+                    missing.append(key)
+                else:
+                    self._embed_cache.move_to_end(key)
+                    vectors[key] = cached
+                    hits += 1
+        degraded = False
+        if missing:
+            texts = [key.split("\x1f", 1)[1] for key in missing]
+            try:
+                fresh = self.embed(texts)
+                if len(fresh) != len(texts):
+                    raise ValueError("embedding count does not match query count")
+            except Exception:
+                if not self.cfg.retrieval.fallback_bm25_on_embed_error:
+                    raise
+                degraded = True
+                dim = int(self.index.vectors.shape[1]) if self.index.vectors.ndim == 2 else 0
+                fresh = np.zeros((len(texts), dim), dtype=np.float32)
+            else:
+                if self._embed_cache_size:
+                    with self._embed_lock:
+                        for key, vector in zip(missing, fresh):
+                            self._embed_cache[key] = vector
+                            self._embed_cache.move_to_end(key)
+                        while len(self._embed_cache) > self._embed_cache_size:
+                            self._embed_cache.popitem(last=False)
+            for key, vector in zip(missing, fresh):
+                vectors[key] = vector
+        matrix = np.vstack([vectors[key] for key in keys])
+        return matrix, hits, degraded
+
+    def _term_coverage(self, text: str, queries: list[str]) -> float:
+        """IDF-weighted share of query terms that occur in ``text``.
+
+        A question whose rare terms (CBAM, ICSID, a fabricated article number)
+        never appear is not answerable from this corpus, even when the generic
+        words produce a decent cosine.
+        """
+        lowered = text.lower()
+        terms: list[str] = []
+        seen: set[str] = set()
+        for query in queries:
+            for term in query_terms(query, use_stopwords=self.cfg.retrieval.query_stopwords):
+                if term not in seen:
+                    seen.add(term)
+                    terms.append(term)
+        if not terms:
+            return 0.0
+        numerator = denominator = 0.0
+        for term in terms:
+            weight = self.index.idf.get(term, 1.0)
+            denominator += weight
+            if term in lowered:
+                numerator += weight
+        return numerator / denominator if denominator else 0.0
+
+    def _confidence(self, chunks: list[dict[str, Any]], queries: list[str]) -> str:
+        """Coarse reliability label for the returned set (diagnostics only)."""
+        conf = self.cfg.retrieval.confidence
+        if not chunks:
+            return "low"
+        top = chunks[0]
+        best = float(top["score_parts"].get("first_stage") or 0.0)
+        second = (
+            float(chunks[1]["score_parts"].get("first_stage") or 0.0)
+            if len(chunks) > 1
+            else 0.0
+        )
+        gap = best - second
+        coverage = self._term_coverage(top.get("text") or "", queries)
+        weight = max(0.0, min(1.0, float(conf.vector_weight)))
+        score = (1.0 - weight) * coverage + weight * float(top["score_parts"].get("vector") or 0.0)
+        if score >= conf.high and gap >= conf.min_gap:
+            return "high"
+        if score >= conf.medium:
+            return "medium"
+        return "low"
+
     def retrieve(
         self,
         queries: list[str] | str,
@@ -321,6 +458,7 @@ class Retriever:
         use_rerank: bool | None = None,
         per_jurisdiction_k: int | None = None,
     ) -> dict[str, Any]:
+        t_start = time.perf_counter()
         if isinstance(queries, str):
             queries = [queries]
         queries = [q.strip() for q in (queries or []) if q and q.strip()]
@@ -349,11 +487,14 @@ class Retriever:
         )
         cached = self._cache_get(cache_key)
         if cached is not None:
+            cached.setdefault("diagnostics", {})["cache_hit"] = True
             return cached
         requested_j = [j.upper() for j in _as_list(filters.get("jurisdictions"))]
         requested_a = [a.lower() for a in _as_list(filters.get("applies_to"))]
         as_of = filters.get("as_of")
+        t_filter = time.perf_counter()
         rows, funnel, zero_reason, uncovered = self._select(filters)
+        timings = {"filter": round((time.perf_counter() - t_filter) * 1000, 2)}
 
         corpus = self.index.corpus_block()
         temporal = self._temporal_block(as_of)
@@ -378,15 +519,21 @@ class Retriever:
             "field_matches": self._field_matches(requested_j, requested_a, rows, as_of),
         }
         if zero_reason:
+            diagnostics["confidence"] = "low"
+            timings["total"] = round((time.perf_counter() - t_start) * 1000, 2)
+            diagnostics["timings_ms"] = timings
             self._cache_put(cache_key, response)
             return response
 
         candidate_ids = [r["chunk_id"] for r in rows]
         candidate_set = set(candidate_ids)
         candidate_indices = [self.index.chunk_pos[cid] for cid in candidate_ids]
-        query_vectors = self.embed(queries)
-        if len(query_vectors) != len(queries):
-            raise ValueError("embedding count does not match query count")
+        t_embed = time.perf_counter()
+        query_vectors, embed_hits, embed_degraded = self._embed_queries(queries)
+        timings["embed"] = round((time.perf_counter() - t_embed) * 1000, 2)
+        diagnostics["embedding_cache_hits"] = embed_hits
+        if embed_degraded:
+            diagnostics["degraded"] = ["embedding"]
 
         merged: dict[str, dict[str, Any]] = {}
         cfg = self.cfg.retrieval
@@ -447,23 +594,34 @@ class Retriever:
             pool_depth = min(200, max(top_k * 3, quota * max(1, len(requested_j)) * 5))
 
         for qi, (query, qvec) in enumerate(zip(queries, query_vectors)):
-            terms = query_terms(query)
+            terms = query_terms(query, use_stopwords=cfg.query_stopwords)
+            t_bm25 = time.perf_counter()
             bm25 = self.index.bm25_scores(candidate_set, terms, cfg.bm25_k1, cfg.bm25_b)
             raw_bm25 = [float(bm25.get(cid, 0.0)) for cid in candidate_ids]
-            raw_vec = self.index.vector_scores(candidate_indices, qvec)
+            timings["bm25"] = round(timings.get("bm25", 0.0) + (time.perf_counter() - t_bm25) * 1000, 2)
+            t_vec = time.perf_counter()
+            raw_vec = (
+                self.index.vector_scores(candidate_indices, qvec)
+                if not embed_degraded
+                else np.zeros((len(candidate_indices),), dtype=np.float32)
+            )
+            timings["vector"] = round(timings.get("vector", 0.0) + (time.perf_counter() - t_vec) * 1000, 2)
             vec_list = [float(x) for x in raw_vec]
             bm25_norm = _minmax(raw_bm25)
             # A batch whose best BM25 is weak (one low-IDF hit) must not be
             # rescaled to 1.0: that lets a literal coincidence outrank a
-            # strong vector match. Scale by magnitude, saturating at 8.
-            if bm25_norm:
-                scale = min(1.0, max(raw_bm25) / 8.0)
+            # strong vector match. Scale by magnitude, saturating at 8
+            # (bm25_saturation=0 restores plain _minmax for ablation).
+            saturation = float(cfg.bm25_saturation or 0.0)
+            if bm25_norm and saturation > 0:
+                scale = min(1.0, max(raw_bm25) / saturation)
                 if scale < 1.0:
                     bm25_norm = [value * scale for value in bm25_norm]
             vec_norm = _minmax(vec_list)
+            vector_weight = 0.0 if embed_degraded else cfg.vector_weight
             scored: list[tuple[float, str, float, float, float, float]] = []
             for i, cid in enumerate(candidate_ids):
-                score = (1.0 - cfg.vector_weight) * bm25_norm[i] + cfg.vector_weight * vec_norm[i]
+                score = (1.0 - vector_weight) * bm25_norm[i] + vector_weight * vec_norm[i]
                 if cfg.similarity_threshold and score < cfg.similarity_threshold:
                     continue
                 scored.append((score, cid, raw_bm25[i], vec_list[i], bm25_norm[i], vec_norm[i]))
@@ -530,6 +688,9 @@ class Retriever:
         diagnostics["rerank"] = rerank_meta
         if not merged:
             diagnostics["zero_reason"] = "no_match"
+            diagnostics["confidence"] = "low"
+            timings["total"] = round((time.perf_counter() - t_start) * 1000, 2)
+            diagnostics["timings_ms"] = timings
             self._cache_put(cache_key, response)
             return response
 
@@ -552,8 +713,22 @@ class Retriever:
                     item[0],
                 ),
             )
-        ordered = _apply_jurisdiction_quota(ordered, top_k, requested_j, quota, self.index)
+        t_rank = time.perf_counter()
+        ordered = _apply_jurisdiction_quota(
+            ordered,
+            top_k,
+            requested_j,
+            quota,
+            self.index,
+            float(cfg.quota_min_ratio or 0.0),
+        )
         diagnostics["per_jurisdiction_k"] = quota or None
+        if quota:
+            slots: dict[str, int] = {}
+            for cid, _hit in ordered:
+                jurisdiction = self.index.chunk_by_id[cid]["jurisdiction"]
+                slots[jurisdiction] = slots.get(jurisdiction, 0) + 1
+            diagnostics["quota_slots"] = slots
         funnel["after_retrieval"] = len(ordered)
         chunks: list[dict[str, Any]] = []
         for rank, (cid, hit) in enumerate(ordered, 1):
@@ -575,6 +750,7 @@ class Retriever:
                 matched_by.append("vec")
             if hit["bm25"] != 0.0:
                 matched_by.append("kw")
+            superseded_by = doc.get("superseded_by") or ""
             chunks.append(
                 {
                     "chunk_id": cid,
@@ -607,6 +783,7 @@ class Retriever:
                     "effective_to": row["effective_to"],
                     "jurisdictions": [row["jurisdiction"]],
                     "applies_to": row["applies_to"],
+                    "superseded_by": superseded_by or None,
                     "matched_by": matched_by,
                     "matched_queries": q_indices,
                     "matched_terms": matched_terms,
@@ -625,5 +802,19 @@ class Retriever:
                 }
             )
         response["chunks"] = chunks
+        superseded = {
+            chunk["doc_id"]: chunk["superseded_by"]
+            for chunk in chunks
+            if chunk.get("superseded_by")
+        }
+        if superseded:
+            diagnostics["warnings"] = [
+                f"{doc_id} has been superseded by {replacement}"
+                for doc_id, replacement in sorted(superseded.items())
+            ]
+        diagnostics["confidence"] = self._confidence(chunks, queries)
+        timings["rank"] = round((time.perf_counter() - t_rank) * 1000, 2)
+        timings["total"] = round((time.perf_counter() - t_start) * 1000, 2)
+        diagnostics["timings_ms"] = timings
         self._cache_put(cache_key, response)
         return response

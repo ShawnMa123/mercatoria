@@ -117,6 +117,13 @@ CN_EFFECTIVE_FROM = {
     "cn-countervailing-2004": "2004-06-01",
 }
 
+# 旧 doc_id -> 承接它的现行 doc_id。检索返回旧法时据此告诉 Agent 该看哪部。
+SUPERSEDED_BY = {
+    "cn-ad-cvd-1997": "cn-anti-dumping-2004",
+    "cn-customs-penalty-rules-2004": "cn-customs-penalty-2022",
+    "cn-import-export-tariff-2017": "cn-tariff-law-2024",
+}
+
 CN_EFFECTIVE_TO = {
     # Superseded by the 2004 anti-dumping / countervailing regulations.
     "cn-ad-cvd-1997": "2004-03-31",
@@ -429,6 +436,11 @@ def build_manifest(corpus_dir: str | Path) -> dict[str, Any]:
     ):
         docs.extend(part(corpus))
     docs.sort(key=lambda d: d["doc_id"])
+    known = {doc["doc_id"] for doc in docs}
+    for doc in docs:
+        replacement = SUPERSEDED_BY.get(doc["doc_id"], "")
+        # Point at the replacement only when it is actually in the corpus.
+        doc["superseded_by"] = replacement if replacement in known else ""
     return {
         "manifest_version": MANIFEST_VERSION,
         "corpus_dir": ".",

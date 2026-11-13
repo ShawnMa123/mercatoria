@@ -30,6 +30,7 @@ from .store import (
     CorpusUnavailable,
     Index,
     IndexNotFound,
+    SchemaTooNew,
     activate_index,
     open_current,
 )
@@ -107,6 +108,10 @@ class Service:
             self.index = None
             self.retriever = None
             self.error = str(exc)
+        except SchemaTooNew as exc:
+            self.index = None
+            self.retriever = None
+            self.error = f"{exc} (rebuild the index: python -m mercatoria.cli rebuild)"
 
     def require_retriever(self) -> Retriever:
         if self.retriever is None:
@@ -352,6 +357,10 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 "chunks": service.index.total_chunks,
                 "documents": service.index.documents,
                 "embedding_model": service.index.embedding_model,
+                "chunking_hash": service.index.chunking_hash,
+                "built_at": service.index.built_at,
+                "schema_version": service.index.schema_version,
+                "index_schema_outdated": service.index.schema_outdated,
             },
             "config": service.cfg.public_dict(),
         }
@@ -407,10 +416,21 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
             raise HTTPException(status_code=503, detail=service.error or "index is not built")
         return service.index
 
-    @app.get("/v1/articles/{article_id}")
-    def get_article(article_id: str, neighbors: int = 0) -> dict[str, Any]:
+    def _follow(value: Any) -> int:
+        try:
+            depth = int(value or 0)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="follow_refs must be an integer") from exc
+        if not 0 <= depth <= 2:
+            raise HTTPException(status_code=400, detail="follow_refs must be in [0, 2]")
+        return depth
+
+    @app.get("/v1/articles/{article_id:path}")
+    def get_article(article_id: str, neighbors: int = 0, follow_refs: int = 0) -> dict[str, Any]:
         index = _index()
-        payload = index.article_payload(article_id, _neighbors(neighbors))
+        payload = index.article_payload(
+            article_id, _neighbors(neighbors), _follow(follow_refs)
+        )
         if payload is None:
             raise HTTPException(status_code=404, detail=f"article not found: {article_id}")
         return payload
@@ -423,12 +443,13 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         if len(raw) > 32:
             raise HTTPException(status_code=400, detail="at most 32 article_ids per request")
         neighbors = _neighbors(body.get("neighbors"))
+        follow = _follow(body.get("follow_refs"))
         index = _index()
         articles: list[dict[str, Any]] = []
         missing: list[str] = []
         for value in raw:
             article_id = str(value)
-            payload = index.article_payload(article_id, neighbors)
+            payload = index.article_payload(article_id, neighbors, follow)
             if payload is None:
                 missing.append(article_id)
             else:
@@ -455,6 +476,7 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 filters=body.get("filters") or {},
                 fields=body.get("fields") or {},
                 use_rerank=body.get("rerank"),
+                per_jurisdiction_k=body.get("per_jurisdiction_k"),
             )
         except (IndexNotFound, CorpusUnavailable) as exc:
             return unavailable(exc)
