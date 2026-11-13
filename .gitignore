@@ -218,3 +218,48 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# 语料原始 PDF（可由脚本重新下载，不入库）
+corpus/**/*.pdf
+corpus/eval/results_*.jsonl
+corpus/eval/summary_*.json
+imported_doc_ids.json
+import_stats.txt
+corpus/cn/
+structtest/
+
+# 评测中间结果（可重跑生成）
+corpus/eval/retrieval_*.json
+corpus/eval/local_*.json
+corpus/eval/dualpath_*.json
+corpus/eval/sweep_*.json
+corpus/eval/cases_part*.json
+corpus/eval/cases_crosslang.json
+
+# ---------------------------------------------------------------------------
+# 不进版本控制的内容
+#
+# 1) 语料：法规文本的转载受各来源使用条款约束（中文法规来自 LawRefBook，
+#    WTO 协定有其版权声明）。仓库只保留抓取脚本，语料用
+#    scripts/setup-corpus.sh 自行重建。
+corpus/au/
+corpus/ecfr/
+corpus/eu/
+corpus/jp/
+corpus/uk/
+corpus/uncitral/
+corpus/wto/
+
+# 2) RAGFlow 源码：Apache-2.0 第三方项目，67MB。改动记录在
+#    ragflow-src/UPSTREAM.md，源码用 scripts/setup-ragflow-src.sh 重建。
+ragflow-src/
+
+# 3) 设计文档：暂不公开
+docs/
+
+# 4) 本地凭证
+.env
+
+# 5) 本地索引与运行配置（可重建）
+data/
+config.json

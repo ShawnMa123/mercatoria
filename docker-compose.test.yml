@@ -1,0 +1,42 @@
+services:
+  mercatoria:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mercatoria:test
+    container_name: mercatoria-test
+    ports:
+      - "8080:8080"
+    environment:
+      # Local magpie gateway on the host (embedding + chat).
+      EMBEDDING_BASE: http://host.docker.internal:3425/v1
+      EMBEDDING_MODEL: my-team-2k/qwen3.7-text-embedding
+      LLM_BASE: http://host.docker.internal:3425/v1
+      LLM_MODEL: local-wb/cn:deepseek-v4.1-flash
+      # gte-rerank-v2 is served on the native DashScope path, not on
+      # magpie's /v1/rerank route.
+      RERANK_ENABLED: "false"
+      RERANK_STYLE: dashscope
+      RERANK_BASE: https://llm-tlndh47wd9ustbss.cn-beijing.maas.aliyuncs.com
+      RERANK_PATH: /api/v1/services/rerank/text-rerank/text-rerank
+      RERANK_MODEL: gte-rerank-v2
+      RERANK_API_KEY: ${RERANK_API_KEY:-}
+      RERANK_CANDIDATES: "10"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - mercatoria-data:/app/data
+    restart: unless-stopped
+
+  test:
+    build:
+      context: .
+      target: test
+    image: mercatoria:test-suite
+    profiles: ["test"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
+
+volumes:
+  mercatoria-data:
