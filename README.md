@@ -548,6 +548,7 @@ index_token_count  索引文本 token 数（BM25 长度归一化）
 | 引用解析准确率 | 32/32 | 人工核对样例 |
 | 本地检索 p50 / 缓存命中 p50 | **28 ms / 0.24 ms** | 11.5k chunks |
 | 并发 | 8 线程 60 rps、32 线程 57 rps，0 错误 | p99 311 / 908 ms |
+| 回答质量（抽样 n=16） | 引用有效率 100%、编造引用 0、无答案拒答 5/6、关键词全覆盖 80% | 生成 p50 8.7 s（含推理） |
 
 评测口径（重要）：`Hit@5` 指 top-5 内存在“条文块且命中全部 must_mention 关键词”。v2 把
 “长条文 `part>=1` 也视为条文块”，该口径变化单独记 +2.04pp Hit@5；消融矩阵见
@@ -859,6 +860,7 @@ AU 5, EU 2, INT 1).
 | reference resolution accuracy | 32/32 |
 | local p50 / cache-hit p50 | **28 ms** / **0.24 ms** |
 | concurrency (8 / 32 threads, 60 s) | 60 / 57 rps, 0 errors |
+| answer quality (sample n=16) | citation validity 100%, 0 fabricated ids, refusal on no_answer 5/6, all-keyword coverage 80% (generation p50 8.7 s) |
 
 `Hit@5` means a top-5 chunk is an article block containing every `must_mention` keyword.
 The v2 scoring change (long-article `part>=1` counts as an article block) is reported
