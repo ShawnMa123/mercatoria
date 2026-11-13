@@ -1,0 +1,395 @@
+{
+ "_meta": {
+  "purpose": "P1-7: multi-jurisdiction filters where only one jurisdiction is relevant",
+  "generated_by": "tools/make_quota_cases.py",
+  "source": "corpus/eval/test_cases.json",
+  "seed": 20261113,
+  "rule": "single-jurisdiction dev case + one rotating distractor jurisdiction"
+ },
+ "cases": [
+  {
+   "id": "Q-01",
+   "source_id": 226,
+   "category": "日本",
+   "question": "関税の納期限はいつですか。",
+   "must_mention": [
+    "関税"
+   ],
+   "relevant_jurisdictions": [
+    "JP"
+   ],
+   "requested_jurisdictions": [
+    "JP",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-02",
+   "source_id": 450,
+   "category": "US担保",
+   "question": "What happens if a bond is breached under 19 CFR Part 113?",
+   "must_mention": [
+    "breach"
+   ],
+   "relevant_jurisdictions": [
+    "US"
+   ],
+   "requested_jurisdictions": [
+    "US",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-03",
+   "source_id": 386,
+   "category": "WTO综合",
+   "question": "What disciplines apply to export subsidies under the SCM Agreement?",
+   "must_mention": [
+    "subsid"
+   ],
+   "relevant_jurisdictions": [
+    "WTO"
+   ],
+   "requested_jurisdictions": [
+    "WTO",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-04",
+   "source_id": 486,
+   "category": "AU报关",
+   "question": "How are goods valued for duty purposes in Australia?",
+   "must_mention": [
+    "value"
+   ],
+   "relevant_jurisdictions": [
+    "AU"
+   ],
+   "requested_jurisdictions": [
+    "AU",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-05",
+   "source_id": 312,
+   "category": "关税",
+   "question": "纳税义务人对税款有异议怎么办？",
+   "must_mention": [
+    "纳"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  },
+  {
+   "id": "Q-06",
+   "source_id": 327,
+   "category": "贸易便利化",
+   "question": "两步申报的具体流程是什么？",
+   "must_mention": [
+    "申报"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  },
+  {
+   "id": "Q-07",
+   "source_id": 207,
+   "category": "WTO",
+   "question": "数量限制在 GATT 下一般是否允许？有哪些例外？",
+   "must_mention": [
+    "quantitative"
+   ],
+   "relevant_jurisdictions": [
+    "WTO"
+   ],
+   "requested_jurisdictions": [
+    "WTO",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-08",
+   "source_id": 308,
+   "category": "关税",
+   "question": "逾期缴纳税款会加收多少滞纳金？",
+   "must_mention": [
+    "纳"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  },
+  {
+   "id": "Q-09",
+   "source_id": 310,
+   "category": "关税",
+   "question": "海关可以采取哪些税收保全措施？",
+   "must_mention": [
+    "纳"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  },
+  {
+   "id": "Q-10",
+   "source_id": 381,
+   "category": "AU综合",
+   "question": "What record keeping is required for Australian customs purposes?",
+   "must_mention": [
+    "record"
+   ],
+   "relevant_jurisdictions": [
+    "AU"
+   ],
+   "requested_jurisdictions": [
+    "AU",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-11",
+   "source_id": 255,
+   "category": "澳洲",
+   "question": "What are the fit and proper person requirements for export licence holders in Australia?",
+   "must_mention": [
+    "export"
+   ],
+   "relevant_jurisdictions": [
+    "AU"
+   ],
+   "requested_jurisdictions": [
+    "AU",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-12",
+   "source_id": 194,
+   "category": "国际货物买卖",
+   "question": "根本违约与一般违约的区别在哪？",
+   "must_mention": [
+    "conform"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-13",
+   "source_id": 540,
+   "category": "CISG深度",
+   "question": "CISG 第 49 条规定了什么？",
+   "must_mention": [
+    "avoid"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-14",
+   "source_id": 192,
+   "category": "国际货物买卖",
+   "question": "根据 CISG，货物不符合同时买方有哪些救济？",
+   "must_mention": [
+    "conform"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-15",
+   "source_id": 511,
+   "category": "WTO SPS",
+   "question": "How does the SPS Agreement treat international standards?",
+   "must_mention": [
+    "standard"
+   ],
+   "relevant_jurisdictions": [
+    "WTO"
+   ],
+   "requested_jurisdictions": [
+    "WTO",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-16",
+   "source_id": 380,
+   "category": "AU综合",
+   "question": "How does Australia regulate exports of controlled goods?",
+   "must_mention": [
+    "goods"
+   ],
+   "relevant_jurisdictions": [
+    "AU"
+   ],
+   "requested_jurisdictions": [
+    "AU",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-17",
+   "source_id": 544,
+   "category": "CISG深度",
+   "question": "CISG 第 78 条规定了什么？",
+   "must_mention": [
+    "interest"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-18",
+   "source_id": 448,
+   "category": "US担保",
+   "question": "What is the minimum bond amount required under 19 CFR Part 113?",
+   "must_mention": [
+    "bond"
+   ],
+   "relevant_jurisdictions": [
+    "US"
+   ],
+   "requested_jurisdictions": [
+    "US",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-19",
+   "source_id": 524,
+   "category": "CISG深度",
+   "question": "CISG 第 1 条规定了什么？",
+   "must_mention": [
+    "place of business"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-20",
+   "source_id": 527,
+   "category": "CISG深度",
+   "question": "CISG 第 11 条规定了什么？",
+   "must_mention": [
+    "writing"
+   ],
+   "relevant_jurisdictions": [
+    "INT"
+   ],
+   "requested_jurisdictions": [
+    "INT",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-21",
+   "source_id": 481,
+   "category": "US出口管制",
+   "question": "What are the end-use and end-user controls in 15 CFR Part 744?",
+   "must_mention": [
+    "end-user"
+   ],
+   "relevant_jurisdictions": [
+    "US"
+   ],
+   "requested_jurisdictions": [
+    "US",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-22",
+   "source_id": 458,
+   "category": "US保税",
+   "question": "What is a warehouse entry under 19 CFR Part 144?",
+   "must_mention": [
+    "warehouse"
+   ],
+   "relevant_jurisdictions": [
+    "US"
+   ],
+   "requested_jurisdictions": [
+    "US",
+    "CN"
+   ]
+  },
+  {
+   "id": "Q-23",
+   "source_id": 406,
+   "category": "检验检疫",
+   "question": "进口预包装食品标签有什么要求？",
+   "must_mention": [
+    "标签"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  },
+  {
+   "id": "Q-24",
+   "source_id": 332,
+   "category": "贸易便利化",
+   "question": "海关预裁定申请的有效期和适用范围是什么？",
+   "must_mention": [
+    "申报"
+   ],
+   "relevant_jurisdictions": [
+    "CN"
+   ],
+   "requested_jurisdictions": [
+    "CN",
+    "US"
+   ]
+  }
+ ]
+}

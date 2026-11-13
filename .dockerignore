@@ -1,0 +1,17 @@
+.git
+.gitignore
+.venv
+.claude
+ragflow-src
+docs
+openspec
+tools
+scripts
+mercatoria.egg-info
+**/__pycache__
+**/*.pyc
+data/embedding-cache.db
+data/index/*.db.tmp
+corpus/eval
+import_stats.txt
+imported_doc_ids.json

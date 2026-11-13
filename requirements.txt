@@ -1,0 +1,30 @@
+# mercatoria runtime dependencies
+# Install: .venv/Scripts/python.exe -m pip install -r requirements.txt
+#
+# Comments are ASCII-only on purpose: pip decodes this file with the locale
+# codec, and a GBK Windows console raises UnicodeDecodeError on CJK comments.
+#
+# Note: the RAGFlow eval tooling (tools/eval_retrieval.py,
+# tools/run_eval.py) is pure standard library. The local service and
+# tools/eval_local.py need the numpy/fastapi/uvicorn extras below.
+
+# PDF text extraction (CISG and other PDF-only sources)
+pymupdf~=1.24
+
+# HTML parsing for the web fetchers
+lxml~=5.2
+
+# Data models
+pydantic~=2.7
+
+# Document parsing and multipart uploads
+python-docx>=1.1
+python-multipart>=0.0.9
+
+# Lightweight retrieval/answer service (no GPU, no RAGFlow runtime)
+numpy>=1.26
+fastapi>=0.110
+uvicorn>=0.29
+
+# HTTP test client for FastAPI tests
+httpx>=0.27
