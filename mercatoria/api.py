@@ -384,6 +384,7 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
                 filters=body.get("filters") or {},
                 fields=body.get("fields") or {},
                 use_rerank=body.get("rerank"),
+                per_jurisdiction_k=body.get("per_jurisdiction_k"),
             )
         except (IndexNotFound, CorpusUnavailable) as exc:
             return unavailable(exc)
@@ -392,15 +393,60 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
         except EmbeddingError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    def _neighbors(value: Any) -> int:
+        try:
+            count = int(value or 0)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="neighbors must be an integer") from exc
+        if not 0 <= count <= 5:
+            raise HTTPException(status_code=400, detail="neighbors must be in [0, 5]")
+        return count
+
+    def _index() -> Any:
+        if service.index is None:
+            raise HTTPException(status_code=503, detail=service.error or "index is not built")
+        return service.index
+
+    @app.get("/v1/articles/{article_id}")
+    def get_article(article_id: str, neighbors: int = 0) -> dict[str, Any]:
+        index = _index()
+        payload = index.article_payload(article_id, _neighbors(neighbors))
+        if payload is None:
+            raise HTTPException(status_code=404, detail=f"article not found: {article_id}")
+        return payload
+
+    @app.post("/v1/articles/batch")
+    def get_articles(body: dict[str, Any]) -> dict[str, Any]:
+        raw = body.get("article_ids")
+        if not isinstance(raw, list) or not raw:
+            raise HTTPException(status_code=400, detail="article_ids must be a non-empty list")
+        if len(raw) > 32:
+            raise HTTPException(status_code=400, detail="at most 32 article_ids per request")
+        neighbors = _neighbors(body.get("neighbors"))
+        index = _index()
+        articles: list[dict[str, Any]] = []
+        missing: list[str] = []
+        for value in raw:
+            article_id = str(value)
+            payload = index.article_payload(article_id, neighbors)
+            if payload is None:
+                missing.append(article_id)
+            else:
+                articles.append(payload)
+        return {"articles": articles, "missing": missing, "count": len(articles)}
+
     @app.post("/chat")
     @app.post("/v1/chat")
     @app.post("/ask")
     @app.post("/v1/ask")
     def chat_answer(body: dict[str, Any]) -> Any:
         question, history, _ = _parse_conversation(body)
-        query = str(body.get("retrieval_query") or "").strip() or _retrieval_query(
-            question, history
-        )
+        rewrite = body.get("rewrite_query", True)
+        query = str(body.get("retrieval_query") or "").strip()
+        if not query:
+            # An agent that already rewrote the question must be able to opt
+            # out of the history-concatenation heuristic.
+            query = _retrieval_query(question, history) if rewrite else question
         try:
             retriever = service.require_retriever()
             result = retriever.retrieve(
@@ -639,6 +685,8 @@ def create_app(config_path: str | None = None, embed_fn=None) -> FastAPI:
             "endpoints": [
                 "/health",
                 "/v1/retrieve",
+                "/v1/articles/{article_id}",
+                "/v1/articles/batch",
                 "/v1/chat",
                 "/v1/ask",
                 "/v1/documents",

@@ -121,6 +121,14 @@ def _meta_get(conn: sqlite3.Connection, key: str, default: Any = None) -> Any:
     return row[0] if row else default
 
 
+SYNTHETIC_ARTICLE_MARKERS = (":doc", ":preamble", ":section-", ":chunk-")
+
+
+def is_synthetic_article(article_id: str) -> bool:
+    """True for fallback chunks that are not legal articles."""
+    return any(marker in article_id for marker in SYNTHETIC_ARTICLE_MARKERS)
+
+
 def _row_to_chunk(row: sqlite3.Row) -> dict[str, Any]:
     return {
         "chunk_id": row["chunk_id"],
@@ -182,6 +190,18 @@ class Index:
             term: float(np.log(1.0 + (n - df + 0.5) / (df + 0.5)))
             for term, df in self.terms.items()
         }
+        # Article-level aggregation: one long article is several chunks, and
+        # external agents need to read it whole and reach its neighbours.
+        self.articles: dict[str, list[dict[str, Any]]] = {}
+        for chunk in self.chunks:
+            self.articles.setdefault(chunk["article_id"], []).append(chunk)
+        for article_chunks in self.articles.values():
+            article_chunks.sort(key=lambda c: c["ordinal"])
+        self.doc_articles: dict[str, list[str]] = {}
+        for article_id, article_chunks in sorted(
+            self.articles.items(), key=lambda item: item[1][0]["ordinal"]
+        ):
+            self.doc_articles.setdefault(article_chunks[0]["doc_id"], []).append(article_id)
         self.jurisdictions = sorted({c["jurisdiction"] for c in self.chunks})
         self.precision: dict[str, str] = {}
         for c in self.chunks:
@@ -259,6 +279,92 @@ class Index:
                 scores[chunk_id] = scores.get(chunk_id, 0.0) + idf * tf * (k1 + 1.0) / denom
         return scores
 
+    def article_chunks(self, article_id: str) -> list[dict[str, Any]]:
+        return self.articles.get(article_id, [])
+
+    def article_text(self, article_chunks: list[dict[str, Any]]) -> str:
+        """Reassemble the raw article text from its chunks.
+
+        Chunks of a split article overlap (``chunking.overlap``), and every
+        chunk keeps its absolute ``src_start``/``src_end``, so the overlap is
+        exactly the prefix already emitted.
+        """
+        pieces: list[str] = []
+        cursor = 0
+        for chunk in article_chunks:
+            text = chunk["text"]
+            start = int(chunk["src_start"])
+            if not pieces:
+                pieces.append(text)
+            else:
+                overlap = max(0, min(len(text), cursor - start))
+                pieces.append(text[overlap:])
+            cursor = max(cursor, start + len(text))
+        return "".join(pieces)
+
+    def article_payload(self, article_id: str, neighbors: int = 0) -> dict[str, Any] | None:
+        article_chunks = self.article_chunks(article_id)
+        if not article_chunks:
+            return None
+        first = article_chunks[0]
+        doc = self.docs.get(first["doc_id"], {})
+        return {
+            "article_id": article_id,
+            "doc_id": first["doc_id"],
+            "source_doc": doc.get("source_doc", first["doc_id"]),
+            "article_label": first["article_label"],
+            "section": first["section"],
+            "jurisdiction": first["jurisdiction"],
+            "applies_to": first["applies_to"],
+            "effective_from": first["effective_from"],
+            "effective_to": first["effective_to"],
+            "text": self.article_text(article_chunks),
+            "chunks": [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "part": chunk["part"],
+                    "ordinal": chunk["ordinal"],
+                    "token_count": chunk["token_count"],
+                    "text": chunk["text"],
+                }
+                for chunk in article_chunks
+            ],
+            "neighbors": self.article_neighbors(article_id, neighbors),
+        }
+
+    def article_neighbors(self, article_id: str, count: int) -> dict[str, list[dict[str, Any]]]:
+        """Previous/next legal articles in the same document, in source order."""
+        empty: dict[str, list[dict[str, Any]]] = {"previous": [], "next": []}
+        if count <= 0:
+            return empty
+        article_chunks = self.article_chunks(article_id)
+        if not article_chunks:
+            return empty
+        sequence = [
+            aid
+            for aid in self.doc_articles.get(article_chunks[0]["doc_id"], [])
+            if not is_synthetic_article(aid)
+        ]
+        if article_id not in sequence:
+            return empty
+        position = sequence.index(article_id)
+
+        def summary(aid: str) -> dict[str, Any]:
+            chunks = self.article_chunks(aid)
+            return {
+                "article_id": aid,
+                "article_label": chunks[0]["article_label"],
+                "chunk_ids": [chunk["chunk_id"] for chunk in chunks],
+                "text": self.article_text(chunks),
+            }
+
+        return {
+            "previous": [
+                summary(aid) for aid in sequence[max(0, position - count) : position]
+            ],
+            "next": [summary(aid) for aid in sequence[position + 1 : position + 1 + count]],
+        }
+
     def vector_scores(self, candidate_indices: list[int], query_vector: np.ndarray) -> np.ndarray:
         if not candidate_indices:
             return np.zeros((0,), dtype=np.float32)
@@ -266,13 +372,15 @@ class Index:
 
 
 def _reusable_vectors(
-    index_dir: Path, model: str, wanted: set[str]
+    index_dir: Path, model: str, chunking_hash: str, wanted: set[str]
 ) -> dict[str, np.ndarray]:
     """Vectors from the active index for unchanged chunk IDs.
 
     Rebuilding after an upload should only embed the new chunks. Reading the
     current SQLite file directly keeps this independent of the in-memory Index
-    held by the serving process.
+    held by the serving process. A different chunking_hash means the indexed
+    text changed (e.g. the context header was toggled), so the old vectors no
+    longer match their chunk IDs and must be recomputed.
     """
     current = index_dir / "current.txt"
     if not current.is_file():
@@ -285,6 +393,9 @@ def _reusable_vectors(
     try:
         row = conn.execute("SELECT value FROM meta WHERE key='embedding_model'").fetchone()
         if not row or str(row[0]) != model:
+            return {}
+        row = conn.execute("SELECT value FROM meta WHERE key='chunking_hash'").fetchone()
+        if not row or str(row[0]) != chunking_hash:
             return {}
         out: dict[str, np.ndarray] = {}
         for chunk_id, blob in conn.execute("SELECT chunk_id, vec FROM vectors"):
@@ -367,7 +478,16 @@ def build_index(
         if rec.chunk_id in seen_chunk_ids:
             continue
         seen_chunk_ids.add(rec.chunk_id)
-        token_counts = term_counts(rec.text)
+        # Only the retrieval signal is enriched: rec.text (and therefore the
+        # chunk_id and the chunk text served to callers) stays the raw article.
+        index_text = rec.text
+        if cfg.chunking.index_context_header:
+            header = " | ".join(
+                part for part in (doc.get("source_doc"), rec.section, rec.article_label) if part
+            )
+            if header:
+                index_text = f"[{header}]\n{rec.text}"
+        token_counts = term_counts(index_text)
         chunk_rows.append(
             (
                 rec.chunk_id,
@@ -390,7 +510,7 @@ def build_index(
         )
         for term, tf in token_counts.items():
             posting_rows.append((term, rec.chunk_id, int(tf)))
-        texts.append(rec.text)
+        texts.append(index_text)
         chunk_ids.append(rec.chunk_id)
 
     conn.executemany(
@@ -417,7 +537,9 @@ def build_index(
         if not texts:
             matrix = np.zeros((0, 0), dtype=np.float32)
         else:
-            reuse = _reusable_vectors(out.parent, cfg.embedding.model, set(chunk_ids))
+            reuse = _reusable_vectors(
+                out.parent, cfg.embedding.model, cfg.chunking_hash(), set(chunk_ids)
+            )
             missing = [i for i, cid in enumerate(chunk_ids) if cid not in reuse]
             fresh = embed([texts[i] for i in missing]) if missing else None
             if fresh is not None:

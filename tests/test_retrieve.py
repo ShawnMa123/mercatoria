@@ -10,7 +10,7 @@ import numpy as np
 
 from mercatoria.config import AppConfig
 from mercatoria.manifest import load_manifest
-from mercatoria.retrieve import Retriever
+from mercatoria.retrieve import Retriever, _apply_jurisdiction_quota, _quota_for
 from mercatoria.store import build_index, open_current
 
 
@@ -261,6 +261,61 @@ class RetrievalTests(unittest.TestCase):
         self.assertTrue(scores)
         self.assertTrue(all(value > 0 for value in scores.values()))
 
+    def test_doc_and_article_filters_run_before_scoring(self) -> None:
+        result = self.retriever.retrieve(["原产地"], filters={"doc_ids": ["cn-test-law"]})
+        self.assertTrue(result["chunks"])
+        self.assertTrue(all(c["doc_id"] == "cn-test-law" for c in result["chunks"]))
+        result = self.retriever.retrieve(
+            ["原产地"], filters={"article_ids": ["cn-test-law:2"]}
+        )
+        self.assertEqual([c["article_ids"] for c in result["chunks"]], [["cn-test-law:2"]])
+        self.assertEqual(result["diagnostics"]["funnel"]["after_article"], 1)
+        missing = self.retriever.retrieve(["原产地"], filters={"doc_ids": ["nope"]})
+        self.assertEqual(missing["chunks"], [])
+        self.assertEqual(missing["diagnostics"]["zero_reason"], "no_doc")
+        missing = self.retriever.retrieve(
+            ["原产地"], filters={"article_ids": ["cn-test-law:99"]}
+        )
+        self.assertEqual(missing["diagnostics"]["zero_reason"], "no_article")
+
+    def test_fields_map_doc_and_article_ids(self) -> None:
+        result = self.retriever.retrieve(["关税"], fields={"doc_ids": ["us-test-101"]})
+        self.assertTrue(result["chunks"])
+        self.assertTrue(all(c["doc_id"] == "us-test-101" for c in result["chunks"]))
+
+    def test_multi_query_match_earns_a_bounded_bonus(self) -> None:
+        result = self.retriever.retrieve(["关税", "关税的征收适用本法"], top_k=5)
+        hit = next(c for c in result["chunks"] if c["article_ids"] == ["cn-test-law:1"])
+        self.assertEqual(len(hit["matched_queries"]), 2)
+        self.assertAlmostEqual(hit["score_parts"]["fusion_bonus"], 0.03, places=6)
+        single = self.retriever.retrieve(["关税"], top_k=5)
+        self.assertEqual(single["chunks"][0]["score_parts"]["fusion_bonus"], 0.0)
+
+    def test_quota_keeps_each_jurisdiction_represented(self) -> None:
+        ordered = [
+            ("a1", {"jurisdiction": "CN"}),
+            ("a2", {"jurisdiction": "CN"}),
+            ("a3", {"jurisdiction": "CN"}),
+            ("b1", {"jurisdiction": "US"}),
+        ]
+        stub = type(
+            "Stub",
+            (),
+            {"chunk_by_id": {cid: {"jurisdiction": hit["jurisdiction"]} for cid, hit in ordered}},
+        )()
+        picked = _apply_jurisdiction_quota(ordered, 2, ["CN", "US"], 1, stub)
+        self.assertEqual([cid for cid, _ in picked], ["a1", "b1"])
+        # No quota means plain top_k.
+        self.assertEqual(
+            [cid for cid, _ in _apply_jurisdiction_quota(ordered, 2, ["CN", "US"], 0, stub)],
+            ["a1", "a2"],
+        )
+        # A single requested jurisdiction never reserves slots.
+        self.assertEqual(_quota_for(["CN"], 5, None), 0)
+        self.assertEqual(_quota_for(["CN", "US"], 4, None), 2)
+        self.assertEqual(_quota_for(["CN", "US", "JP"], 3, None), 1)
+        self.assertEqual(_quota_for(["CN", "US"], 3, 2), 2)
+
     def test_query_cache_is_isolated_from_caller_mutation(self) -> None:
         first = self.retriever.retrieve(["关税"], top_k=2)
         self.assertTrue(first["chunks"])
@@ -281,6 +336,149 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("reranker down", result["diagnostics"]["rerank"]["error"])
         self.assertTrue(result["chunks"])
         self.assertIsNone(result["chunks"][0]["score_parts"]["rerank"])
+
+
+class ArticleAggregationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        corpus = root / "corpus"
+        (corpus / "cn").mkdir(parents=True)
+        (corpus / "cn" / "long.md").write_text(
+            "<!-- document: 测试长法条 -->\n"
+            "## 第一章 总则\n"
+            "第一条 " + "甲" * 200 + "。\n\n"
+            "第二条 乙。\n\n"
+            "第三条 丙。\n",
+            encoding="utf-8",
+        )
+        manifest_path = root / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "manifest_version": "test",
+                    "docs": [
+                        {
+                            "doc_id": "cn-long-law",
+                            "path": "cn/long.md",
+                            "source_doc": "测试长法条",
+                            "jurisdiction": "CN",
+                            "language": "zh",
+                            "precision": "exact",
+                            "applies_to": ["customs"],
+                            "effective_from": "2024-01-01",
+                            "effective_to": None,
+                            "snapshot_date": None,
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.cfg = AppConfig(
+            corpus_dir=str(corpus),
+            index_dir=str(root / "index"),
+            manifest_path=str(manifest_path),
+        )
+        self.cfg.embedding.dim = 3
+        self.cfg.chunking.max_chars = 120
+        self.cfg.chunking.overlap = 20
+        build_index(
+            load_manifest(manifest_path),
+            self.cfg,
+            self.cfg.resolved_index_dir(),
+            embed_fn=fake_embed,
+        )
+        self.index = open_current(self.cfg.resolved_index_dir())
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def test_parts_are_stitched_without_overlap(self) -> None:
+        payload = self.index.article_payload("cn-long-law:1")
+        self.assertEqual(len(payload["chunks"]), 2)
+        self.assertEqual(payload["text"].count("甲"), 200)
+        self.assertTrue(payload["text"].startswith("第一条"))
+        self.assertEqual(len({c["chunk_id"] for c in payload["chunks"]}), 2)
+
+    def test_neighbors_follow_source_order(self) -> None:
+        payload = self.index.article_payload("cn-long-law:2", neighbors=1)
+        self.assertEqual(
+            [n["article_id"] for n in payload["neighbors"]["previous"]], ["cn-long-law:1"]
+        )
+        self.assertEqual(
+            [n["article_id"] for n in payload["neighbors"]["next"]], ["cn-long-law:3"]
+        )
+        previous = payload["neighbors"]["previous"][0]
+        self.assertEqual(previous["text"].count("甲"), 200)
+        self.assertEqual(
+            previous["chunk_ids"],
+            [c["chunk_id"] for c in self.index.article_chunks("cn-long-law:1")],
+        )
+        self.assertIsNone(self.index.article_payload("cn-long-law:42"))
+
+
+class ContextHeaderTests(unittest.TestCase):
+    def _build(self, root: Path, header: bool):
+        corpus = root / "corpus"
+        (corpus / "cn").mkdir(parents=True)
+        (corpus / "cn" / "chapter.md").write_text(
+            "<!-- document: 测试关税法 -->\n"
+            "## 第五章 税率\n"
+            "第二条 进口货物的税率由国务院规定。\n",
+            encoding="utf-8",
+        )
+        manifest_path = root / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "manifest_version": "test",
+                    "docs": [
+                        {
+                            "doc_id": "cn-chapter-law",
+                            "path": "cn/chapter.md",
+                            "source_doc": "测试关税法",
+                            "jurisdiction": "CN",
+                            "language": "zh",
+                            "precision": "exact",
+                            "applies_to": ["customs"],
+                            "effective_from": "2024-01-01",
+                            "effective_to": None,
+                            "snapshot_date": None,
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        cfg = AppConfig(
+            corpus_dir=str(corpus),
+            index_dir=str(root / "index"),
+            manifest_path=str(manifest_path),
+        )
+        cfg.embedding.dim = 3
+        cfg.chunking.index_context_header = header
+        build_index(
+            load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=fake_embed
+        )
+        return open_current(cfg.resolved_index_dir())
+
+    def test_header_keeps_chunk_id_and_text_but_enriches_index(self) -> None:
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            with_header = self._build(Path(a), True)
+            without = self._build(Path(b), False)
+            ids_on = [c["chunk_id"] for c in with_header.chunks]
+            ids_off = [c["chunk_id"] for c in without.chunks]
+            self.assertEqual(ids_on, ids_off)
+            self.assertEqual(
+                [c["text"] for c in with_header.chunks],
+                [c["text"] for c in without.chunks],
+            )
+            self.assertEqual(with_header.chunks[0]["text"], "第二条 进口货物的税率由国务院规定。")
+            terms = ["关税", "第五章"]
+            candidates = set(with_header.chunk_ids)
+            self.assertTrue(with_header.bm25_scores(candidates, terms, 1.5, 0.75))
+            self.assertFalse(without.bm25_scores(candidates, terms, 1.5, 0.75))
 
 
 if __name__ == "__main__":

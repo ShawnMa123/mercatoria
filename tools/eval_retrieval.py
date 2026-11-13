@@ -117,6 +117,15 @@ def retrieve(q: str, kb: str, key: str, p: dict, timeout: int = 180) -> dict:
     }
 
 
+def is_real_article_id(article_id: str) -> bool:
+    """A chunk's article id is a legal article, not a document container.
+
+    Long articles are split into ``part>=1`` chunks whose text no longer starts
+    with 第X条; the structural article id is the reliable signal there.
+    """
+    return not article_id.endswith(":doc") and not article_id.endswith(":preamble")
+
+
 def score_case(case: dict, chunks: list[dict]) -> dict:
     """计算命中情况。
 
@@ -138,7 +147,10 @@ def score_case(case: dict, chunks: list[dict]) -> dict:
         content = c.get("content") or ""
         doc = c.get("document_keyword") or c.get("docnm_kwd") or ""
         k = article_key(doc, content)
-        is_article_head = k is not None
+        chunk_article_ids = [str(a) for a in (c.get("article_ids") or []) if str(a)]
+        is_article_head = k is not None or any(
+            is_real_article_id(a) for a in chunk_article_ids
+        )
         if k and k not in keys:
             keys.append(k)
 

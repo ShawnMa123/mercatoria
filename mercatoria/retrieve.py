@@ -58,7 +58,57 @@ def _map_fields(filters: dict[str, Any], fields: dict[str, Any] | None) -> dict[
         out["as_of"] = fields["as_of"]
     if "date" in fields and not out.get("as_of"):
         out["as_of"] = fields["date"]
+    if "doc_ids" in fields and not out.get("doc_ids"):
+        out["doc_ids"] = _as_list(fields["doc_ids"])
+    if "article_ids" in fields and not out.get("article_ids"):
+        out["article_ids"] = _as_list(fields["article_ids"])
     return out
+
+
+def _quota_for(
+    requested_j: list[str], top_k: int, per_jurisdiction_k: int | None
+) -> int:
+    """Slots reserved for each requested jurisdiction in the final top_k.
+
+    ``per_jurisdiction_k`` wins when given. Otherwise a cross-jurisdiction
+    comparison query (2+ jurisdictions) reserves min(2, top_k // n) slots per
+    jurisdiction so one high-scoring law cannot take every slot.
+    """
+    if per_jurisdiction_k is not None:
+        return max(0, int(per_jurisdiction_k))
+    if len(requested_j) < 2:
+        return 0
+    return max(1, min(2, top_k // len(requested_j)))
+
+
+def _apply_jurisdiction_quota(
+    ordered: list[tuple[str, dict[str, Any]]],
+    top_k: int,
+    requested_j: list[str],
+    quota: int,
+    index: "Index",
+) -> list[tuple[str, dict[str, Any]]]:
+    if quota <= 0 or len(ordered) <= top_k:
+        return ordered[:top_k]
+    wanted = set(requested_j)
+    picked: list[tuple[str, dict[str, Any]]] = []
+    taken: set[str] = set()
+    counts: dict[str, int] = {j: 0 for j in requested_j}
+    for cid, hit in ordered:
+        jurisdiction = index.chunk_by_id[cid]["jurisdiction"]
+        if jurisdiction in wanted and counts[jurisdiction] < quota:
+            picked.append((cid, hit))
+            taken.add(cid)
+            counts[jurisdiction] += 1
+            if len(picked) >= top_k:
+                return picked
+    for cid, hit in ordered:
+        if cid in taken:
+            continue
+        picked.append((cid, hit))
+        if len(picked) >= top_k:
+            break
+    return picked
 
 
 class Retriever:
@@ -88,6 +138,7 @@ class Retriever:
         filters: dict[str, Any],
         fields: dict[str, Any],
         rerank: bool,
+        per_jurisdiction_k: int | None = None,
     ) -> str:
         # Every knob that can change the response must be part of the key:
         # /v1/config rewrites these in place, and a stale hit would then serve
@@ -110,6 +161,7 @@ class Retriever:
             "rerank_top_n": self.cfg.rerank.top_n,
             "rerank_min_score": self.cfg.rerank.min_score,
             "rerank_model": self.cfg.rerank.model,
+            "per_jurisdiction_k": per_jurisdiction_k,
         }
         return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
 
@@ -137,6 +189,8 @@ class Retriever:
 
         requested_j = [j.upper() for j in _as_list(filters.get("jurisdictions"))]
         requested_a = [a.lower() for a in _as_list(filters.get("applies_to"))]
+        requested_doc = set(_as_list(filters.get("doc_ids")))
+        requested_art = set(_as_list(filters.get("article_ids")))
         as_of = filters.get("as_of")
         if as_of:
             try:
@@ -180,11 +234,23 @@ class Retriever:
                     continue
                 after_t.append(r)
 
+        # 4) explicit document/article scope (cross-reference lookups).
+        if requested_doc:
+            after_doc = [r for r in after_t if r["doc_id"] in requested_doc]
+        else:
+            after_doc = after_t
+        if requested_art:
+            after_art = [r for r in after_doc if r["article_id"] in requested_art]
+        else:
+            after_art = after_doc
+
         funnel = {
             "total": total,
             "after_jurisdiction": len(after_j),
             "after_applies_to": len(after_a),
             "after_as_of": len(after_t),
+            "after_doc": len(after_doc),
+            "after_article": len(after_art),
             "after_retrieval": 0,
         }
         zero_reason = None
@@ -196,12 +262,16 @@ class Retriever:
             zero_reason = "no_business_type"
         elif not after_t:
             zero_reason = "no_temporal"
+        elif not after_doc:
+            zero_reason = "no_doc"
+        elif not after_art:
+            zero_reason = "no_article"
 
         uncovered = {
             "jurisdictions": uncovered_j,
             "applies_to": uncovered_a,
         }
-        return after_t, funnel, zero_reason, uncovered
+        return after_art, funnel, zero_reason, uncovered
 
     def _temporal_block(self, as_of: str | None) -> dict[str, Any]:
         return {
@@ -249,6 +319,7 @@ class Retriever:
         filters: dict[str, Any] | None = None,
         fields: dict[str, Any] | None = None,
         use_rerank: bool | None = None,
+        per_jurisdiction_k: int | None = None,
     ) -> dict[str, Any]:
         if isinstance(queries, str):
             queries = [queries]
@@ -264,9 +335,18 @@ class Retriever:
             raise ValueError("top_k must be in [1, 100]")
 
         filters = _map_fields(filters or {}, fields)
+        if per_jurisdiction_k is None and filters.get("per_jurisdiction_k") is not None:
+            try:
+                per_jurisdiction_k = int(filters["per_jurisdiction_k"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError("per_jurisdiction_k must be an integer") from exc
+        if per_jurisdiction_k is not None and not 0 <= per_jurisdiction_k <= 100:
+            raise ValueError("per_jurisdiction_k must be in [0, 100]")
         rerank_on = self.rerank_enabled if use_rerank is None else bool(use_rerank)
         rerank = self._rerank if rerank_on else None
-        cache_key = self._cache_key(queries, top_k, filters, fields or {}, rerank_on)
+        cache_key = self._cache_key(
+            queries, top_k, filters, fields or {}, rerank_on, per_jurisdiction_k
+        )
         cached = self._cache_get(cache_key)
         if cached is not None:
             return cached
@@ -365,6 +445,13 @@ class Retriever:
             raw_vec = self.index.vector_scores(candidate_indices, qvec)
             vec_list = [float(x) for x in raw_vec]
             bm25_norm = _minmax(raw_bm25)
+            # A batch whose best BM25 is weak (one low-IDF hit) must not be
+            # rescaled to 1.0: that lets a literal coincidence outrank a
+            # strong vector match. Scale by magnitude, saturating at 8.
+            if bm25_norm:
+                scale = min(1.0, max(raw_bm25) / 8.0)
+                if scale < 1.0:
+                    bm25_norm = [value * scale for value in bm25_norm]
             vec_norm = _minmax(vec_list)
             scored: list[tuple[float, str, float, float, float, float]] = []
             for i, cid in enumerate(candidate_ids):
@@ -440,7 +527,26 @@ class Retriever:
 
         ordered = sorted(
             merged.items(), key=lambda item: (-item[1]["score"], -item[1]["first_stage"], item[0])
-        )[:top_k]
+        )
+        # Multi-query fusion: a chunk that answers several sub-queries is more
+        # likely to be the intended article than one that scores highly on a
+        # single phrasing. Single-query requests are unaffected.
+        if len(queries) > 1 and cfg.multi_query_bonus:
+            ordered = sorted(
+                ordered,
+                key=lambda item: (
+                    -(
+                        item[1]["score"]
+                        + cfg.multi_query_bonus
+                        * min(len(item[1]["query_indices"]) - 1, 2)
+                    ),
+                    -item[1]["first_stage"],
+                    item[0],
+                ),
+            )
+        quota = _quota_for(requested_j, top_k, per_jurisdiction_k)
+        ordered = _apply_jurisdiction_quota(ordered, top_k, requested_j, quota, self.index)
+        diagnostics["per_jurisdiction_k"] = quota or None
         funnel["after_retrieval"] = len(ordered)
         chunks: list[dict[str, Any]] = []
         for rank, (cid, hit) in enumerate(ordered, 1):
@@ -479,6 +585,11 @@ class Retriever:
                         "first_stage": round(float(hit["first_stage"]), 6),
                         "hybrid": round(float(hit["first_stage"]), 6),
                         "rerank": None if hit["rerank"] is None else round(float(hit["rerank"]), 6),
+                        "fusion_bonus": round(
+                            float(cfg.multi_query_bonus) * min(len(q_indices) - 1, 2), 6
+                        )
+                        if len(queries) > 1
+                        else 0.0,
                     },
                     "articles": [row["article_label"]],
                     "article_ids": [row["article_id"]],

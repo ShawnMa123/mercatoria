@@ -14,6 +14,20 @@ from collections import Counter
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff]+")
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
 
+# Regulatory boilerplate: it matches every article, so it only adds noise to
+# BM25 (and to the embedding's tail). Kept out of queries only; documents still
+# index these tokens because they carry within-document structure.
+STOPWORDS = {
+    # Chinese 2-grams of legal boilerplate.
+    "应当", "可以", "必须", "不得", "规定", "本法", "本条", "下列", "之一",
+    "情形", "或者", "以及", "按照", "有关", "进行", "对于", "根据", "依照",
+    "其他", "以上", "以下", "由于", "但是", "并且", "其中", "任何", "予以",
+    # English function words that survive the >=2 char rule.
+    "shall", "under", "such", "with", "from", "that", "this", "these",
+    "those", "have", "been", "will", "may", "the", "and", "for", "not",
+    "any", "all", "its", "are", "was", "were",
+}
+
 
 def tokenize(text: str) -> list[str]:
     text = text.lower()
@@ -57,10 +71,17 @@ def extract_matches(query: str, text: str, limit: int = 12) -> list[dict[str, ob
 
 
 def query_terms(query: str, max_terms: int = 96) -> list[str]:
-    """Deduplicated terms in first-seen order, capped for SQL comfort."""
+    """Deduplicated terms in first-seen order, capped for SQL comfort.
+
+    Boilerplate terms are dropped so a five-word legal question is scored on
+    its distinguishing words. If the query is nothing but boilerplate, keep
+    the raw tokens: better a noisy search than an empty one.
+    """
+    tokens = tokenize(query)
+    useful = [term for term in tokens if term not in STOPWORDS]
     seen: set[str] = set()
     out: list[str] = []
-    for term in tokenize(query):
+    for term in useful or tokens:
         if term in seen:
             continue
         seen.add(term)

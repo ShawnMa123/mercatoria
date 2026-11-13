@@ -53,6 +53,11 @@ class ChunkingConfig:
     drop_sections: bool = True
     # 0 = unlimited. A legal article must never be silently truncated.
     max_chunks_per_article: int = 0
+    # Prefix the *indexed* text (embedding + BM25) with
+    # "[法典名 | 章节 | 条号]" so long-article part>=1 chunks and
+    # chapter-dependent articles keep their retrieval signal. ChunkRecord.text
+    # and chunk_id stay derived from the bare article text.
+    index_context_header: bool = True
 
 
 @dataclass

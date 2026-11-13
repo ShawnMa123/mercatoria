@@ -270,6 +270,80 @@ class ApiTests(unittest.TestCase):
         self.client.put("/v1/config", json={"rerank": {"enabled": False}})
         self.assertFalse(retriever.rerank_enabled)
 
+    def test_article_endpoint_returns_full_text(self) -> None:
+        resp = self.client.get("/v1/articles/cn-test-law:1")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["article_id"], "cn-test-law:1")
+        self.assertEqual(body["doc_id"], "cn-test-law")
+        self.assertIn("关税的征收", body["text"])
+        expected = self.app.state.service.index.articles["cn-test-law:1"][0]["chunk_id"]
+        self.assertEqual([c["chunk_id"] for c in body["chunks"]], [expected])
+        self.assertEqual(body["chunks"][0]["text"], "第一条 关税的征收适用本法。")
+        self.assertEqual(body["neighbors"], {"previous": [], "next": []})
+
+    def test_article_endpoint_404_and_batch(self) -> None:
+        self.assertEqual(self.client.get("/v1/articles/nope:1").status_code, 404)
+        resp = self.client.post(
+            "/v1/articles/batch",
+            json={"article_ids": ["cn-test-law:1", "nope:2"], "neighbors": 0},
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["count"], 1)
+        self.assertEqual(body["missing"], ["nope:2"])
+        self.assertEqual(body["articles"][0]["article_id"], "cn-test-law:1")
+        bad = self.client.get("/v1/articles/cn-test-law:1?neighbors=9")
+        self.assertEqual(bad.status_code, 400)
+        too_many = self.client.post(
+            "/v1/articles/batch", json={"article_ids": [f"x:{i}" for i in range(33)]}
+        )
+        self.assertEqual(too_many.status_code, 400)
+
+    def test_chat_rewrite_query_can_be_disabled(self) -> None:
+        resp = self.client.post(
+            "/v1/chat",
+            json={
+                "messages": [
+                    {"role": "user", "content": "关税怎么征收？"},
+                    {"role": "assistant", "content": "按法定税率。"},
+                    {"role": "user", "content": "它还有别的规定吗？"},
+                ],
+                "rewrite_query": False,
+                "answer": {"enabled": False},
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["retrieval_query"], "它还有别的规定吗？")
+        rewritten = self.client.post(
+            "/v1/chat",
+            json={
+                "messages": [
+                    {"role": "user", "content": "关税怎么征收？"},
+                    {"role": "user", "content": "它还有别的规定吗？"},
+                ],
+                "answer": {"enabled": False},
+            },
+        )
+        self.assertIn("关税怎么征收", rewritten.json()["retrieval_query"])
+
+    def test_retrieve_accepts_per_jurisdiction_k(self) -> None:
+        resp = self.client.post(
+            "/v1/retrieve",
+            json={
+                "queries": ["关税"],
+                "top_k": 2,
+                "per_jurisdiction_k": 1,
+                "filters": {"jurisdictions": ["CN"]},
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["diagnostics"]["per_jurisdiction_k"], 1)
+        bad = self.client.post(
+            "/v1/retrieve", json={"queries": ["关税"], "per_jurisdiction_k": 101}
+        )
+        self.assertEqual(bad.status_code, 400)
+
     def test_manifest_endpoint(self) -> None:
         resp = self.client.post("/v1/admin/manifest")
         self.assertEqual(resp.status_code, 200)

@@ -93,7 +93,12 @@ def main() -> int:
                 continue
             elapsed = round(time.time() - started, 3)
             chunks = [
-                {"content": c["text"], "document_keyword": c["source_doc"]}
+                {
+                    "content": c["text"],
+                    "document_keyword": c["source_doc"],
+                    "doc_id": c.get("doc_id"),
+                    "article_ids": c.get("article_ids") or [],
+                }
                 for c in result["chunks"]
             ]
             sc = score_case(case, chunks)
