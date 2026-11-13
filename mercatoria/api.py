@@ -128,6 +128,13 @@ class Service:
         if self.cfg.chunking_hash() != old_hash:
             pending = True
             self.pending_rebuild = True
+        if self.retriever is not None:
+            # The retriever holds cfg by reference, but its cache and the
+            # rerank flag are snapshots of the old settings.
+            self.retriever.rerank_enabled = self.retriever._rerank_forced or bool(
+                self.cfg.rerank.enabled
+            )
+            self.retriever.clear_cache()
         if body.get("save"):
             save_config(self.cfg, Path("config.json"))
         return pending

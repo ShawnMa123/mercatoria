@@ -191,6 +191,31 @@ def _article_from_label(
     return None
 
 
+def _article_from_heading(
+    label: str, doc_id: str, family: str
+) -> tuple[str, str] | None:
+    """Article identity for an explicit markdown heading.
+
+    ``_article_from_label`` refuses anything but ``第X条`` for CN/JP. That is
+    right for body lines, but an explicit ``## § 101.1`` or ``## Article 1``
+    heading is a structural marker: uploads default to ``jurisdiction="CN"``,
+    so without this fallback every English article heading degrades to a
+    section and a whole contract collapses into one ``:doc`` chunk.
+    ``Section`` headings stay excluded (JP ``### Section 1 第一節``, WTO
+    ``## Section I`` are containers, not articles).
+    """
+    art = _article_from_label(label, doc_id, family)
+    if art or family not in {"CN", "JP"}:
+        return art
+    m = RE_SECTION.match(label)
+    if m:
+        return f"{doc_id}:{m.group(1)}", f"§ {m.group(1)}"
+    m = RE_ARTICLE.match(label)
+    if m:
+        return f"{doc_id}:art-{m.group(1)}", f"Article {m.group(1)}"
+    return None
+
+
 def _section_from_label(label: str) -> str:
     label = re.sub(r"^#{2,6}\s*", "", label).strip()
     return label
@@ -213,7 +238,7 @@ def _iter_starts(body: str, family: str = "") -> list[dict[str, Any]]:
         heading = RE_HEADING.match(stripped)
         if heading:
             label = heading.group(2).strip()
-            art = _article_from_label(label, "", family)
+            art = _article_from_heading(label, "", family)
             if art:
                 starts.append(
                     {
@@ -337,7 +362,7 @@ def _records_for_unit_article(
             ordinal += 1
             continue
 
-        parsed = _article_from_label(start_info["label"], doc_id, family)
+        parsed = _article_from_heading(start_info["label"], doc_id, family)
         if not parsed:
             continue
         article_id, article_label = parsed

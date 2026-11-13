@@ -76,7 +76,8 @@ class Retriever:
         # Keep the client even when disabled: a request can opt in with
         # "rerank": true without rebuilding the retriever.
         self._rerank = rerank_fn if rerank_fn is not None else RerankClient(cfg.rerank).rerank
-        self.rerank_enabled = bool(rerank_fn is not None or cfg.rerank.enabled)
+        self._rerank_forced = rerank_fn is not None
+        self.rerank_enabled = bool(self._rerank_forced or cfg.rerank.enabled)
         self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._cache_size = 256
 
@@ -88,6 +89,9 @@ class Retriever:
         fields: dict[str, Any],
         rerank: bool,
     ) -> str:
+        # Every knob that can change the response must be part of the key:
+        # /v1/config rewrites these in place, and a stale hit would then serve
+        # results computed under the previous settings.
         payload = {
             "queries": queries,
             "top_k": top_k,
@@ -95,13 +99,22 @@ class Retriever:
             "fields": fields,
             "vector_weight": self.cfg.retrieval.vector_weight,
             "threshold": self.cfg.retrieval.similarity_threshold,
+            "bm25_k1": self.cfg.retrieval.bm25_k1,
+            "bm25_b": self.cfg.retrieval.bm25_b,
+            "expand_cross_language": self.cfg.retrieval.expand_cross_language,
+            "multi_query_bonus": self.cfg.retrieval.multi_query_bonus,
             "rerank": rerank,
             "candidates": self.cfg.rerank.candidates,
             "fusion": self.cfg.rerank.fusion,
             "rerank_weight": self.cfg.rerank.weight,
-            "expand_cross_language": self.cfg.retrieval.expand_cross_language,
+            "rerank_top_n": self.cfg.rerank.top_n,
+            "rerank_min_score": self.cfg.rerank.min_score,
+            "rerank_model": self.cfg.rerank.model,
         }
         return json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
+
+    def clear_cache(self) -> None:
+        self._cache.clear()
 
     def _cache_get(self, key: str) -> dict[str, Any] | None:
         cached = self._cache.get(key)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -209,6 +210,56 @@ class RetrievalTests(unittest.TestCase):
         self.assertFalse(result["diagnostics"]["rerank"]["enabled"])
         self.assertFalse(result["diagnostics"]["rerank"]["applied"])
         self.assertIsNone(result["chunks"][0]["score_parts"]["rerank"])
+
+    def test_cache_key_covers_every_scoring_parameter(self) -> None:
+        cfg = self.cfg
+        base = self.retriever._cache_key(["q"], 5, {}, {}, False)
+        mutations = [
+            ("retrieval", "vector_weight", cfg.retrieval.vector_weight + 0.1),
+            ("retrieval", "similarity_threshold", 0.25),
+            ("retrieval", "bm25_k1", cfg.retrieval.bm25_k1 + 0.5),
+            ("retrieval", "bm25_b", cfg.retrieval.bm25_b + 0.1),
+            ("retrieval", "multi_query_bonus", 0.05),
+            ("retrieval", "expand_cross_language", False),
+            ("rerank", "candidates", 99),
+            ("rerank", "fusion", "max"),
+            ("rerank", "weight", 0.9),
+            ("rerank", "top_n", 7),
+            ("rerank", "min_score", 0.5),
+            ("rerank", "model", "other-reranker"),
+        ]
+        for section, key, value in mutations:
+            target = getattr(cfg, section)
+            old = getattr(target, key)
+            setattr(target, key, value)
+            try:
+                self.assertNotEqual(
+                    base,
+                    self.retriever._cache_key(["q"], 5, {}, {}, False),
+                    f"{section}.{key} is missing from the cache key",
+                )
+            finally:
+                setattr(target, key, old)
+        self.assertEqual(base, self.retriever._cache_key(["q"], 5, {}, {}, False))
+
+    def test_clear_cache_drops_entries(self) -> None:
+        self.retriever.retrieve(["关税"], top_k=2)
+        self.assertTrue(self.retriever._cache)
+        self.retriever.clear_cache()
+        self.assertFalse(self.retriever._cache)
+
+    def test_bm25_runs_from_memory_not_sqlite(self) -> None:
+        index = self.retriever.index
+        self.assertTrue(index.postings)
+        self.assertTrue(index.terms)
+        self.assertTrue(index.idf)
+        # The connection is closed once the index is loaded, so no request
+        # thread can issue SQL against it.
+        with self.assertRaises(sqlite3.ProgrammingError):
+            index.conn.execute("SELECT 1")
+        scores = index.bm25_scores(set(index.chunk_ids), ["关税"], 1.5, 0.75)
+        self.assertTrue(scores)
+        self.assertTrue(all(value > 0 for value in scores.values()))
 
     def test_query_cache_is_isolated_from_caller_mutation(self) -> None:
         first = self.retriever.retrieve(["关税"], top_k=2)

@@ -36,6 +36,18 @@ UA = "mercatoria-corpus-builder/0.1 (+legal retrieval POC)"
 # 抓取日期固定，保证可复现
 DEFAULT_DATE = "2026-11-01"
 
+# --title 未给 --parts 时使用的默认 part 清单。
+# 19 = CBP 海关实务；15 = EAR 出口管制；31 = OFAC 制裁。
+DEFAULT_PARTS: dict[int, str] = {
+    19: (
+        "0,7,10,11,12,18,19,24,54,101,102,103,111,112,113,114,115,118,122,"
+        "123,125,127,128,132,133,134,141,142,143,144,145,146,147,148,149,151,"
+        "152,158,159,161,162,163,165,171,172,173,174,177,181,182,190"
+    ),
+    15: "730,732,734,736,738,740,742,744,746,748,750,758,760,762,764,772",
+    31: "501,510,535,542,560,587,591",
+}
+
 
 def fetch(url: str, retries: int = 3, timeout: int = 90) -> bytes:
     """带重试的 GET，eCFR 要求两个 Accept 头。"""
@@ -160,8 +172,8 @@ def main() -> int:
     ap.add_argument("--title", type=int, required=True, help="CFR title 编号")
     ap.add_argument(
         "--parts",
-        required=True,
-        help="逗号分隔的 part 编号，如 0,10,11",
+        default="",
+        help="逗号分隔的 part 编号，如 0,10,11；省略时用 DEFAULT_PARTS[title]",
     )
     ap.add_argument("--date", default=DEFAULT_DATE, help="快照日期 YYYY-MM-DD")
     ap.add_argument("--out", default=None, help="输出根目录，默认 corpus/ecfr")
@@ -172,6 +184,13 @@ def main() -> int:
     tdir.mkdir(parents=True, exist_ok=True)
 
     parts = [p.strip() for p in args.parts.split(",") if p.strip()]
+    if not parts:
+        parts = [p.strip() for p in DEFAULT_PARTS.get(args.title, "").split(",") if p.strip()]
+    if not parts:
+        ap.error(
+            f"--parts is required for title {args.title} "
+            f"(known titles: {sorted(DEFAULT_PARTS)})"
+        )
     index: dict = {
         "source": "US eCFR",
         "title": args.title,

@@ -165,6 +165,23 @@ class Index:
         self.chunk_ids = [c["chunk_id"] for c in self.chunks]
         self.chunk_pos = {cid: i for i, cid in enumerate(self.chunk_ids)}
         self.vectors = self._load_vectors()
+        # The inverted index is a few MB at POC scale. Keeping it in memory
+        # removes every SQLite call from the query path, which is also the
+        # only safe answer to concurrent requests on a shared connection.
+        self.terms: dict[str, int] = {
+            str(row["term"]): int(row["df"])
+            for row in conn.execute("SELECT term, df FROM terms")
+        }
+        self.postings: dict[str, list[tuple[str, int]]] = {}
+        for row in conn.execute("SELECT term, chunk_id, tf FROM postings"):
+            self.postings.setdefault(str(row["term"]), []).append(
+                (str(row["chunk_id"]), int(row["tf"]))
+            )
+        n = max(1, len(self.chunks))
+        self.idf: dict[str, float] = {
+            term: float(np.log(1.0 + (n - df + 0.5) / (df + 0.5)))
+            for term, df in self.terms.items()
+        }
         self.jurisdictions = sorted({c["jurisdiction"] for c in self.chunks})
         self.precision: dict[str, str] = {}
         for c in self.chunks:
@@ -174,6 +191,9 @@ class Index:
             {value for c in self.chunks for value in c["applies_to"]}
         )
         self.config = _loads(_meta_get(self.conn, "config", "{}"), {})
+        # Everything is in memory now; a closed connection cannot be raced by
+        # concurrent request threads.
+        self.conn.close()
 
     def _load_vectors(self) -> np.ndarray:
         rows = list(
@@ -224,24 +244,19 @@ class Index:
         terms = [t for t in terms if t]
         if not terms or not candidate_ids:
             return {}
-        placeholders = ",".join("?" for _ in terms)
-        rows = self.conn.execute(
-            f"""SELECT p.term, p.chunk_id, p.tf, t.df
-                FROM postings p JOIN terms t ON t.term = p.term
-                WHERE p.term IN ({placeholders})""",
-            terms,
-        )
-        n = max(1, self.total_chunks)
         avgdl = self.avgdl or 1.0
         scores: dict[str, float] = {}
-        for term, chunk_id, tf, df in rows:
-            if chunk_id not in candidate_ids:
+        for term in set(terms):
+            postings = self.postings.get(term)
+            if not postings:
                 continue
-            chunk = self.chunk_by_id[chunk_id]
-            dl = chunk["token_count"] or 1
-            idf = np.log(1.0 + (n - df + 0.5) / (df + 0.5))
-            denom = tf + k1 * (1.0 - b + b * dl / avgdl)
-            scores[chunk_id] = scores.get(chunk_id, 0.0) + float(idf * tf * (k1 + 1.0) / denom)
+            idf = self.idf.get(term, 0.0)
+            for chunk_id, tf in postings:
+                if chunk_id not in candidate_ids:
+                    continue
+                dl = self.chunk_by_id[chunk_id]["token_count"] or 1
+                denom = tf + k1 * (1.0 - b + b * dl / avgdl)
+                scores[chunk_id] = scores.get(chunk_id, 0.0) + idf * tf * (k1 + 1.0) / denom
         return scores
 
     def vector_scores(self, candidate_indices: list[int], query_vector: np.ndarray) -> np.ndarray:

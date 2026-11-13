@@ -122,6 +122,28 @@ class DuplicateArticleTests(unittest.TestCase):
         self.assertNotEqual(recs[0].chunk_id, recs[1].chunk_id)
 
 
+class DefaultJurisdictionHeadingTests(unittest.TestCase):
+    """Uploads default to jurisdiction="CN"; foreign headings must survive it."""
+
+    def test_english_article_headings_under_cn_family(self) -> None:
+        doc = {"doc_id": "contract-1", "jurisdiction": "CN", "language": "en"}
+        raw = "## Article 1\n\nText one.\n\n## Article 2\n\nText two.\n"
+        recs = chunk_document(doc, raw, ChunkingConfig())
+        self.assertEqual([r.article_id for r in recs], ["contract-1:art-1", "contract-1:art-2"])
+
+    def test_ecfr_section_headings_under_cn_family(self) -> None:
+        doc = {"doc_id": "us-test", "jurisdiction": "CN", "language": "en"}
+        raw = "## § 101.1 Definitions.\n\nText.\n\n## § 101.2 More.\n\nMore text.\n"
+        recs = chunk_document(doc, raw, ChunkingConfig())
+        self.assertEqual([r.article_id for r in recs], ["us-test:101.1", "us-test:101.2"])
+
+    def test_plain_section_headings_stay_sections_under_cn_family(self) -> None:
+        doc = {"doc_id": "jp-upload", "jurisdiction": "JP", "language": "ja"}
+        raw = "### Section 1 第一節 通則\n\n本文。\n\n## 第一条\n\n甲。\n"
+        recs = chunk_document(doc, raw, ChunkingConfig())
+        self.assertEqual([r.article_id for r in recs], ["jp-upload:1"])
+
+
 class ChunkingOptionTests(unittest.TestCase):
     def test_include_heading_false(self) -> None:
         doc = {"doc_id": "cisg", "jurisdiction": "INT", "language": "en"}

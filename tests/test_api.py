@@ -253,6 +253,23 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(indexes["indexes"])
         self.assertEqual(self.client.get("/health").status_code, 200)
 
+    def test_config_update_clears_retrieval_cache(self) -> None:
+        self.client.post("/v1/retrieve", json={"queries": ["关税"]})
+        retriever = self.app.state.service.require_retriever()
+        self.assertTrue(retriever._cache)
+        resp = self.client.put("/v1/config", json={"retrieval": {"bm25_k1": 2.0}})
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(retriever._cache)
+
+    def test_config_update_syncs_rerank_flag(self) -> None:
+        service = self.app.state.service
+        retriever = service.require_retriever()
+        self.assertFalse(retriever.rerank_enabled)
+        self.client.put("/v1/config", json={"rerank": {"enabled": True}})
+        self.assertTrue(retriever.rerank_enabled)
+        self.client.put("/v1/config", json={"rerank": {"enabled": False}})
+        self.assertFalse(retriever.rerank_enabled)
+
     def test_manifest_endpoint(self) -> None:
         resp = self.client.post("/v1/admin/manifest")
         self.assertEqual(resp.status_code, 200)
