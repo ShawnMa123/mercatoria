@@ -26,7 +26,7 @@ from .config import (
     save_config,
     with_active_build,
 )
-from .control import ControlStore
+from .control import ControlConflict, ControlStore
 from .documents import DocumentRegistry
 from .embed import EmbeddingError
 from .ingest import (
@@ -38,13 +38,12 @@ from .ingest import (
 )
 from .lock import DirectoryLock
 from .manifest import write_manifest
-from .publication import import_legacy, publish_index
+from .publication import PostCommitError, PublicationCoordinator, import_legacy
 from .retrieve import Retriever
 from .snapshot import (
     ServingSnapshot,
     SnapshotError,
     SnapshotHolder,
-    build_snapshot,
     manifest_from_index,
 )
 from .store import (
@@ -166,6 +165,13 @@ class Service:
             raise
         self.registry = registry
         self.control = control
+        self.coordinator = PublicationCoordinator(
+            self.control,
+            self.deployment_cfg,
+            self.deployment_cfg.resolved_index_dir(),
+            holder=self.snapshots,
+            embed_fn=embed_fn,
+        )
         self.cfg = self._load_desired_config()
         self.reload()
 
@@ -195,24 +201,41 @@ class Service:
         snapshot = self.snapshots.current()
         return snapshot.retriever if snapshot is not None else None
 
-    def reload(self) -> None:
-        """Build a new snapshot and swap it in; on failure the old one serves.
+    def reload(self) -> bool:
+        """Load the committed head and install it. Returns success.
 
         Loading is never done in place: the previous snapshot is closed only
         after its last request released its lease, so a failed reload cannot
-        leave the process with neither the old nor the new index.
+        leave the process with neither the old nor the new index. A load that
+        finishes after a newer generation committed is discarded by the
+        coordinator instead of being installed.
         """
         try:
-            snapshot = self._load_state_snapshot()
+            if self.control.head() is None:
+                # Migration bootstrap: only an explicit legacy pointer is adopted.
+                import_legacy(self.control, self.deployment_cfg)
+            snapshot = self.coordinator.reload()
         except (IndexNotFound, SnapshotError, SchemaTooNew, CorpusUnavailable) as exc:
             self.error = str(exc)
-            return
+            return False
         except Exception as exc:  # unexpected loader failure must not kill serving
             self.error = f"{type(exc).__name__}: {exc}"
-            return
-        self.snapshots.install(snapshot)
+            return False
+        if snapshot is None:
+            self.error = "index is not built"
+            return False
+        self._sync_state(snapshot)
+        return True
+
+    def _sync_state(self, snapshot: ServingSnapshot) -> None:
         self.error = None if not snapshot.empty else "index is empty"
         self.pending_rebuild = needs_index_rebuild(snapshot.config, self.cfg)
+
+    def _sync_after_publish(self, result: dict[str, Any]) -> None:
+        """Adopt the served state after a publication installed it."""
+        snapshot = self.snapshots.current()
+        if snapshot is not None and result.get("installed"):
+            self._sync_state(snapshot)
 
     def active_build_cfg(self) -> AppConfig:
         """Config an ordinary document operation builds with.
@@ -222,16 +245,6 @@ class Service:
         """
         snapshot = self.snapshots.current()
         return copy.deepcopy(snapshot.config if snapshot is not None else self.cfg)
-
-    def _load_state_snapshot(self) -> ServingSnapshot:
-        index_dir = self.deployment_cfg.resolved_index_dir()
-        state = self.control.head()
-        if state is None:
-            adopted = import_legacy(self.control, self.deployment_cfg)
-            if adopted is None:
-                raise IndexNotFound("index is not built")
-            state = adopted
-        return build_snapshot(state, self.deployment_cfg, index_dir, self.embed_fn)
 
     def require_retriever(self) -> Retriever:
         snapshot = self.snapshots.current()
@@ -261,22 +274,23 @@ class Service:
             snapshot is not None
             and serving.runtime_fingerprint() != snapshot.runtime_config_id
         )
-        if runtime_changed:
-            self.control.publish(
-                index_version=snapshot.index_version,
-                manifest=snapshot.manifest,
-                build_profile_id=snapshot.build_profile_id,
-                runtime_config_id=serving.runtime_fingerprint(),
-                base_generation=snapshot.generation,
-                config=export_public_config(serving),
-            )
+        try:
+            if runtime_changed:
+                self.coordinator.publish_runtime(serving)
+        except PostCommitError as exc:
+            # The new state is committed. Adopt the accepted config, but do not
+            # pretend the old snapshot is current: readiness reports not-ready.
+            self.control.set_desired_config(export_public_config(updated))
+            self.cfg = updated
+            self.error = str(exc)
+            raise
         self.control.set_desired_config(export_public_config(updated))
         self.cfg = updated
         if body.get("save"):
             # Deprecated no-op for compatibility: acceptance already persists.
             save_config(updated, self.config_path)
         if runtime_changed:
-            self.reload()
+            self._sync_state(self.snapshots.current())
         else:
             self.pending_rebuild = needs_index_rebuild(active, updated)
         return self.config_payload()
@@ -326,6 +340,12 @@ class Service:
         try:
             job["result"] = work()
             job["status"] = "done"
+        except PostCommitError as exc:
+            # The publication committed; the job failed to *follow* it. Report
+            # both facts instead of pretending nothing happened.
+            job["status"] = "error"
+            job["error"] = f"{type(exc).__name__}: {exc}"
+            job["result"] = exc.result.describe()
         except Exception as exc:  # background jobs must report, not crash
             job["status"] = "error"
             job["error"] = f"{type(exc).__name__}: {exc}"
@@ -362,9 +382,9 @@ class Service:
                 embed_fn=self.embed_fn,
                 progress=self._progress(job),
                 activate=activate,
+                publish=self.coordinator,
             )
-            if activate:
-                self.reload()
+            self._sync_after_publish(result)
             return result
 
         return self._run_or_queue(job, work, bool(body.get("background", True)))
@@ -381,9 +401,9 @@ class Service:
                 items,
                 embed_fn=self.embed_fn,
                 progress=self._progress(job),
+                publish=self.coordinator,
             )
-            if result.get("indexed"):
-                self.reload()
+            self._sync_after_publish(result)
             return result
 
         threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
@@ -414,11 +434,16 @@ class Service:
                     self.registry,
                     embed_fn=self.embed_fn,
                     progress=self._progress(job),
+                    publish=self.coordinator,
                 )
+            except PostCommitError:
+                # Committed: restoring the old status would disagree with the
+                # published manifest. Readiness reports the install failure.
+                raise
             except Exception:
                 self.registry.update(doc_id, status=previous)
                 raise
-            self.reload()
+            self._sync_after_publish(result)
             return {"deleted": doc_id, **result}
 
         threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
@@ -438,8 +463,9 @@ class Service:
                 doc_id,
                 embed_fn=self.embed_fn,
                 progress=self._progress(job),
+                publish=self.coordinator,
             )
-            self.reload()
+            self._sync_after_publish(result)
             return result
 
         threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
@@ -491,13 +517,18 @@ class Service:
                     self.registry,
                     embed_fn=self.embed_fn,
                     progress=self._progress(job),
+                    publish=self.coordinator,
                 )
+            except PostCommitError:
+                # Committed: the published manifest already carries the new
+                # metadata, so restoring the old values would contradict it.
+                raise
             except Exception:
                 # A failed rebuild must not leave metadata that disagrees
                 # with the index that is still serving.
                 self.registry.update(doc_id, **previous)
                 raise
-            self.reload()
+            self._sync_after_publish(result)
             return {"updated": doc_id, "fields": values, **result}
 
         threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
@@ -511,24 +542,24 @@ class Service:
         snapshot = self.snapshots.current()
         if snapshot is not None:
             manifest = snapshot.manifest
+            cfg = snapshot.config
+            expected = snapshot.generation
         else:
             index = open_index(path)
             try:
                 manifest = manifest_from_index(index)
             finally:
                 index.close()
-        state = publish_index(
-            self.control,
-            self.cfg,
-            index_version,
-            manifest,
-            require_profile=False,
+            cfg = self.cfg
+            expected = self.control.head_generation()
+        result = self.coordinator.publish(
+            index_version, manifest, cfg, expected_generation=expected
         )
-        self.reload()
-        return state.describe()
+        self._sync_state(self.snapshots.current())
+        return result.describe()
 
     def rollback(self, snapshot_version: str) -> dict[str, Any]:
-        """Re-publish a retained generation (index + manifest)."""
+        """Re-publish a retained generation (index + manifest + config)."""
         if not snapshot_version.isdigit():
             raise KeyError(
                 f"unknown snapshot_version: {snapshot_version} "
@@ -537,16 +568,9 @@ class Service:
         target = self.control.get(int(snapshot_version))
         if target is None:
             raise KeyError(f"unknown snapshot_version: {snapshot_version}")
-        state = publish_index(
-            self.control,
-            self.cfg,
-            target.index_version,
-            target.manifest,
-            require_profile=False,
-            created_by_job_id=target.created_by_job_id,
-        )
-        self.reload()
-        return {**state.describe(), "source_snapshot_version": target.snapshot_version}
+        result = self.coordinator.rollback(target)
+        self._sync_state(self.snapshots.current())
+        return {**result.describe(), "source_snapshot_version": target.snapshot_version}
 
     def close(self) -> None:
         self.snapshots.close()
@@ -587,12 +611,26 @@ def create_app(
     @app.get("/health")
     @app.get("/health/ready")
     def health() -> Any:
+        head = service.control.head_generation()
         snapshot = service.current()
+        # A committed head that this process is not serving is not ready. Try a
+        # deterministic recovery first (reload the authoritative state); if that
+        # fails, say so instead of reporting the stale snapshot as current.
+        if head is not None and (snapshot is None or snapshot.generation != head):
+            service.reload()
+            snapshot = service.current()
         common = {"pending_rebuild": service.pending_rebuild}
-        if snapshot is None:
+        online = snapshot.generation if snapshot is not None else None
+        if snapshot is None or online != head:
             return JSONResponse(
                 status_code=503,
-                content={"status": "not_built", "error": service.error, **common},
+                content={
+                    "status": "not_ready" if head is not None else "not_built",
+                    "error": service.error,
+                    "head_generation": head,
+                    "online_generation": online,
+                    **common,
+                },
             )
         return {
             "status": "ready",
@@ -600,6 +638,8 @@ def create_app(
             "index_version": snapshot.index_version,
             "chunks": snapshot.index.total_chunks,
             "documents": snapshot.index.documents,
+            "head_generation": head,
+            "online_generation": online,
             "error": service.error,
             **common,
             "index": {
@@ -612,7 +652,7 @@ def create_app(
                 "schema_version": snapshot.index.schema_version,
                 "index_schema_outdated": snapshot.index.schema_outdated,
             },
-            "config": service.cfg.public_dict(),
+            "config": snapshot.config.public_dict(),
         }
 
     @app.get("/health/live")
@@ -629,8 +669,10 @@ def create_app(
             return service.apply_config(body)
         except ConfigError as exc:
             raise write_error(exc, 422) from exc
-        except WriteRefused as exc:
-            raise write_error(exc) from exc
+        except PostCommitError as exc:
+            raise write_error(exc, 503) from exc
+        except (SnapshotError, ControlConflict) as exc:
+            raise write_error(exc, 409) from exc
 
     def _retrieve(body: dict[str, Any], snapshot: ServingSnapshot) -> dict[str, Any]:
         if snapshot.retriever is None:
@@ -966,8 +1008,12 @@ def create_app(
     def rebuild(body: dict[str, Any] | None = None) -> dict[str, Any]:
         try:
             return service.start_rebuild(body or {})
+        except PostCommitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except ConfigError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except (SnapshotError, ControlConflict) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except IngestError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except (FileNotFoundError, ValueError) as exc:
@@ -987,6 +1033,10 @@ def create_app(
             return service.rollback(snapshot_version)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+        except PostCommitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ControlConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except (SnapshotError, FileNotFoundError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -996,6 +1046,10 @@ def create_app(
             return service.publish_staged(index_version)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except PostCommitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ControlConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except SnapshotError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 

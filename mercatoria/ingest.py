@@ -20,7 +20,8 @@ from .config import AppConfig
 from .documents import DocumentRegistry, combined_manifest
 from .manifest import build_manifest, load_manifest
 from .parse import ParseError, parse_document
-from .store import build_index
+from .publication import PostCommitError
+from .store import build_index, index_path
 
 Progress = Callable[[str, int, int], None]
 
@@ -80,6 +81,7 @@ def ingest_batch(
     *,
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
+    publish: Any = None,
 ) -> dict[str, Any]:
     if not items:
         raise IngestError("no files")
@@ -216,7 +218,20 @@ def ingest_batch(
             embed_fn=embed_fn,
             activate=True,
             progress=index_progress,
+            publish=publish,
         )
+    except PostCommitError as exc:
+        # The publication committed: the documents are in the live document set
+        # even though this process could not install the snapshot. Marking them
+        # failed would contradict the committed head.
+        counts = _chunk_counts(
+            str(index_path(cfg.resolved_index_dir(), exc.result.index_version))
+        )
+        for doc in parsed:
+            registry.update(
+                doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0)
+            )
+        raise
     except Exception as exc:
         for doc in parsed:
             registry.update(
@@ -256,6 +271,7 @@ def rebuild_with_uploads(
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
     activate: bool = True,
+    publish: Any = None,
 ) -> dict[str, Any]:
     """Rebuild using the static corpus plus every parsed upload.
 
@@ -271,6 +287,7 @@ def rebuild_with_uploads(
         embed_fn=embed_fn,
         activate=activate,
         progress=progress,
+        publish=publish,
     )
     if not activate:
         return result
@@ -290,6 +307,7 @@ def reindex_document(
     *,
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
+    publish: Any = None,
 ) -> dict[str, Any]:
     record = registry.get(doc_id)
     if not record:
@@ -316,7 +334,9 @@ def reindex_document(
     parsed_path.parent.mkdir(parents=True, exist_ok=True)
     parsed_path.write_text(parsed.text, encoding="utf-8")
     registry.update(doc_id, status="parsed", parsed_path=str(parsed_path), error=None)
-    return rebuild_with_uploads(cfg, registry, embed_fn=embed_fn, progress=progress)
+    return rebuild_with_uploads(
+        cfg, registry, embed_fn=embed_fn, progress=progress, publish=publish
+    )
 
 
 __all__ = [

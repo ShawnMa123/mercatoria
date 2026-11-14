@@ -8,9 +8,11 @@ import sys
 from pathlib import Path
 
 from .config import load_config
+from .control import ControlStore
 from .documents import DocumentRegistry, combined_manifest
 from .lock import DirectoryLock, LockBusy
 from .manifest import load_manifest, write_manifest
+from .publication import PublicationCoordinator
 from .store import build_index
 
 
@@ -55,13 +57,21 @@ def _cmd_rebuild(args: argparse.Namespace) -> int:
             if stage in {"chunk", "embed", "done"}:
                 print(f"{stage}: {done}/{total}", flush=True)
 
-        result = build_index(
-            merged,
-            cfg,
-            args.out or cfg.resolved_index_dir(),
-            activate=not args.no_activate,
-            progress=progress,
-        )
+        control = ControlStore(cfg.resolved_control_path())
+        try:
+            coordinator = PublicationCoordinator(
+                control, cfg, cfg.resolved_index_dir()
+            )
+            result = build_index(
+                merged,
+                cfg,
+                args.out or cfg.resolved_index_dir(),
+                activate=not args.no_activate,
+                progress=progress,
+                publish=coordinator,
+            )
+        finally:
+            control.close()
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     finally:

@@ -24,7 +24,7 @@ from mercatoria.control import ControlConflict, ControlStore
 from mercatoria.documents import DocumentRegistry
 from mercatoria.lock import LockBusy
 from mercatoria.manifest import load_manifest
-from mercatoria.publication import legacy_index_version, publish_index
+from mercatoria.publication import PublicationCoordinator, legacy_index_version
 from mercatoria.snapshot import SnapshotError, SnapshotHolder, build_snapshot
 from mercatoria.store import build_index
 
@@ -214,8 +214,16 @@ class PublicationTests(unittest.TestCase):
         control = ControlStore(self.cfg.resolved_control_path())
         try:
             before = control.head()
+            coordinator = PublicationCoordinator(
+                control, other, other.resolved_index_dir()
+            )
             with self.assertRaises(SnapshotError):
-                publish_index(control, other, before.index_version, before.manifest)
+                coordinator.publish(
+                    before.index_version,
+                    before.manifest,
+                    other,
+                    expected_generation=before.generation,
+                )
             self.assertEqual(control.head_generation(), before.generation)
         finally:
             control.close()

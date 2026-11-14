@@ -252,17 +252,25 @@ class ControlStore:
         base_generation: int | None = None,
         created_by_job_id: str | None = None,
         config: dict[str, Any] | None = None,
+        expect_empty: bool = False,
     ) -> ControlState:
         """Append a generation and move the head, or raise ControlConflict.
 
         ``base_generation=None`` means "whatever the head is now" and is only
         safe while the caller holds the data-directory write lock.
+        ``expect_empty=True`` is the explicit first-publication CAS: the head
+        must not exist yet, so two candidates built from nothing cannot both
+        publish.
         """
         with self._lock:
             conn = self.conn
             conn.execute("BEGIN IMMEDIATE")
             try:
                 current = self.head_generation()
+                if expect_empty and current is not None:
+                    raise ControlConflict(
+                        f"control head is not empty: generation {current} is already published"
+                    )
                 if base_generation is not None and current != base_generation:
                     raise ControlConflict(
                         f"control head moved: expected generation {base_generation}, "

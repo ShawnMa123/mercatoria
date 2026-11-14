@@ -231,9 +231,19 @@ class SnapshotHolder:
             return self._current
 
     def install(self, snapshot: ServingSnapshot) -> ServingSnapshot | None:
-        """Swap the live snapshot; the old one closes after its last lease."""
+        """Swap the live snapshot; the old one closes after its last lease.
+
+        An older generation is refused: publication only ever appends, so a
+        stale load completing late must not move the process backwards. The
+        caller keeps ownership of a rejected snapshot.
+        """
         with self._lock:
             previous = self._current
+            if previous is not None and snapshot.generation < previous.generation:
+                raise SnapshotError(
+                    f"refusing to install generation {snapshot.generation}: "
+                    f"generation {previous.generation} is live"
+                )
             self._current = snapshot
             if previous is not None and previous is not snapshot:
                 previous.retired = True

@@ -642,6 +642,7 @@ def build_index(
     embed_fn: Callable[[list[str]], np.ndarray] | None = None,
     activate: bool = True,
     progress: Callable[[str, int, int], None] | None = None,
+    publish: Any = None,
 ) -> dict[str, Any]:
     """Build a complete index file and optionally publish it.
 
@@ -651,6 +652,10 @@ def build_index(
     ``activate=False`` only leaves a candidate file behind: the control head,
     the served snapshot and ``current.txt`` are untouched, so a staged build
     cannot become live through a restart either.
+
+    ``publish`` is the owning :class:`PublicationCoordinator`. Callers that do
+    not pass one get a coordinator without a snapshot holder (offline CLI):
+    the commit happens, the process-local install does not.
     """
     from .embed import EmbeddingClient
     from .control import ControlStore
@@ -871,22 +876,33 @@ def build_index(
         "embedding_dim": dim,
         "avgdl": float(avgdl),
         "activated": False,
+        "committed": False,
+        "installed": False,
         "generation": None,
         "snapshot_version": None,
+        "warnings": [],
     }
     if activate:
-        from .publication import publish_index
+        from .publication import PublicationCoordinator
 
-        control = ControlStore(cfg.resolved_control_path())
+        owned = None
+        publisher = publish
+        if publisher is None:
+            owned = ControlStore(cfg.resolved_control_path())
+            publisher = PublicationCoordinator(owned, cfg, cfg.resolved_index_dir())
         try:
-            state = publish_index(
-                control, cfg, version, manifest, base_generation=base_generation
+            publication = publisher.publish_built(
+                version, manifest, cfg, base_generation=base_generation
             )
         finally:
-            control.close()
-        result["activated"] = True
-        result["generation"] = state.generation
-        result["snapshot_version"] = state.snapshot_version
+            if owned is not None:
+                owned.close()
+        result["activated"] = publication.committed
+        result["committed"] = publication.committed
+        result["installed"] = publication.installed
+        result["generation"] = publication.generation
+        result["snapshot_version"] = publication.snapshot_version
+        result["warnings"] = list(publication.warnings)
     if progress:
         progress("done", len(chunk_rows), len(chunk_rows))
     return result
