@@ -265,27 +265,65 @@ class Index:
             if str(doc.get("source_doc") or "").strip()
         }
         self.config = _loads(_meta_get(self.conn, "config", "{}"), {})
+        # What the build was made from: its own manifest, build config and base
+        # generation. Activation reads this record instead of borrowing the
+        # current state's manifest, which would publish a different document set
+        # than the one that was built.
+        self.candidate = _loads(_meta_get(self.conn, "candidate", "null"), None)
         # Everything is in memory now; a closed connection cannot be raced by
         # concurrent request threads.
         self.conn.close()
 
     def _load_vectors(self) -> np.ndarray:
-        rows = list(
-            self.conn.execute("SELECT vec FROM vectors ORDER BY chunk_id")
-        )
-        # chunks were loaded ORDER BY chunk_id, so the two orders align.
-        if rows and len(rows) != len(self.chunks):
-            raise ValueError(
-                f"index is inconsistent: {len(self.chunks)} chunks, {len(rows)} vectors"
-            )
-        if not rows:
-            dim = int(_meta_get(self.conn, "embedding_dim", 0) or 0)
-            return np.zeros((0, dim), dtype=np.float32)
+        """Decode vectors and put row *i* exactly at ``chunk_ids[i]``.
+
+        The old implementation selected ``vec`` ordered by chunk_id and assumed
+        that order matched the chunk list. Equal lengths therefore proved
+        nothing: a wrong or missing id still produced a matrix of the right
+        shape, and a tampered candidate could be published. The id set is now
+        matched explicitly, and any missing, extra, duplicate or differently
+        sized vector refuses the index.
+        """
+        rows = list(self.conn.execute("SELECT chunk_id, vec FROM vectors"))
         dim = int(_meta_get(self.conn, "embedding_dim", 0) or 0)
-        matrix = np.vstack([np.frombuffer(row["vec"], dtype=np.float32) for row in rows])
-        if dim and matrix.shape[1] != dim:
-            raise ValueError(f"vector dim mismatch: meta={dim}, data={matrix.shape[1]}")
-        return np.ascontiguousarray(matrix, dtype=np.float32)
+        if not rows:
+            if self.chunks:
+                raise ValueError(
+                    f"index is inconsistent: {len(self.chunks)} chunks but no vectors"
+                )
+            self.vector_chunk_ids = []
+            return np.zeros((0, dim), dtype=np.float32)
+        by_id: dict[str, bytes] = {}
+        for chunk_id, blob in rows:
+            key = str(chunk_id)
+            if key in by_id:
+                raise ValueError(f"index is inconsistent: duplicate vector for {key}")
+            by_id[key] = blob
+        missing = [cid for cid in self.chunk_ids if cid not in by_id]
+        extra = [cid for cid in by_id if cid not in self.chunk_pos]
+        if missing or extra:
+            raise ValueError(
+                "index is inconsistent: vector ids do not match chunks "
+                f"(missing={missing[:5]}, extra={extra[:5]})"
+            )
+        vectors: list[np.ndarray] = []
+        width = 0
+        for chunk_id in self.chunk_ids:
+            vector = np.frombuffer(by_id[chunk_id], dtype=np.float32)
+            if vector.ndim != 1 or vector.shape[0] == 0:
+                raise ValueError(f"index is inconsistent: empty vector for {chunk_id}")
+            if not width:
+                width = int(vector.shape[0])
+            elif int(vector.shape[0]) != width:
+                raise ValueError(
+                    f"index is inconsistent: vector width {vector.shape[0]} for "
+                    f"{chunk_id} differs from {width}"
+                )
+            vectors.append(vector)
+        if dim and width != dim:
+            raise ValueError(f"vector dim mismatch: meta={dim}, data={width}")
+        self.vector_chunk_ids = list(self.chunk_ids)
+        return np.ascontiguousarray(np.vstack(vectors), dtype=np.float32)
 
     def close(self) -> None:
         self.conn.close()
@@ -863,6 +901,12 @@ def build_index(
     _meta_set(conn, "precision", precision)
     _meta_set(conn, "snapshot_date", snapshot_date)
     _meta_set(conn, "config", export_public_config(cfg))
+    # Everything activation needs, recorded by the build that produced it.
+    _meta_set(
+        conn,
+        "candidate",
+        {"base_generation": base_generation, "manifest": manifest},
+    )
     conn.commit()
     conn.close()
 
@@ -918,12 +962,15 @@ def index_path(index_dir: str | Path, version: str) -> Path:
 
 
 def _published_index_path(control: Any, index_dir: Path) -> Path | None:
-    """Index file the control head points at, else the legacy export."""
+    """Index file the control head points at, else the legacy export.
+
+    Once a head exists, ``current.txt`` is only an export and is never consulted:
+    a stale pointer must not make a rebuild reuse vectors from another state.
+    """
     head = control.head()
     if head is not None:
         path = index_path(index_dir, head.index_version)
-        if path.is_file():
-            return path
+        return path if path.is_file() else None
     current = _current_file(index_dir)
     if current.is_file():
         try:

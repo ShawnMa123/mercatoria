@@ -535,28 +535,49 @@ class Service:
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
     def publish_staged(self, index_version: str) -> dict[str, Any]:
-        """Publish an already built candidate index as the new state."""
+        """Publish a candidate using the description its own build recorded.
+
+        The candidate carries its manifest, build config and base generation.
+        Borrowing the *current* manifest here published a state whose document
+        set did not match the built index; borrowing the current head as the
+        base let a stale candidate overwrite newer work.
+        """
         path = index_path(self.cfg.resolved_index_dir(), index_version)
         if not path.is_file():
             raise FileNotFoundError(f"index version not found: {index_version}")
-        snapshot = self.snapshots.current()
-        if snapshot is not None:
-            manifest = snapshot.manifest
-            cfg = snapshot.config
-            expected = snapshot.generation
-        else:
+        try:
             index = open_index(path)
-            try:
+        except (ValueError, RuntimeError) as exc:
+            raise SnapshotError(
+                f"candidate {index_version} cannot be opened: {exc}"
+            ) from exc
+        try:
+            record = index.candidate if isinstance(index.candidate, dict) else None
+            manifest = record.get("manifest") if record else None
+            if not isinstance(manifest, dict) or "docs" not in manifest:
                 manifest = manifest_from_index(index)
-            finally:
-                index.close()
-            cfg = self.cfg
-            expected = self.control.head_generation()
+            if record is not None:
+                expected = record.get("base_generation")
+            else:
+                expected = self.control.head_generation()
+            candidate_config = index.config if isinstance(index.config, dict) else {}
+        finally:
+            index.close()
+        if candidate_config:
+            try:
+                cfg = config_from_sections(self.deployment_cfg, candidate_config)
+            except ConfigError as exc:
+                raise SnapshotError(
+                    f"candidate {index_version} has an unusable config: {exc}"
+                ) from exc
+        else:
+            snapshot = self.snapshots.current()
+            cfg = snapshot.config if snapshot is not None else self.cfg
         result = self.coordinator.publish(
             index_version, manifest, cfg, expected_generation=expected
         )
         self._sync_state(self.snapshots.current())
-        return result.describe()
+        return {**result.describe(), "base_generation": expected}
 
     def rollback(self, snapshot_version: str) -> dict[str, Any]:
         """Re-publish a retained generation (index + manifest + config)."""
