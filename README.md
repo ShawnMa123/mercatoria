@@ -60,7 +60,8 @@ curl -s localhost:8080/v1/retrieve -H 'Content-Type: application/json' \
 - **双路召回 + 配额**：内存 BM25 与向量矩阵融合；多法域比较按配额保留槽位（覆盖率 1/8 → 8/8）。
 - **内容派生 ID**：`sha256(doc_id | article_id | normalize(text))[:16]`，引用可复核。
 - **索引文本解耦**：向量/BM25 用 `[法典 | 章节 | 条号]\n原文`，返回值仍是原文。
-- **原子发布**：tmp → `os.replace` → `current.txt`，可按版本切换/回滚。
+- **原子发布**：候选 tmp → `os.replace` → 提交前完整 prepare → control head 单事务 CAS 追加 generation → 安装快照；`current.txt` 只是导出。
+- **单写者**：`data/documents/write.lock` 在打开 control/registry 之前取得，第二个实例直接拒绝启动。
 - **只读置信度**：`high|medium|low` 附在 `diagnostics`，不改变候选顺序。
 
 ## 仓库结构 / Layout
@@ -137,7 +138,10 @@ Endpoints: `/health`, `/v1/config`, `/v1/retrieve`, `/v1/articles/{id}`, `/v1/ar
 - In-memory BM25 + dense vectors; jurisdiction quotas widen the pool before reserving slots.
 - Content-addressed ids: `sha256(doc_id | article_id | normalize(text))[:16]`.
 - Index text (`[statute | chapter | article] + text`) decoupled from the returned payload.
-- Atomic publish (`tmp → os.replace → current.txt`) with versioned rollback.
+- Atomic publish: candidate `tmp → os.replace`, full prepare before the commit, a CAS generation
+  appended to the control head, then the snapshot swap; `current.txt` is an export only.
+- Single writer: `data/documents/write.lock` is taken before any writable store is opened, so a
+  second instance refuses to start instead of serving a stale head.
 - Read-only confidence signal (`high|medium|low`) that never reorders results.
 
 ## Boundaries

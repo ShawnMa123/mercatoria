@@ -81,12 +81,18 @@ flowchart LR
 ```
 
 - **唯一权威**：`control.db` 的 `control_head` 决定线上版本；`current.txt` 只是导出与迁移输入，重启也不读它做判断。
-- **发布顺序**：构建候选 → 完整校验/加载 → `BEGIN IMMEDIATE` + CAS(base generation) 追加 generation 并移动 head → 替换进程内快照。校验或加载失败不移动 head，旧快照继续服务。
+- **发布顺序**：构建候选 → **提交前**完整校验并构造客户端（`prepare`）→ `BEGIN IMMEDIATE` + CAS(base generation) 追加 generation 并移动 head → 导出 `current.txt` → 替换进程内快照。
+  提交前失败不动 head；导出失败只记 warning；提交后安装失败按 `not-ready` 处理，不做"未提交"回滚。
 - **stage 与 activate 分离**：`activate=false` 只留候选文件，head、快照、`current.txt` 均不变，重启也不会自动激活。
+  迁移只认显式 `current.txt` 指针：没有指针即 `not_built`，指针损坏 fail closed，已有 head 后该文件不参与判断。
+- **候选自描述**：每次 build 在索引内记录自己的 manifest、build 配置与 base generation；激活读取该记录并 CAS 该 base。
 - **请求级快照**：一个请求只有一个 `ServingSnapshot`（索引 + 冻结配置 + 检索器），发布中不会混用两个状态；旧快照在最后一个租约释放后关闭。
-- **写入所有权**：`data/documents/write.lock` 是跨进程文件锁；第二个服务只读运行（`writable=false`，管理写操作 409），离线 CLI 检测到锁时拒绝写入。
-- **schema 版本**：索引 `meta.schema_version=2`，control `PRAGMA user_version=1`；旧库自动回退，新库打开返回 503 并提示重建。
-- **多版本共存**：`index-*.db` 全部保留，`POST /v1/admin/activate/{snapshot_version}` 回滚整个状态，`/v1/admin/indexes/{index_version}/activate` 发布已构建的候选。
+- **并发安装保护**：加载可在发布门之外进行，安装前在锁内复核 head；过期快照被丢弃并关闭，`SnapshotHolder` 拒绝安装更旧的 generation。
+- **写入所有权**：`data/documents/write.lock` 是跨进程文件锁，在打开 control/registry 之前获取；拿不到锁的第二个实例直接启动失败（不再提供"只读副本"），离线 CLI 检测到锁时拒绝写入。
+- **配置持久化**：control state 记录该 generation 的非敏感配置，`desired_config` 单行表记录待重建的运维意图；
+  部署路径/限额/凭证始终来自部署环境（config.json + env）。重启后同一 `snapshot_version` 绑定同一配置。
+- **schema 版本**：索引 `meta.schema_version=2`，control `PRAGMA user_version=2`；旧库自动回退，新库打开返回 503 并提示重建。
+- **多版本共存**：`index-*.db` 全部保留，`POST /v1/admin/activate/{snapshot_version}` 回滚整个状态（索引 + manifest + 该代配置），`/v1/admin/indexes/{index_version}/activate` 发布已构建的候选。
 
 ### 4. 关键设计决策
 
@@ -124,12 +130,29 @@ index_token_count  索引文本 token 数（BM25 长度归一化）
 
 **SQLite v2**：`docs`、`chunks`、`postings(term,chunk_id,tf)`、`terms(term,df)`、
 `vectors(chunk_id,dim,vec)`、`meta`（`version`、`built_at`、`schema_version`、
-`embedding_model`、`embedding_dim`、`chunking_hash`、`index_text_hash`、`avgdl`、`config`）。
+`embedding_model`、`embedding_dim`、`chunking_hash`、`index_text_hash`、`avgdl`、`config`、
+`candidate={manifest, base_generation}`）。`vectors` 与 `chunks` 按 `chunk_id` 逐条对齐，
+缺失/多余/错 ID/维度不符在打开索引时即拒绝。
 
 **control.db**（`data/documents/`）：`control_states`（不可变 generation：`index_version`、
-`manifest`、`manifest_id`、`build_profile_id`、`runtime_config_id`、`created_by_job_id`、
-`created_at`）+ `control_head`（单行当前 generation）。**registry.db**：上传文档记录与状态，
-逻辑删除用 `status=deleted` 表达。
+`manifest`、`manifest_id`、`build_profile_id`、`runtime_config_id`、`config`、
+`created_by_job_id`、`created_at`）+ `control_head`（单行当前 generation）+
+`desired_config`（单行，运维期望的配置，可含尚未重建的 build 变更）。
+**registry.db**：上传文档记录与状态，逻辑删除用 `status=deleted` 表达。
+
+### 6. 迁移与兼容（control schema 1 → 2）
+
+- 启动时按 `PRAGMA user_version` 做**加性**迁移：`control_states.config` 列与 `desired_config` 表，
+  事务内完成，失败回滚；重复执行幂等。迁移不复制 `current.txt` 指向的索引以外的文件。
+- 旧 generation（`config` 为空）只能按 `runtime_config_id` 校验：部署配置指纹一致则按部署配置服务，
+  不一致则拒绝加载并提示 rebuild/rollback，不猜历史配置。新发布都会写入 `config`。
+- 旧版配置中的 `save=false` 更新从未持久化，无法事后恢复：升级后同版本号可能继续反映旧值，
+  下一次 PUT 会写入持久配置。`save` 字段仍被接受，但不再影响是否持久化。
+- 旧索引若无 `meta.config`，`embedding.base` 无法核对（只校验 model/dim/chunking）；建议重建。
+- 回滚说明：`POST /v1/admin/activate/{snapshot_version}` 追加新 generation 并恢复该代索引、manifest 与配置；
+  仅当目标索引文件与配置仍可用时成功，否则 409。
+- 备份：`data/documents/control.db`（WAL 请用一致性备份）、`data/documents/registry.db`、
+  `data/index/`；恢复后以 control head 为准，`current.txt` 可重新导出。
 
 ---
 
@@ -175,19 +198,31 @@ flowchart LR
 
 ### 3. Index lifecycle
 
-New index → `*.tmp` → `os.replace` → candidate `index-*.db` → validation (schema, counts,
-dimensions, NaN, embedding space, manifest) → append a generation in `control.db` and move the
-single `control_head` row (CAS on the base generation) → load a `ServingSnapshot` and swap it in.
+New index → `*.tmp` → `os.replace` → candidate `index-*.db` → **prepare** before the commit (open,
+validate schema/counts/id alignment/dimensions/NaN/space/manifest, construct the clients) → append a
+generation in `control.db` and move the single `control_head` row (CAS on the base generation) →
+export `current.txt` → load a `ServingSnapshot` and swap it in.
 
 - The control head is the only authority. `current.txt` is an export and the migration input;
-  no restart reads it to decide what serves.
+  no restart reads it to decide what serves. Migration accepts only an explicit pointer: no pointer
+  means `not_built`, a broken pointer fails closed, and an existing head ignores the file entirely.
 - A candidate that fails validation or loading never moves the head: the old snapshot keeps serving.
 - `activate=false` leaves a candidate file only; head, snapshot and `current.txt` are untouched.
+  Each build records its own manifest, build config and base generation, and activation uses that
+  record (an expired base returns 409).
+- After the commit, an export failure is a warning and an install failure is `not_ready`
+  (`PostCommitError`, `result.committed=true`); neither is ever compensated as "not committed".
 - One snapshot per request (index + frozen config + retriever), so a publish cannot mix two states;
   a retired snapshot closes after its last lease.
-- `data/documents/write.lock` is a cross-process lock: a second service serves reads only
-  (`writable=false`, management writes 409) and an offline CLI refuses to write.
-- `schema_version=2` for indexes, `PRAGMA user_version=1` for control; newer schemas are refused
+- Loading runs outside the publication gate; installing re-checks the head under it, and the holder
+  refuses an older generation, so a slow reload cannot move the process backwards.
+- `data/documents/write.lock` is a cross-process lock taken before any writable store is opened:
+  a second instance fails to start instead of serving a head it never follows, and an offline CLI
+  refuses to write.
+- Control states persist the non-sensitive config they serve with; `desired_config` holds the
+  operator's not-yet-built intent. Deployment paths, limits and credentials stay in the
+  environment, so the same `snapshot_version` serves the same config across restarts.
+- `schema_version=2` for indexes, `PRAGMA user_version=2` for control; newer schemas are refused
   with a rebuild hint.
 - All `index-*.db` files are kept: `activate/{snapshot_version}` rolls back a whole state,
   `indexes/{index_version}/activate` publishes an already built candidate.
@@ -213,8 +248,32 @@ single `control_head` row (CAS on the base generation) → load a `ServingSnapsh
 - **Manifest document**: `doc_id`, `path`, `source_doc`, `jurisdiction`, `language`,
   `precision`, `applies_to`, `effective_from/to`, `snapshot_date`, `superseded_by`.
 - **SQLite v2**: `docs`, `chunks`, `postings`, `terms`, `vectors`, `meta`
-  (`schema_version`, `chunking_hash`, `index_text_hash`, …).
+  (`schema_version`, `chunking_hash`, `index_text_hash`, `config`,
+  `candidate={manifest, base_generation}`, …). `vectors` are matched to `chunks` by exact
+  `chunk_id`; missing, extra, wrong-id or differently sized rows refuse the index at open time.
 - **`control.db`** (`data/documents/`): immutable `control_states` rows (`index_version`,
-  `manifest`, `manifest_id`, `build_profile_id`, `runtime_config_id`, `created_by_job_id`,
-  `created_at`) plus the single-row `control_head`. **`registry.db`** holds uploaded document
-  records; a logical delete is `status=deleted`.
+  `manifest`, `manifest_id`, `build_profile_id`, `runtime_config_id`, `config`,
+  `created_by_job_id`, `created_at`), the single-row `control_head`, and a single-row
+  `desired_config` holding the operator's (possibly not yet built) intent. **`registry.db`**
+  holds uploaded document records; a logical delete is `status=deleted`.
+
+### 6. Migration and compatibility (control schema 1 → 2)
+
+- Startup runs an **additive** migration inside a transaction: the `control_states.config` column
+  and the `desired_config` table. It is idempotent and rolls back on failure; no index file is
+  copied or rewritten.
+- A pre-v2 generation (empty `config`) is accepted only while the deployment config's runtime
+  fingerprint still equals its recorded `runtime_config_id`; otherwise loading fails with an
+  explicit rebuild/rollback hint rather than guessing the historical config. Every new publication
+  writes `config`.
+- `save=false` updates were never persisted before this change and cannot be reconstructed: the
+  same `snapshot_version` may still reflect the older value until the next PUT persists. `save` is
+  still accepted but no longer decides whether an update survives a restart.
+- An index without `meta.config` cannot prove its `embedding.base` (only model/dim/chunking are
+  checked); rebuild it to gain the endpoint check.
+- Rollback: `POST /v1/admin/activate/{snapshot_version}` appends a generation restoring that
+  index, manifest and config; it succeeds only while the target index and config remain usable
+  (otherwise 409).
+- Backup set: `data/documents/control.db` (use a consistent WAL backup), `data/documents/registry.db`
+  and `data/index/`. After restore the control head is authoritative and `current.txt` can be
+  re-exported.

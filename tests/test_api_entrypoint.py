@@ -41,6 +41,32 @@ HOLD_LOCK = textwrap.dedent(
 )
 
 
+CRASH_AFTER_PUBLISH = textwrap.dedent(
+    """
+    import json
+    import os
+    import sys
+
+    import numpy as np
+
+    from mercatoria.config import load_config
+    from mercatoria.manifest import load_manifest
+    from mercatoria.store import build_index
+
+    cfg = load_config(sys.argv[1])
+
+    def fake(texts):
+        return np.asarray([[1.0, 0.0, 0.0] for _ in texts], dtype=np.float32)
+
+    manifest = load_manifest(cfg.resolved_manifest_path())
+    result = build_index(manifest, cfg, cfg.resolved_index_dir(), embed_fn=fake)
+    print(json.dumps({"generation": result["generation"]}), flush=True)
+    # Hard exit: no close(), no lock release, no snapshot teardown.
+    os._exit(0)
+    """
+)
+
+
 def _env() -> dict[str, str]:
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO)
@@ -265,6 +291,37 @@ class SingleWriterTests(unittest.TestCase):
         # No leaked registry/index handle: the directory is removable again.
         shutil.rmtree(self.cfg.resolved_documents_dir())
         self.assertFalse(self.cfg.resolved_documents_dir().exists())
+
+    def test_crashed_publisher_releases_lock_and_head_recovers(self) -> None:
+        """A crash after commit (no close) must not need a graceful shutdown."""
+        done = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                "-c",
+                CRASH_AFTER_PUBLISH,
+                str(self.root / "config.json"),
+            ],
+            cwd=str(REPO),
+            env=_env(),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        import json
+
+        published = json.loads(done.stdout.strip().splitlines()[-1])
+        self.assertGreater(published["generation"], 1)
+
+        service = self.service()
+        self.assertEqual(service.current().generation, published["generation"])
+        app = create_app(str(self.root / "config.json"), embed_fn=fake_embed, service=service)
+        from fastapi.testclient import TestClient
+
+        health = TestClient(app).get("/health")
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.json()["head_generation"], published["generation"])
 
     def test_create_app_propagates_a_locked_directory(self) -> None:
         holder = self._hold_lock_in_subprocess()
