@@ -10,7 +10,9 @@ The order is deliberate and not interchangeable:
    manifest it will serve with, and construct the real clients. Nothing has
    changed yet; a failure here leaves head, config and the live snapshot alone.
 2. **commit** — append the control generation and move the head inside one
-   transaction, compare-and-swapping the expected base generation.
+   transaction, compare-and-swapping the expected base generation. Commit,
+   export and install run under the publication gate (only ``prepare`` runs
+   outside it), so the committed head and the served head change as one step.
 3. **export** — update ``current.txt`` for legacy tooling. This is an export,
    not an authority: a failure is a warning that can be retried, never a reason
    to pretend the commit did not happen.
@@ -158,8 +160,13 @@ class PublicationCoordinator:
         self.index_dir = Path(index_dir)
         self.holder = holder
         self.embed_fn = embed_fn
-        # Loading may run outside the gate; installing never does. The gate is
-        # what makes "read the head, then install" atomic against publishes.
+        # Loading may run outside the gate; committing and installing never do.
+        # The gate is the single boundary between "a request checks the head and
+        # pins it" and "the head moves": it covers the control transaction, the
+        # export and the snapshot swap, and never embedding or retrieval work.
+        # Lock order: gate -> ControlStore._write_lock (publish) or
+        # gate -> ControlStore._read_lock (head check + pin). Nothing takes a
+        # control lock and then waits for this gate.
         self.gate = gate or threading.RLock()
 
     # -- preparation -------------------------------------------------------
@@ -222,27 +229,33 @@ class PublicationCoordinator:
         transaction as the generation.
         """
         prepared = self.prepare(index_version, manifest, cfg)
-        try:
-            self._commit(
-                prepared,
-                expected_generation=expected_generation,
-                created_by_job_id=created_by_job_id,
-                desired_config=desired_config,
+        # The gate covers the commit, the export and the install as one
+        # boundary: a request can neither observe an uncommitted head nor pin a
+        # head this process has not installed yet, and a commit cannot land
+        # between a request's head check and its pin. Preparation (index load,
+        # embedding/rerank/LLM clients) stays outside the gate.
+        with self.gate:
+            try:
+                self._commit(
+                    prepared,
+                    expected_generation=expected_generation,
+                    created_by_job_id=created_by_job_id,
+                    desired_config=desired_config,
+                )
+            except BaseException:
+                prepared.close()
+                raise
+            result = PublicationResult(
+                committed=True,
+                index_version=index_version,
+                generation=prepared.generation,
+                snapshot_version=prepared.snapshot_version,
             )
-        except BaseException:
-            prepared.close()
-            raise
-        result = PublicationResult(
-            committed=True,
-            index_version=index_version,
-            generation=prepared.generation,
-            snapshot_version=prepared.snapshot_version,
-        )
-        result = self._export(result)
-        if not install:
-            prepared.close()
-            return result
-        return self._install_or_fail(prepared, result)
+            result = self._export(result)
+            if not install:
+                prepared.close()
+                return result
+            return self._install_or_fail(prepared, result)
 
     def publish_runtime(
         self, cfg: AppConfig, *, desired_config: dict[str, Any] | None = None

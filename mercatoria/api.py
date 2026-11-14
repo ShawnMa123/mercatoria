@@ -299,8 +299,10 @@ class Service:
     def serving_lease(self) -> Iterator[ServingSnapshot | None]:
         """Lease the committed head for one request, never a stale snapshot.
 
-        The head check and the pin happen under the publication gate, so a
-        commit cannot land between them (a check-then-lease would leave that
+        The head check and the pin happen under the publication gate, and a
+        publish holds that same gate from its control transaction through the
+        snapshot swap, so neither an uncommitted head nor a committed-but-not-
+        installed one can be observed here (a check-then-lease would leave that
         window). A committed head that is not online yet triggers one
         deterministic reload; if it still cannot be served the request yields
         ``None`` and the caller answers 503 rather than the old state. A request

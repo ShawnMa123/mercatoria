@@ -135,17 +135,53 @@ class ControlState:
 
 
 class ControlStore:
+    """The authority, with one writer connection and one committed-view reader.
+
+    ``self.conn`` is the writer: every state change happens inside its
+    ``BEGIN IMMEDIATE`` ... ``COMMIT`` block, serialised by ``_write_lock``.
+    ``self._read_conn`` is a second, ``query_only`` connection used by every
+    *public* read method, so a request thread can never observe rows the writer
+    has not committed: SQLite only shows a second connection committed state,
+    and this one never opens a transaction of its own.
+
+    Lock order (never take them the other way around):
+
+    1. ``PublicationCoordinator.gate`` — the process-wide publish/lease
+       boundary; it covers the control commit *and* the head-check+pin.
+    2. ``ControlStore._write_lock`` — one control transaction at a time.
+    3. ``ControlStore._read_lock`` — one committed-view read at a time.
+
+    A read that happens inside the publication gate takes 1 then 3, and the
+    publish path takes 1 then 2. No path holds a control lock and then waits
+    for the publication gate, so the two chains cannot deadlock. Transaction
+    internals that must see their own uncommitted writes (``publish`` checking
+    the base generation) use :meth:`_head_on` on the write connection instead of
+    the public readers, which would self-lock.
+    """
+
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
-        self.conn = sqlite3.connect(
+        self._write_lock = threading.Lock()
+        self._read_lock = threading.Lock()
+        self.conn = self._connect(writer=True)
+        self._read_conn: sqlite3.Connection | None = None
+        self._migrate()
+        self._read_conn = self._connect(writer=False)
+
+    def _connect(self, *, writer: bool) -> sqlite3.Connection:
+        conn = sqlite3.connect(
             self.path, check_same_thread=False, isolation_level=None
         )
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA journal_mode=WAL")
-        self.conn.execute("PRAGMA busy_timeout=5000")
-        self._migrate()
+        conn.row_factory = sqlite3.Row
+        if writer:
+            conn.execute("PRAGMA journal_mode=WAL")
+        else:
+            # Read-only view: a public read can never leave a transaction (or a
+            # pending write) behind on the handle other threads read from.
+            conn.execute("PRAGMA query_only=ON")
+        conn.execute("PRAGMA busy_timeout=5000")
+        return conn
 
     def _migrate(self) -> None:
         version = int(self.conn.execute("PRAGMA user_version").fetchone()[0])
@@ -180,7 +216,28 @@ class ControlStore:
                 raise
 
     def close(self) -> None:
+        reader, self._read_conn = self._read_conn, None
+        if reader is not None:
+            reader.close()
         self.conn.close()
+
+    # -- committed-view reads ---------------------------------------------
+
+    def _read(self, sql: str, params: tuple[Any, ...] = ()) -> list[sqlite3.Row]:
+        """Run one read on the committed-view connection."""
+        reader = self._read_conn
+        if reader is None:
+            raise ControlError("control store is closed")
+        with self._read_lock:
+            return reader.execute(sql, params).fetchall()
+
+    @staticmethod
+    def _head_on(conn: sqlite3.Connection) -> int | None:
+        """Head as seen by ``conn`` (unlocked: only for a held transaction)."""
+        row = conn.execute(
+            "SELECT generation FROM control_head WHERE singleton=1"
+        ).fetchone()
+        return int(row[0]) if row else None
 
     def _row(self, row: sqlite3.Row | None) -> ControlState | None:
         if row is None:
@@ -202,35 +259,38 @@ class ControlStore:
         )
 
     def head_generation(self) -> int | None:
-        row = self.conn.execute("SELECT generation FROM control_head WHERE singleton=1").fetchone()
-        return int(row[0]) if row else None
+        rows = self._read("SELECT generation FROM control_head WHERE singleton=1")
+        return int(rows[0][0]) if rows else None
 
     def head(self) -> ControlState | None:
-        generation = self.head_generation()
-        if generation is None:
-            return None
-        return self.get(generation)
+        # One statement, one snapshot: the head row and the state it names can
+        # never come from two different commits.
+        rows = self._read(
+            """SELECT states.* FROM control_states AS states
+               JOIN control_head AS head ON states.generation = head.generation
+               WHERE head.singleton = 1"""
+        )
+        return self._row(rows[0]) if rows else None
 
     def get(self, generation: int) -> ControlState | None:
-        row = self.conn.execute(
+        rows = self._read(
             "SELECT * FROM control_states WHERE generation=?", (int(generation),)
-        ).fetchone()
-        return self._row(row)
+        )
+        return self._row(rows[0]) if rows else None
 
     def states(self, limit: int = 50) -> list[ControlState]:
-        rows = self.conn.execute(
-            "SELECT * FROM control_states ORDER BY generation DESC LIMIT ?", (int(limit),)
-        ).fetchall()
+        rows = self._read(
+            "SELECT * FROM control_states ORDER BY generation DESC LIMIT ?",
+            (int(limit),),
+        )
         return [state for state in (self._row(row) for row in rows) if state is not None]
 
     # -- desired (not yet built) configuration ----------------------------
 
     def desired_config(self) -> dict[str, Any] | None:
         """Operator intent that may still need an explicit rebuild."""
-        row = self.conn.execute(
-            "SELECT config FROM desired_config WHERE singleton=1"
-        ).fetchone()
-        return _loads(row[0]) if row is not None else None
+        rows = self._read("SELECT config FROM desired_config WHERE singleton=1")
+        return _loads(rows[0][0]) if rows else None
 
     @staticmethod
     def _write_desired(
@@ -246,7 +306,7 @@ class ControlStore:
         )
 
     def set_desired_config(self, config: dict[str, Any]) -> None:
-        with self._lock:
+        with self._write_lock:
             self._write_desired(self.conn, config)
 
     def publish(
@@ -274,11 +334,14 @@ class ControlStore:
         never leave the active state advanced while the accepted operator intent
         is the previous value, and a failed desired write rolls the head back.
         """
-        with self._lock:
+        with self._write_lock:
             conn = self.conn
             conn.execute("BEGIN IMMEDIATE")
             try:
-                current = self.head_generation()
+                # The head of *this* transaction: the committed-view reader
+                # would not see the row this transaction just wrote, and taking
+                # its lock here would nest control locks.
+                current = self._head_on(conn)
                 if expect_empty and current is not None:
                     raise ControlConflict(
                         f"control head is not empty: generation {current} is already published"
