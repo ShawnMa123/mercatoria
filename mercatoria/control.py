@@ -216,7 +216,8 @@ class ControlStore:
                 raise
 
     def close(self) -> None:
-        reader, self._read_conn = self._read_conn, None
+        with self._read_lock:
+            reader, self._read_conn = self._read_conn, None
         if reader is not None:
             reader.close()
         self.conn.close()
@@ -225,10 +226,10 @@ class ControlStore:
 
     def _read(self, sql: str, params: tuple[Any, ...] = ()) -> list[sqlite3.Row]:
         """Run one read on the committed-view connection."""
-        reader = self._read_conn
-        if reader is None:
-            raise ControlError("control store is closed")
         with self._read_lock:
+            reader = self._read_conn
+            if reader is None:
+                raise ControlError("control store is closed")
             return reader.execute(sql, params).fetchall()
 
     @staticmethod
