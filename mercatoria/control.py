@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS control_states (
@@ -40,6 +40,21 @@ CREATE TABLE IF NOT EXISTS control_head (
 );
 """
 
+# Schema 2 adds the non-sensitive configuration a generation was published
+# with, plus the operator's desired (possibly not yet built) configuration.
+# Both are additive: an existing deployment keeps its rows and gets an empty
+# column, which is exactly the "cannot reconstruct the config" case.
+SCHEMA_V2_COLUMNS = (
+    ("control_states", "config", "TEXT"),
+)
+SCHEMA_V2_TABLES = (
+    """CREATE TABLE IF NOT EXISTS desired_config (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    config TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+)""",
+)
+
 
 class ControlError(RuntimeError):
     pass
@@ -55,6 +70,16 @@ class ControlSchemaTooNew(ControlError):
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _loads(raw: str | None) -> dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
 
 
 def manifest_id(manifest: dict[str, Any]) -> str:
@@ -84,6 +109,10 @@ class ControlState:
     runtime_config_id: str = ""
     created_by_job_id: str | None = None
     created_at: str = ""
+    # Non-sensitive configuration this generation serves with. ``None`` means
+    # the row predates config persistence: its runtime config can only be
+    # reconstructed if the deployment config still has the same fingerprint.
+    config: dict[str, Any] | None = field(default=None, repr=False, compare=False)
 
     @property
     def snapshot_version(self) -> str:
@@ -101,6 +130,7 @@ class ControlState:
             "documents": len(self.manifest.get("docs") or []),
             "created_by_job_id": self.created_by_job_id,
             "created_at": self.created_at,
+            "config_persisted": self.config is not None,
         }
 
 
@@ -128,7 +158,26 @@ class ControlStore:
             # Additive only, and idempotent: a half-created schema is completed
             # on the next start, an existing one keeps its rows.
             self.conn.executescript(SCHEMA)
-            self.conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+            self.conn.execute("PRAGMA user_version=1")
+        if version < 2:
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                existing = {
+                    row[1]
+                    for row in self.conn.execute("PRAGMA table_info(control_states)")
+                }
+                for table, column, decl in SCHEMA_V2_COLUMNS:
+                    if column not in existing:
+                        self.conn.execute(
+                            f"ALTER TABLE {table} ADD COLUMN {column} {decl}"
+                        )
+                for statement in SCHEMA_V2_TABLES:
+                    self.conn.execute(statement)
+                self.conn.execute("PRAGMA user_version=2")
+                self.conn.execute("COMMIT")
+            except BaseException:
+                self.conn.execute("ROLLBACK")
+                raise
 
     def close(self) -> None:
         self.conn.close()
@@ -149,6 +198,7 @@ class ControlStore:
             runtime_config_id=str(row["runtime_config_id"]),
             created_by_job_id=row["created_by_job_id"],
             created_at=str(row["created_at"]),
+            config=_loads(row["config"]) if "config" in row.keys() else None,
         )
 
     def head_generation(self) -> int | None:
@@ -173,6 +223,25 @@ class ControlStore:
         ).fetchall()
         return [state for state in (self._row(row) for row in rows) if state is not None]
 
+    # -- desired (not yet built) configuration ----------------------------
+
+    def desired_config(self) -> dict[str, Any] | None:
+        """Operator intent that may still need an explicit rebuild."""
+        row = self.conn.execute(
+            "SELECT config FROM desired_config WHERE singleton=1"
+        ).fetchone()
+        return _loads(row[0]) if row is not None else None
+
+    def set_desired_config(self, config: dict[str, Any]) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT INTO desired_config(singleton, config, updated_at)
+                   VALUES (1, ?, ?)
+                   ON CONFLICT(singleton) DO UPDATE SET
+                       config=excluded.config, updated_at=excluded.updated_at""",
+                (json.dumps(config, ensure_ascii=False), _now()),
+            )
+
     def publish(
         self,
         *,
@@ -182,6 +251,7 @@ class ControlStore:
         runtime_config_id: str,
         base_generation: int | None = None,
         created_by_job_id: str | None = None,
+        config: dict[str, Any] | None = None,
     ) -> ControlState:
         """Append a generation and move the head, or raise ControlConflict.
 
@@ -208,12 +278,14 @@ class ControlStore:
                     runtime_config_id=runtime_config_id,
                     created_by_job_id=created_by_job_id,
                     created_at=_now(),
+                    config=config,
                 )
                 conn.execute(
                     """INSERT INTO control_states
                        (generation, manifest_id, index_version, build_profile_id,
-                        runtime_config_id, created_by_job_id, created_at, manifest)
-                       VALUES (?,?,?,?,?,?,?,?)""",
+                        runtime_config_id, created_by_job_id, created_at, manifest,
+                        config)
+                       VALUES (?,?,?,?,?,?,?,?,?)""",
                     (
                         state.generation,
                         state.manifest_id,
@@ -223,6 +295,7 @@ class ControlStore:
                         state.created_by_job_id,
                         state.created_at,
                         json.dumps(manifest, ensure_ascii=False),
+                        json.dumps(config, ensure_ascii=False) if config is not None else None,
                     ),
                 )
                 conn.execute(

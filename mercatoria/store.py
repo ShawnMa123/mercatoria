@@ -20,7 +20,7 @@ from typing import Any, Callable, Iterable
 import numpy as np
 
 from .chunker import ChunkRecord, chunk_document, cn_to_int
-from .config import AppConfig
+from .config import AppConfig, export_public_config
 from .tokenizer import term_counts, tokenize
 
 # Bump when a table/column the reader relies on changes. Opening an older
@@ -857,7 +857,7 @@ def build_index(
     _meta_set(conn, "jurisdictions", jurisdictions)
     _meta_set(conn, "precision", precision)
     _meta_set(conn, "snapshot_date", snapshot_date)
-    _meta_set(conn, "config", cfg.public_dict())
+    _meta_set(conn, "config", export_public_config(cfg))
     conn.commit()
     conn.close()
 

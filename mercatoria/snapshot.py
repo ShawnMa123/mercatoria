@@ -19,7 +19,7 @@ from typing import Any, Callable, Iterator
 
 import numpy as np
 
-from .config import AppConfig
+from .config import AppConfig, ConfigError, config_from_sections
 from .control import ControlState
 from .retrieve import Retriever
 from .store import Index, index_path, open_index
@@ -56,18 +56,42 @@ def manifest_from_index(index: Index) -> dict[str, Any]:
     }
 
 
+def resolve_state_config(state: ControlState, deployment_cfg: AppConfig) -> AppConfig:
+    """The config a control state served with, over the deployment environment.
+
+    Deployment paths, limits and credentials always come from the environment;
+    everything a request can observe comes from the state. A row written before
+    config persistence cannot be reconstructed: it is accepted only while the
+    deployment config still has the recorded fingerprint, otherwise the state
+    fails closed instead of serving different settings under the same
+    snapshot_version.
+    """
+    if state.config is not None:
+        try:
+            return config_from_sections(deployment_cfg, state.config)
+        except ConfigError as exc:
+            raise SnapshotError(
+                f"control state {state.generation} has an unusable persisted config: {exc}"
+            ) from exc
+    if state.runtime_config_id and deployment_cfg.runtime_fingerprint() != state.runtime_config_id:
+        raise SnapshotError(
+            f"control state {state.generation} predates config persistence and the "
+            f"deployment config no longer matches its recorded runtime fingerprint "
+            f"({state.runtime_config_id}); rebuild or roll back explicitly"
+        )
+    return copy.deepcopy(deployment_cfg)
+
+
 def validate_index(
     index: Index,
     cfg: AppConfig,
     manifest: dict[str, Any] | None = None,
-    require_profile: bool = True,
 ) -> list[str]:
     """Return every reason this index must not be published. Empty = usable.
 
-    ``require_profile=False`` is for activating or rolling back an index that
-    was built under a different chunking profile: the index carries its own
-    token counts, so serving it is safe, but the difference is reported back as
-    ``pending_rebuild`` instead of being hidden.
+    The rules are identical for a candidate and for a committed load: one
+    definition of "can serve", so a state that passed validation at publish
+    time cannot fail it on restart.
     """
     problems: list[str] = []
     if len(index.chunk_ids) != len(index.vectors):
@@ -89,7 +113,15 @@ def validate_index(
                 f"embedding space mismatch: index model={index.embedding_model}, "
                 f"configured={cfg.embedding.model}"
             )
-        if require_profile and index.chunking_hash != cfg.chunking_hash():
+        recorded_base = ""
+        if isinstance(index.config, dict):
+            recorded_base = str((index.config.get("embedding") or {}).get("base") or "")
+        if recorded_base and cfg.embedding.base and recorded_base != cfg.embedding.base:
+            problems.append(
+                f"embedding endpoint mismatch: index base={recorded_base}, "
+                f"configured={cfg.embedding.base}"
+            )
+        if index.chunking_hash != cfg.chunking_hash():
             problems.append(
                 "chunking/index-text profile mismatch: "
                 f"index={index.chunking_hash}, configured={cfg.chunking_hash()}"
@@ -151,11 +183,12 @@ class ServingSnapshot:
 
 def build_snapshot(
     state: ControlState,
-    cfg: AppConfig,
+    deployment_cfg: AppConfig,
     index_dir: str | Path,
     embed_fn: Callable[[list[str]], np.ndarray] | None = None,
 ) -> ServingSnapshot:
     """Load and fully validate one control state. Raises SnapshotError."""
+    cfg = resolve_state_config(state, deployment_cfg)
     path = index_path(index_dir, state.index_version)
     if not path.is_file():
         raise SnapshotError(f"index version not found: {state.index_version} ({path})")

@@ -249,6 +249,77 @@ class AppConfig:
         return data
 
 
+# Sections a published snapshot records. Deployment paths and limits stay in
+# the deployment config (config.json/env) and are never copied into state.
+PERSISTED_SECTIONS = ("chunking", "embedding", "retrieval", "rerank", "answer")
+
+_SECRET_FIELDS = {
+    ("embedding", "api_key"),
+    ("rerank", "api_key"),
+    ("answer", "api_key"),
+}
+
+
+def export_public_config(cfg: AppConfig) -> dict[str, Any]:
+    """Non-sensitive configuration for durable artifacts.
+
+    Used for control-state rows, index metadata and saved config files. Secrets
+    are *absent*, not masked: an artifact that has no field cannot leak one.
+    """
+    data = copy.deepcopy(asdict(cfg))
+    for section, key in _SECRET_FIELDS:
+        data.get(section, {}).pop(key, None)
+    return {section: data[section] for section in PERSISTED_SECTIONS}
+
+
+def config_from_sections(base: AppConfig, sections: dict[str, Any] | None) -> AppConfig:
+    """Resolve a persisted snapshot's config over a deployment config.
+
+    Paths, limits and credentials come from ``base`` (deployment config), the
+    published non-sensitive values from ``sections``. Validation is the same one
+    a live config update goes through, so a corrupt or stale row fails closed
+    instead of quietly serving different settings.
+    """
+    if sections is None:
+        raise ConfigError("control state has no persisted config")
+    updated = copy.deepcopy(base)
+    for section in PERSISTED_SECTIONS:
+        if section not in sections:
+            continue
+        setattr(updated, section, _merge_section((section,), getattr(updated, section), sections[section]))
+    if updated.chunking.overlap >= updated.chunking.max_chars:
+        raise ConfigError("chunking.overlap must be smaller than chunking.max_chars")
+    return updated
+
+
+def build_identity(cfg: AppConfig) -> dict[str, Any]:
+    """What an index is built from: chunking, embedding space and endpoint.
+
+    Changing any of these requires a rebuild; everything else is a runtime
+    parameter that a new snapshot can carry without touching the vectors.
+    """
+    return {
+        "chunking": asdict(cfg.chunking),
+        "embedding_model": cfg.embedding.model,
+        "embedding_dim": cfg.embedding.dim,
+        "embedding_base": cfg.embedding.base,
+    }
+
+
+def with_active_build(desired: AppConfig, active: AppConfig) -> AppConfig:
+    """``desired`` runtime settings on ``active``'s build identity.
+
+    A runtime update must never drag a pending chunking/embedding-space change
+    into the serving state: the served index still belongs to the active build.
+    """
+    serving = copy.deepcopy(desired)
+    serving.chunking = copy.deepcopy(active.chunking)
+    serving.embedding.base = active.embedding.base
+    serving.embedding.model = active.embedding.model
+    serving.embedding.dim = active.embedding.dim
+    return serving
+
+
 def _merge_dataclass(cls, data: dict[str, Any] | None):
     obj = cls()
     for key, value in (data or {}).items():
@@ -329,9 +400,18 @@ def load_config(path: str | Path | None = None) -> AppConfig:
 
 
 def save_config(cfg: AppConfig, path: str | Path) -> None:
+    """Write a durable config file without credentials.
+
+    The file is an operator convenience (deployment paths and secrets still come
+    from the environment), so it uses the same non-sensitive export as the
+    control state. ``to_dict()`` must never be written to disk.
+    """
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+    p.write_text(
+        json.dumps(export_public_config(cfg), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 class ConfigError(ValueError):
@@ -376,17 +456,17 @@ _CHOICES: dict[tuple[str, ...], set[str]] = {
     ("rerank", "fusion"): {"max", "weighted", "rerank"},
 }
 
+# Endpoints a request actually dials. An invalid value here used to be accepted
+# and only fail when a client was constructed *after* the state was published.
+_URL_FIELDS = {
+    ("embedding", "base"),
+    ("rerank", "base"),
+    ("answer", "base"),
+}
+
 # Top-level keys a config update may touch. Deployment paths and limits are
 # environment/deployment concerns and are not remotely editable.
 _EDITABLE_TOP = {"chunking", "embedding", "retrieval", "rerank", "answer"}
-
-# Plaintext credentials never travel through the config API: they come from the
-# environment, and a persisted config would otherwise store them on disk.
-_SECRET_FIELDS = {
-    ("embedding", "api_key"),
-    ("rerank", "api_key"),
-    ("answer", "api_key"),
-}
 
 
 def _coerce(path: tuple[str, ...], value: Any, current: Any) -> Any:
@@ -429,6 +509,24 @@ def _check_range(path: tuple[str, ...], value: Any) -> None:
     choices = _CHOICES.get(path)
     if choices is not None and value not in choices:
         raise ConfigError(f"{'.'.join(path)} must be one of {sorted(choices)}")
+    if path in _URL_FIELDS:
+        _check_url(path, value)
+
+
+def _check_url(path: tuple[str, ...], value: Any) -> None:
+    """Reject an endpoint that no client could ever dial."""
+    from urllib.parse import urlsplit
+
+    name = ".".join(path)
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigError(f"{name} must be an http(s) URL")
+    parts = urlsplit(value.strip().rstrip("/"))
+    if parts.scheme not in {"http", "https"} or not parts.hostname:
+        raise ConfigError(f"{name} must be an http(s) URL, got {value!r}")
+    try:
+        parts.port
+    except ValueError as exc:
+        raise ConfigError(f"{name} has an invalid port: {value!r}") from exc
 
 
 def _merge_section(path: tuple[str, ...], current: Any, value: Any) -> Any:
@@ -481,4 +579,4 @@ def merge_config_update(cfg: AppConfig, body: dict[str, Any] | None) -> AppConfi
 
 def needs_index_rebuild(before: AppConfig, after: AppConfig) -> bool:
     """True when the change alters the indexed text or the embedding space."""
-    return before.chunking_hash() != after.chunking_hash()
+    return build_identity(before) != build_identity(after)

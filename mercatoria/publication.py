@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .config import AppConfig
+from .config import AppConfig, export_public_config
 from .control import ControlState, ControlStore
 from .snapshot import SnapshotError, manifest_from_index, validate_index
 from .store import export_current, index_path, open_index
@@ -22,7 +22,6 @@ def validate_candidate(
     cfg: AppConfig,
     index_version: str,
     manifest: dict[str, Any],
-    require_profile: bool = True,
 ) -> dict[str, Any]:
     """Open a built index and prove it can serve before publishing it.
 
@@ -37,7 +36,7 @@ def validate_candidate(
     except (ValueError, RuntimeError) as exc:
         raise SnapshotError(f"index {index_version} cannot be opened: {exc}") from exc
     try:
-        problems = validate_index(index, cfg, manifest, require_profile=require_profile)
+        problems = validate_index(index, cfg, manifest)
         facts = {
             "chunking_hash": index.chunking_hash,
             "embedding_model": index.embedding_model,
@@ -58,11 +57,8 @@ def publish_index(
     *,
     base_generation: int | None = None,
     created_by_job_id: str | None = None,
-    require_profile: bool = True,
 ) -> ControlState:
-    facts = validate_candidate(
-        cfg, index_version, manifest, require_profile=require_profile
-    )
+    facts = validate_candidate(cfg, index_version, manifest)
     state = control.publish(
         index_version=index_version,
         manifest=manifest,
@@ -70,6 +66,7 @@ def publish_index(
         runtime_config_id=cfg.runtime_fingerprint(),
         base_generation=base_generation,
         created_by_job_id=created_by_job_id,
+        config=export_public_config(cfg),
     )
     export_current(cfg.resolved_index_dir(), index_version)
     return state
@@ -124,6 +121,7 @@ def import_legacy(control: ControlStore, cfg: AppConfig) -> ControlState | None:
         build_profile_id=cfg.chunking_hash(),
         runtime_config_id=cfg.runtime_fingerprint(),
         base_generation=None,
+        config=export_public_config(cfg),
     )
 
 

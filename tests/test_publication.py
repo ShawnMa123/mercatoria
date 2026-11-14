@@ -258,21 +258,33 @@ class PublicationTests(unittest.TestCase):
     def test_config_error_type(self) -> None:
         self.assertTrue(issubclass(ConfigError, ValueError))
 
-    def test_endpoint_change_rebuilds_the_embedding_client(self) -> None:
-        """A06: a base/timeout change must reach the client, not just the config."""
+    def test_timeout_change_rebuilds_the_embedding_client(self) -> None:
+        """A06: a client-parameter change must reach the client, not just cfg."""
         # No injected embedder: the point of the test is the real client object.
         service = Service(self.cfg, embed_fn=None)
         self.services.append(service)
         before = service.require_retriever().embed.__self__._http
         app = create_app(str(self.root / "config.json"), embed_fn=None, service=service)
-        resp = TestClient(app).put(
-            "/v1/config",
-            json={"embedding": {"base": "http://127.0.0.1:9999/v1", "timeout": 5}},
-        )
+        resp = TestClient(app).put("/v1/config", json={"embedding": {"timeout": 5}})
         self.assertEqual(resp.status_code, 200)
         after = service.require_retriever().embed.__self__._http
         self.assertIsNot(after, before)
-        self.assertEqual((after.host, after.port, after.timeout), ("127.0.0.1", 9999, 5))
+        self.assertEqual(after.timeout, 5)
+
+    def test_embedding_endpoint_change_waits_for_a_rebuild(self) -> None:
+        """R09: base is space identity, not a hot-swappable client setting."""
+        service = Service(self.cfg, embed_fn=None)
+        self.services.append(service)
+        before = service.require_retriever().embed.__self__._http
+        app = create_app(str(self.root / "config.json"), embed_fn=None, service=service)
+        resp = TestClient(app).put(
+            "/v1/config", json={"embedding": {"base": "http://127.0.0.1:9999/v1"}}
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["pending_rebuild"])
+        after = service.require_retriever().embed.__self__._http
+        self.assertIs(after, before)
+        self.assertEqual(service.cfg.embedding.base, "http://127.0.0.1:9999/v1")
 
     # -- one snapshot per request -----------------------------------------
 

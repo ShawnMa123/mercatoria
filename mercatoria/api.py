@@ -18,10 +18,13 @@ from .config import (
     REPO_ROOT,
     AppConfig,
     ConfigError,
+    config_from_sections,
+    export_public_config,
     load_config,
     merge_config_update,
     needs_index_rebuild,
     save_config,
+    with_active_build,
 )
 from .control import ControlStore
 from .documents import DocumentRegistry
@@ -129,10 +132,15 @@ class Service:
         embed_fn=None,
         config_path: str | Path | None = None,
     ):
-        self.cfg = cfg
+        # The deployment config supplies paths, limits and credentials. What a
+        # request observes comes from the control state; what the operator
+        # wants next lives in ``self.cfg`` (desired).
+        self.deployment_cfg = copy.deepcopy(cfg)
+        self.cfg = copy.deepcopy(cfg)
         self.embed_fn = embed_fn
         self.config_path = Path(config_path) if config_path else REPO_ROOT / "config.json"
         self.error: str | None = None
+        self.desired_error: str | None = None
         self.pending_rebuild = False
         self.jobs: dict[str, dict[str, Any]] = {}
         self.job_lock = threading.Lock()
@@ -158,7 +166,19 @@ class Service:
             raise
         self.registry = registry
         self.control = control
+        self.cfg = self._load_desired_config()
         self.reload()
+
+    def _load_desired_config(self) -> AppConfig:
+        """Restore the operator's desired config, over the deployment one."""
+        sections = self.control.desired_config()
+        if sections is None:
+            return copy.deepcopy(self.deployment_cfg)
+        try:
+            return config_from_sections(self.deployment_cfg, sections)
+        except ConfigError as exc:
+            self.desired_error = f"desired config is unusable: {exc}"
+            return copy.deepcopy(self.deployment_cfg)
 
     # -- serving state -----------------------------------------------------
 
@@ -192,17 +212,26 @@ class Service:
             return
         self.snapshots.install(snapshot)
         self.error = None if not snapshot.empty else "index is empty"
-        self.pending_rebuild = self.cfg.chunking_hash() != snapshot.index.chunking_hash
+        self.pending_rebuild = needs_index_rebuild(snapshot.config, self.cfg)
+
+    def active_build_cfg(self) -> AppConfig:
+        """Config an ordinary document operation builds with.
+
+        A pending build change belongs to an explicit rebuild; an upload, delete
+        or metadata update must leave an index the active build can serve.
+        """
+        snapshot = self.snapshots.current()
+        return copy.deepcopy(snapshot.config if snapshot is not None else self.cfg)
 
     def _load_state_snapshot(self) -> ServingSnapshot:
-        index_dir = self.cfg.resolved_index_dir()
+        index_dir = self.deployment_cfg.resolved_index_dir()
         state = self.control.head()
         if state is None:
-            adopted = import_legacy(self.control, self.cfg)
+            adopted = import_legacy(self.control, self.deployment_cfg)
             if adopted is None:
                 raise IndexNotFound("index is not built")
             state = adopted
-        return build_snapshot(state, self.cfg, index_dir, self.embed_fn)
+        return build_snapshot(state, self.deployment_cfg, index_dir, self.embed_fn)
 
     def require_retriever(self) -> Retriever:
         snapshot = self.snapshots.current()
@@ -215,43 +244,55 @@ class Service:
     # -- configuration -----------------------------------------------------
 
     def apply_config(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Validate, swap in a new config, and publish a runtime snapshot.
+        """Persist the desired config and publish its runtime part immediately.
 
-        A build-profile change (chunking or embedding space) is recorded as
-        desired state only: the served snapshot keeps the index it has until a
-        rebuild publishes a matching one.
+        A build change (chunking or embedding space) is desired state only: it
+        needs an explicit rebuild before it can serve. A runtime change is
+        published on the *active* build identity, so a pending rebuild never
+        leaks into the running state. Everything accepted here is durable
+        (control DB), because a temporary, restart-losing setting meant a
+        snapshot_version could serve a different config after a restart.
         """
         updated = merge_config_update(self.cfg, body)
-        rebuild = needs_index_rebuild(self.cfg, updated)
+        snapshot = self.snapshots.current()
+        active = snapshot.config if snapshot is not None else self.deployment_cfg
+        serving = with_active_build(updated, active)
+        runtime_changed = (
+            snapshot is not None
+            and serving.runtime_fingerprint() != snapshot.runtime_config_id
+        )
+        if runtime_changed:
+            self.control.publish(
+                index_version=snapshot.index_version,
+                manifest=snapshot.manifest,
+                build_profile_id=snapshot.build_profile_id,
+                runtime_config_id=serving.runtime_fingerprint(),
+                base_generation=snapshot.generation,
+                config=export_public_config(serving),
+            )
+        self.control.set_desired_config(export_public_config(updated))
         self.cfg = updated
         if body.get("save"):
+            # Deprecated no-op for compatibility: acceptance already persists.
             save_config(updated, self.config_path)
-        if rebuild:
-            self.pending_rebuild = True
+        if runtime_changed:
+            self.reload()
         else:
-            snapshot = self.snapshots.current()
-            # Only publish when a request could observe the difference; a
-            # no-op write must not burn a generation.
-            if snapshot is not None and (
-                snapshot.runtime_config_id != updated.runtime_fingerprint()
-            ):
-                self.control.publish(
-                    index_version=snapshot.index_version,
-                    manifest=snapshot.manifest,
-                    build_profile_id=snapshot.build_profile_id,
-                    runtime_config_id=updated.runtime_fingerprint(),
-                )
-                self.reload()
+            self.pending_rebuild = needs_index_rebuild(active, updated)
         return self.config_payload()
 
     def config_payload(self) -> dict[str, Any]:
         snapshot = self.snapshots.current()
+        active = snapshot.config if snapshot is not None else self.cfg
         return {
-            "config": self.cfg.public_dict(),
-            "config_version": self.cfg.runtime_fingerprint(),
+            "config": active.public_dict(),
+            "config_version": active.runtime_fingerprint(),
+            "desired_config": self.cfg.public_dict() if self.pending_rebuild else None,
+            "desired_config_version": self.cfg.runtime_fingerprint(),
             "active_index": snapshot.index_version if snapshot else None,
             "snapshot_version": snapshot.snapshot_version if snapshot else None,
             "pending_rebuild": self.pending_rebuild,
+            "deployment_error": self.desired_error,
         }
 
     # -- jobs --------------------------------------------------------------
@@ -331,7 +372,7 @@ class Service:
     def start_ingest(self, items: list[UploadItem]) -> dict[str, Any]:
         self._claim_job()
         job = self._new_job("ingest")
-        cfg = copy.deepcopy(self.cfg)
+        cfg = self.active_build_cfg()
 
         def work() -> dict[str, Any]:
             result = ingest_batch(
@@ -358,7 +399,7 @@ class Service:
             raise IngestError(f"document not found: {doc_id}")
         self._claim_job()
         job = self._new_job("delete")
-        cfg = copy.deepcopy(self.cfg)
+        cfg = self.active_build_cfg()
         previous = record["status"]
 
         def work() -> dict[str, Any]:
@@ -388,7 +429,7 @@ class Service:
             raise IngestError(f"document not found: {doc_id}")
         self._claim_job()
         job = self._new_job("reindex")
-        cfg = copy.deepcopy(self.cfg)
+        cfg = self.active_build_cfg()
 
         def work() -> dict[str, Any]:
             result = reindex_document(
@@ -439,7 +480,7 @@ class Service:
             raise IngestError("no updatable fields")
         self._claim_job()
         job = self._new_job("update")
-        cfg = copy.deepcopy(self.cfg)
+        cfg = self.active_build_cfg()
         previous = {key: record.get(key) for key in values}
 
         def work() -> dict[str, Any]:
