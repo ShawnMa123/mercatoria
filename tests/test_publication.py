@@ -162,6 +162,27 @@ class PublicationTests(unittest.TestCase):
         finally:
             control.close()
 
+    def test_restart_follows_the_committed_head(self) -> None:
+        """A12: recovery is a function of the committed head, never of memory."""
+        service = self.service()
+        first = service.current().index_version
+        published = build_index(
+            self.manifest, self.cfg, self.cfg.resolved_index_dir(), embed_fn=fake_embed
+        )
+        # The process dies before (or right after) swapping its snapshot.
+        service.close()
+        self.services.remove(service)
+
+        restarted = self.service()
+        self.assertEqual(restarted.current().index_version, published["version"])
+        self.assertNotEqual(restarted.current().index_version, first)
+        self.assertEqual(self.head()["generation"], published["generation"])
+        control = ControlStore(self.cfg.resolved_control_path())
+        try:
+            self.assertEqual(len(control.states()), published["generation"])
+        finally:
+            control.close()
+
     # -- failed loads keep the old snapshot --------------------------------
 
     def test_failed_reload_keeps_serving_the_old_snapshot(self) -> None:
