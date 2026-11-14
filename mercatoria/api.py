@@ -260,7 +260,11 @@ class Service:
             self.pending_rebuild = True
         else:
             snapshot = self.snapshots.current()
-            if snapshot is not None and not self.read_only:
+            # Only publish when a request could observe the difference; a
+            # no-op write must not burn a generation.
+            if snapshot is not None and (
+                snapshot.runtime_config_id != updated.runtime_fingerprint()
+            ):
                 self.control.publish(
                     index_version=snapshot.index_version,
                     manifest=snapshot.manifest,

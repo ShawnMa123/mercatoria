@@ -72,6 +72,7 @@ def build_case_corpus(root: Path, files: dict[str, str], docs: list[dict]) -> Ap
         corpus_dir=str(corpus),
         index_dir=str(root / "index"),
         manifest_path=str(manifest_path),
+        documents_dir=str(root / "documents"),
     )
     cfg.embedding.dim = EMBED_DIM
     cfg.embedding.query_cache_size = 8
@@ -344,6 +345,7 @@ class VectorReuseTests(unittest.TestCase):
                 corpus_dir=str(corpus),
                 index_dir=str(root / "index"),
                 manifest_path=str(manifest_path),
+                documents_dir=str(root / "documents"),
             )
             cfg.embedding.dim = EMBED_DIM
             build_index(load_manifest(manifest_path), cfg, cfg.resolved_index_dir(), embed_fn=counting)

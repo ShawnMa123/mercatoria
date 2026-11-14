@@ -85,6 +85,7 @@ class RetrievalTests(unittest.TestCase):
             corpus_dir=str(self.corpus),
             index_dir=str(self.root / "index"),
             manifest_path=str(self.manifest_path),
+            documents_dir=str(self.root / "documents"),
         )
         self.cfg.embedding.dim = 3
         self.cfg.embedding.batch_size = 2
@@ -386,6 +387,7 @@ class ArticleAggregationTests(unittest.TestCase):
             corpus_dir=str(corpus),
             index_dir=str(root / "index"),
             manifest_path=str(manifest_path),
+            documents_dir=str(root / "documents"),
         )
         self.cfg.embedding.dim = 3
         self.cfg.chunking.max_chars = 120
@@ -462,6 +464,7 @@ class ContextHeaderTests(unittest.TestCase):
             corpus_dir=str(corpus),
             index_dir=str(root / "index"),
             manifest_path=str(manifest_path),
+            documents_dir=str(root / "documents"),
         )
         cfg.embedding.dim = 3
         cfg.chunking.index_context_header = header
@@ -537,6 +540,7 @@ class JurisdictionQuotaTests(unittest.TestCase):
             corpus_dir=str(corpus),
             index_dir=str(root / "index"),
             manifest_path=str(manifest_path),
+            documents_dir=str(root / "documents"),
         )
         cfg.embedding.dim = 3
         build_index(
