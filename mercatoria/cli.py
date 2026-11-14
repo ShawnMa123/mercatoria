@@ -73,7 +73,11 @@ def _cmd_serve(args: argparse.Namespace) -> int:
 
     from .api import create_app
 
-    app = create_app(args.config)
+    try:
+        app = create_app(args.config)
+    except LockBusy as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level)
     return 0
 

@@ -23,7 +23,7 @@ from .config import (
     needs_index_rebuild,
     save_config,
 )
-from .control import ControlStore, manifest_id
+from .control import ControlStore
 from .documents import DocumentRegistry
 from .embed import EmbeddingError
 from .ingest import (
@@ -33,9 +33,9 @@ from .ingest import (
     rebuild_with_uploads,
     reindex_document,
 )
-from .lock import DirectoryLock, LockBusy
+from .lock import DirectoryLock
 from .manifest import write_manifest
-from .publication import import_legacy, legacy_index_version, publish_index
+from .publication import import_legacy, publish_index
 from .retrieve import Retriever
 from .snapshot import (
     ServingSnapshot,
@@ -54,10 +54,6 @@ from .store import (
 )
 
 CONFIG_SECTIONS = ("chunking", "embedding", "retrieval", "rerank", "answer")
-
-
-class WriteRefused(RuntimeError):
-    """This process does not own the data directory, so it cannot write."""
 
 
 def _now() -> str:
@@ -140,19 +136,28 @@ class Service:
         self.pending_rebuild = False
         self.jobs: dict[str, dict[str, Any]] = {}
         self.job_lock = threading.Lock()
-        self.registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
-        self.control = ControlStore(cfg.resolved_control_path())
         self.snapshots = SnapshotHolder()
+        # Ownership comes before anything else: a process that cannot take the
+        # directory lock must not open (or migrate) the writable control and
+        # registry stores, and it must not serve a head it will never follow.
         self.write_lock = DirectoryLock(cfg.resolved_write_lock_path())
-        self.read_only = False
-        self.lock_error: str | None = None
+        self.write_lock.acquire()
+        registry: DocumentRegistry | None = None
+        control: ControlStore | None = None
         try:
-            self.write_lock.acquire()
-        except LockBusy as exc:
-            # Another process owns the directory. Serve reads from the control
-            # head it published and refuse every write, instead of racing it.
-            self.read_only = True
-            self.lock_error = str(exc)
+            registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
+            control = ControlStore(cfg.resolved_control_path())
+        except BaseException:
+            for handle in (registry, control):
+                if handle is not None:
+                    try:
+                        handle.close()
+                    except Exception:
+                        pass
+            self.write_lock.release()
+            raise
+        self.registry = registry
+        self.control = control
         self.reload()
 
     # -- serving state -----------------------------------------------------
@@ -193,38 +198,11 @@ class Service:
         index_dir = self.cfg.resolved_index_dir()
         state = self.control.head()
         if state is None:
-            if self.read_only:
-                return self._adopt_legacy_read_only(index_dir)
             adopted = import_legacy(self.control, self.cfg)
             if adopted is None:
                 raise IndexNotFound("index is not built")
             state = adopted
         return build_snapshot(state, self.cfg, index_dir, self.embed_fn)
-
-    def _adopt_legacy_read_only(self, index_dir: Path) -> ServingSnapshot:
-        """Serve a pre-control index without publishing (read-only process)."""
-        version = legacy_index_version(index_dir)
-        if version is None:
-            raise IndexNotFound("index is not built")
-        try:
-            index = open_index(index_path(index_dir, version))
-        except (ValueError, RuntimeError) as exc:
-            raise SnapshotError(f"existing index {version} cannot be opened: {exc}") from exc
-        try:
-            manifest = manifest_from_index(index)
-        finally:
-            index.close()
-        from .control import ControlState
-
-        provisional = ControlState(
-            generation=0,
-            index_version=version,
-            manifest=manifest,
-            manifest_id=manifest_id(manifest),
-            build_profile_id=self.cfg.chunking_hash(),
-            runtime_config_id=self.cfg.runtime_fingerprint(),
-        )
-        return build_snapshot(provisional, self.cfg, index_dir, self.embed_fn)
 
     def require_retriever(self) -> Retriever:
         snapshot = self.snapshots.current()
@@ -233,13 +211,6 @@ class Service:
         if snapshot.retriever is None:
             raise IndexNotFound("index is empty")
         return snapshot.retriever
-
-    def _ensure_writable(self) -> None:
-        if self.read_only:
-            raise WriteRefused(
-                self.lock_error
-                or "service is read-only: another process owns the data directory"
-            )
 
     # -- configuration -----------------------------------------------------
 
@@ -250,7 +221,6 @@ class Service:
         desired state only: the served snapshot keeps the index it has until a
         rebuild publishes a matching one.
         """
-        self._ensure_writable()
         updated = merge_config_update(self.cfg, body)
         rebuild = needs_index_rebuild(self.cfg, updated)
         self.cfg = updated
@@ -282,7 +252,6 @@ class Service:
             "active_index": snapshot.index_version if snapshot else None,
             "snapshot_version": snapshot.snapshot_version if snapshot else None,
             "pending_rebuild": self.pending_rebuild,
-            "writable": not self.read_only,
         }
 
     # -- jobs --------------------------------------------------------------
@@ -333,7 +302,6 @@ class Service:
     # -- management operations --------------------------------------------
 
     def start_rebuild(self, body: dict[str, Any]) -> dict[str, Any]:
-        self._ensure_writable()
         config_body = {
             key: body[key] for key in CONFIG_SECTIONS if isinstance(body.get(key), dict)
         }
@@ -361,7 +329,6 @@ class Service:
         return self._run_or_queue(job, work, bool(body.get("background", True)))
 
     def start_ingest(self, items: list[UploadItem]) -> dict[str, Any]:
-        self._ensure_writable()
         self._claim_job()
         job = self._new_job("ingest")
         cfg = copy.deepcopy(self.cfg)
@@ -386,7 +353,6 @@ class Service:
         }
 
     def start_delete(self, doc_id: str) -> dict[str, Any]:
-        self._ensure_writable()
         record = self.registry.get_raw(doc_id)
         if record is None or record["status"] == "deleted":
             raise IngestError(f"document not found: {doc_id}")
@@ -418,7 +384,6 @@ class Service:
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
     def start_reindex(self, doc_id: str) -> dict[str, Any]:
-        self._ensure_writable()
         if self.registry.get(doc_id) is None:
             raise IngestError(f"document not found: {doc_id}")
         self._claim_job()
@@ -440,7 +405,6 @@ class Service:
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
     def start_update(self, doc_id: str, fields: dict[str, Any]) -> dict[str, Any]:
-        self._ensure_writable()
         record = self.registry.get(doc_id)
         if record is None:
             raise IngestError(f"document not found: {doc_id}")
@@ -500,7 +464,6 @@ class Service:
 
     def publish_staged(self, index_version: str) -> dict[str, Any]:
         """Publish an already built candidate index as the new state."""
-        self._ensure_writable()
         path = index_path(self.cfg.resolved_index_dir(), index_version)
         if not path.is_file():
             raise FileNotFoundError(f"index version not found: {index_version}")
@@ -525,7 +488,6 @@ class Service:
 
     def rollback(self, snapshot_version: str) -> dict[str, Any]:
         """Re-publish a retained generation (index + manifest)."""
-        self._ensure_writable()
         if not snapshot_version.isdigit():
             raise KeyError(
                 f"unknown snapshot_version: {snapshot_version} "
@@ -585,10 +547,7 @@ def create_app(
     @app.get("/health/ready")
     def health() -> Any:
         snapshot = service.current()
-        common = {
-            "writable": not service.read_only,
-            "pending_rebuild": service.pending_rebuild,
-        }
+        common = {"pending_rebuild": service.pending_rebuild}
         if snapshot is None:
             return JSONResponse(
                 status_code=503,
@@ -873,8 +832,6 @@ def create_app(
             return service.start_ingest(items)
         except IngestError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.get("/v1/documents")
     def list_documents(status: str | None = None) -> dict[str, Any]:
@@ -889,8 +846,6 @@ def create_app(
             raise HTTPException(status_code=404, detail="document not found")
         try:
             return service.start_update(doc_id, body)
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except IngestError as exc:
             message = str(exc)
             code = 409 if "another" in message else 400
@@ -913,8 +868,6 @@ def create_app(
             raise HTTPException(status_code=404, detail="document not found")
         try:
             return service.start_delete(doc_id)
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except IngestError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -924,8 +877,6 @@ def create_app(
             raise HTTPException(status_code=404, detail="document not found")
         try:
             return service.start_reindex(doc_id)
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except IngestError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -965,10 +916,6 @@ def create_app(
 
     @app.post("/v1/admin/manifest")
     def rebuild_manifest() -> dict[str, Any]:
-        try:
-            service._ensure_writable()
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         manifest = write_manifest(
             service.cfg.resolved_corpus_dir(), service.cfg.resolved_manifest_path()
         )
@@ -980,8 +927,6 @@ def create_app(
             return service.start_rebuild(body or {})
         except ConfigError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except IngestError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except (FileNotFoundError, ValueError) as exc:
@@ -999,8 +944,6 @@ def create_app(
     def activate_snapshot(snapshot_version: str) -> dict[str, Any]:
         try:
             return service.rollback(snapshot_version)
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
         except (SnapshotError, FileNotFoundError) as exc:
@@ -1010,8 +953,6 @@ def create_app(
     def activate_index_version(index_version: str) -> dict[str, Any]:
         try:
             return service.publish_staged(index_version)
-        except WriteRefused as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except SnapshotError as exc:
@@ -1071,6 +1012,11 @@ class _LazyApp:
     directory: tests and tools import this module, and a side effect there is
     a side effect on the deployment. ``uvicorn mercatoria.api:app`` still works
     because the proxy forwards the ASGI call and every attribute.
+
+    ``__call__`` is a coroutine function on purpose: Uvicorn decides between
+    ASGI2 and ASGI3 by inspecting the callable, so a synchronous proxy makes
+    the documented entrypoint answer with a TypeError instead of serving
+    requests.
     """
 
     def __init__(self) -> None:
@@ -1083,8 +1029,8 @@ class _LazyApp:
             self.__dict__["_app"] = app
         return app
 
-    def __call__(self, scope, receive, send):
-        return self._get()(scope, receive, send)
+    async def __call__(self, scope, receive, send):
+        await self._get()(scope, receive, send)
 
     def __getattr__(self, name: str):
         return getattr(self._get(), name)

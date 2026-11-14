@@ -22,6 +22,7 @@ from mercatoria.api import Service, create_app
 from mercatoria.config import ConfigError, load_config, merge_config_update
 from mercatoria.control import ControlConflict, ControlStore
 from mercatoria.documents import DocumentRegistry
+from mercatoria.lock import LockBusy
 from mercatoria.manifest import load_manifest
 from mercatoria.publication import legacy_index_version, publish_index
 from mercatoria.snapshot import SnapshotError, SnapshotHolder, build_snapshot
@@ -297,24 +298,12 @@ class PublicationTests(unittest.TestCase):
 
     # -- write ownership ---------------------------------------------------
 
-    def test_second_service_is_read_only(self) -> None:
-        """A14: a second process must not write to the same data directory."""
+    def test_second_instance_is_refused(self) -> None:
+        """A14/R07: only the owner may run; no replica that never follows."""
         owner = self.service()
-        self.assertFalse(owner.read_only)
-        second = Service(self.cfg, embed_fn=fake_embed)
-        self.services.append(second)
-        self.assertTrue(second.read_only)
-        self.assertIn("another process", second.lock_error)
-
-        app = create_app(str(self.root / "config.json"), embed_fn=fake_embed, service=second)
-        client = TestClient(app)
-        self.assertEqual(client.get("/health").json()["writable"], False)
-        self.assertEqual(client.post("/v1/admin/rebuild", json={}).status_code, 409)
-        self.assertEqual(
-            client.put("/v1/config", json={"retrieval": {"top_k": 2}}).status_code, 409
-        )
-        # Reads keep working from the published head.
-        self.assertEqual(client.post("/v1/retrieve", json={"queries": ["关税"]}).status_code, 200)
+        self.assertIsNotNone(owner.current())
+        with self.assertRaises(LockBusy):
+            Service(self.cfg, embed_fn=fake_embed)
 
     def test_cli_rebuild_refuses_a_locked_directory(self) -> None:
         from mercatoria.cli import main
