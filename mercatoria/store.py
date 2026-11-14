@@ -20,7 +20,7 @@ from typing import Any, Callable, Iterable
 import numpy as np
 
 from .chunker import ChunkRecord, chunk_document, cn_to_int
-from .config import AppConfig, export_public_config
+from .config import AppConfig, embedding_space_id, snapshot_config_payload
 from .tokenizer import term_counts, tokenize
 
 # Bump when a table/column the reader relies on changes. Opening an older
@@ -196,6 +196,7 @@ class Index:
         self.version = str(_meta_get(conn, "version", ""))
         self.built_at = str(_meta_get(conn, "built_at", ""))
         self.embedding_model = str(_meta_get(conn, "embedding_model", ""))
+        self.embedding_space_id = str(_meta_get(conn, "embedding_space_id", ""))
         self.chunking_hash = str(_meta_get(conn, "chunking_hash", ""))
         self.snapshot_date = _meta_get(conn, "snapshot_date", None)
         self.schema_version = int(_meta_get(conn, "schema_version", 1) or 1)
@@ -631,8 +632,7 @@ class Index:
 
 def _reusable_vectors(
     path: Path | None,
-    model: str,
-    chunking_hash: str,
+    space_id: str,
     wanted: set[str],
     hashes: dict[str, str],
 ) -> dict[str, np.ndarray]:
@@ -640,22 +640,23 @@ def _reusable_vectors(
 
     Rebuilding after an upload should only embed the new chunks. Reading the
     published SQLite file directly keeps this independent of the in-memory
-    Index held by the serving process. A different chunking_hash means the
-    indexed text changed (e.g. the context header was toggled), so the old
-    vectors no longer match their chunk IDs and must be recomputed.
+    Index held by the serving process.
+
+    Reuse is gated on the index's recorded ``embedding_space_id``: the same
+    model name on another endpoint (or another explicit space version) is a
+    different space, and injecting its vectors would relabel old data as the
+    new space. An index written before space ids existed has no trustworthy
+    identity and is not reused (it is rebuilt instead).
     """
     if path is None or not path.is_file():
         return {}
     conn = sqlite3.connect(path)
     try:
-        row = conn.execute("SELECT value FROM meta WHERE key='embedding_model'").fetchone()
-        if not row or str(row[0]) != model:
-            return {}
-        row = conn.execute("SELECT value FROM meta WHERE key='chunking_hash'").fetchone()
-        if not row or str(row[0]) != chunking_hash:
+        row = conn.execute("SELECT value FROM meta WHERE key='embedding_space_id'").fetchone()
+        if not row or str(row[0]) != space_id:
             return {}
         # The header text comes from document metadata (source_doc/section),
-        # which chunking_hash does not cover, so compare the per-chunk hash of
+        # which the space id does not cover, so compare the per-chunk hash of
         # the exact indexed text before reusing a vector.
         row = conn.execute("SELECT value FROM meta WHERE key='index_text_hash'").fetchone()
         old_hashes = _loads(row[0], {}) if row else {}
@@ -832,8 +833,7 @@ def build_index(
         else:
             reuse = _reusable_vectors(
                 source_index,
-                cfg.embedding.model,
-                cfg.chunking_hash(),
+                embedding_space_id(cfg.embedding),
                 set(chunk_ids),
                 index_hashes,
             )
@@ -892,6 +892,7 @@ def build_index(
     _meta_set(conn, "built_at", _now())
     _meta_set(conn, "embedding_model", cfg.embedding.model)
     _meta_set(conn, "embedding_dim", dim)
+    _meta_set(conn, "embedding_space_id", embedding_space_id(cfg.embedding))
     _meta_set(conn, "chunking_hash", cfg.chunking_hash())
     _meta_set(conn, "avgdl", float(avgdl))
     _meta_set(conn, "chunk_count", len(chunk_rows))
@@ -900,7 +901,7 @@ def build_index(
     _meta_set(conn, "jurisdictions", jurisdictions)
     _meta_set(conn, "precision", precision)
     _meta_set(conn, "snapshot_date", snapshot_date)
-    _meta_set(conn, "config", export_public_config(cfg))
+    _meta_set(conn, "config", snapshot_config_payload(cfg))
     # Everything activation needs, recorded by the build that produced it.
     _meta_set(
         conn,

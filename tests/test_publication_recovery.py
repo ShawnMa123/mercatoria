@@ -19,7 +19,7 @@ from unittest import mock
 from test_publication import build_case, fake_embed
 
 from mercatoria.api import Service, create_app
-from mercatoria.config import export_public_config, load_config, needs_index_rebuild
+from mercatoria.config import load_config, needs_index_rebuild, snapshot_config_payload
 from mercatoria.control import ControlState, ControlStore
 from mercatoria.snapshot import SnapshotError, build_snapshot
 
@@ -254,8 +254,8 @@ class SecretPersistenceTests(RecoveryTestCase):
         for secret in SECRETS:
             self.assertNotIn(secret, text)
 
-    def test_export_public_config_omits_secret_fields(self) -> None:
-        exported = export_public_config(self._cfg_with_secrets())
+    def test_snapshot_payload_omits_secret_fields(self) -> None:
+        exported = snapshot_config_payload(self._cfg_with_secrets())
         self.assertNotIn("api_key", exported["embedding"])
         self.assertNotIn("api_key", exported["rerank"])
         self.assertNotIn("api_key", exported["answer"])

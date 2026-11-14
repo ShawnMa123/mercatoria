@@ -19,11 +19,11 @@ from .config import (
     AppConfig,
     ConfigError,
     config_from_sections,
-    export_public_config,
     load_config,
     merge_config_update,
     needs_index_rebuild,
     save_config,
+    snapshot_config_payload,
     with_active_build,
 )
 from .control import ControlConflict, ControlStore
@@ -274,28 +274,35 @@ class Service:
             snapshot is not None
             and serving.runtime_fingerprint() != snapshot.runtime_config_id
         )
+        warnings: list[str] = []
         try:
             if runtime_changed:
                 self.coordinator.publish_runtime(serving)
         except PostCommitError as exc:
             # The new state is committed. Adopt the accepted config, but do not
             # pretend the old snapshot is current: readiness reports not-ready.
-            self.control.set_desired_config(export_public_config(updated))
+            self.control.set_desired_config(snapshot_config_payload(updated))
             self.cfg = updated
             self.error = str(exc)
             raise
-        self.control.set_desired_config(export_public_config(updated))
+        self.control.set_desired_config(snapshot_config_payload(updated))
         self.cfg = updated
         if body.get("save"):
-            # Deprecated no-op for compatibility: acceptance already persists.
-            save_config(updated, self.config_path)
+            # The control DB already accepted the change; the deployment file is
+            # an operator copy. A failed write is reported, not undone.
+            try:
+                save_config(updated, self.config_path)
+            except OSError as exc:
+                warnings.append(
+                    f"config file save failed ({exc}); the control state is committed"
+                )
         if runtime_changed:
             self._sync_state(self.snapshots.current())
         else:
             self.pending_rebuild = needs_index_rebuild(active, updated)
-        return self.config_payload()
+        return self.config_payload(warnings=warnings)
 
-    def config_payload(self) -> dict[str, Any]:
+    def config_payload(self, warnings: list[str] | tuple[str, ...] = ()) -> dict[str, Any]:
         snapshot = self.snapshots.current()
         active = snapshot.config if snapshot is not None else self.cfg
         return {
@@ -307,6 +314,7 @@ class Service:
             "snapshot_version": snapshot.snapshot_version if snapshot else None,
             "pending_rebuild": self.pending_rebuild,
             "deployment_error": self.desired_error,
+            "warnings": list(warnings),
         }
 
     # -- jobs --------------------------------------------------------------
@@ -607,6 +615,10 @@ def create_app(
 ) -> FastAPI:
     cfg = load_config(config_path)
     service = service or Service(cfg, embed_fn=embed_fn, config_path=config_path)
+    if config_path is not None:
+        # The app's config path is the operator's file; never fall back to the
+        # repository default when an explicit path was given.
+        service.config_path = Path(config_path)
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         yield

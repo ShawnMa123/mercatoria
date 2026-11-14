@@ -73,7 +73,13 @@ class EmbeddingConfig:
     dim: int = 0
     retries: int = 3
     cache_path: str = "data/embedding-cache.db"
-    # LRU cache for query vectors: (model, normalized query) -> vector.
+    # Space identity beyond endpoint/model/dim. ``model_revision`` is the
+    # upstream model revision if the provider exposes one; ``space_version`` is
+    # an explicit operator override for a silently changed backend. Neither is
+    # a client parameter: changing either requires a rebuild.
+    model_revision: str = ""
+    space_version: str = ""
+    # LRU cache for query vectors: (space_id, normalized query) -> vector.
     # 0 disables it. Shared by every request of a Retriever.
     query_cache_size: int = 1024
 
@@ -253,23 +259,77 @@ class AppConfig:
 # the deployment config (config.json/env) and are never copied into state.
 PERSISTED_SECTIONS = ("chunking", "embedding", "retrieval", "rerank", "answer")
 
+# Deployment-only fields. They live in the deployment config file (or the
+# environment) and must survive a save: rewriting the file without them moved
+# the data directory on the next start.
+DEPLOYMENT_FIELDS = (
+    "corpus_dir",
+    "index_dir",
+    "manifest_path",
+    "uploads_dir",
+    "documents_dir",
+    "max_upload_bytes",
+    "max_batch_bytes",
+    "ingest_workers",
+)
+
 _SECRET_FIELDS = {
     ("embedding", "api_key"),
     ("rerank", "api_key"),
     ("answer", "api_key"),
 }
 
+# Bumped when the text handed to the embedding gateway changes shape. Part of
+# the space id so a preprocessing change cannot silently reuse old vectors.
+EMBEDDING_PREPROCESSING_VERSION = "index-text-v1"
 
-def export_public_config(cfg: AppConfig) -> dict[str, Any]:
-    """Non-sensitive configuration for durable artifacts.
 
-    Used for control-state rows, index metadata and saved config files. Secrets
-    are *absent*, not masked: an artifact that has no field cannot leak one.
+def snapshot_config_payload(cfg: AppConfig) -> dict[str, Any]:
+    """Non-sensitive configuration a published state serves with.
+
+    Used for control-state rows and index metadata. Secrets are *absent*, not
+    masked, and deployment paths are not copied into state: an artifact that
+    has no field cannot leak or shadow one.
     """
     data = copy.deepcopy(asdict(cfg))
     for section, key in _SECRET_FIELDS:
         data.get(section, {}).pop(key, None)
     return {section: data[section] for section in PERSISTED_SECTIONS}
+
+
+def deployment_config_payload(cfg: AppConfig) -> dict[str, Any]:
+    """The deployment config file: complete paths/limits, no credentials.
+
+    ``save_config`` must not shrink the file to the snapshot sections; an
+    operator may legitimately set ``documents_dir`` there.
+    """
+    data = copy.deepcopy(asdict(cfg))
+    for section, key in _SECRET_FIELDS:
+        data.get(section, {}).pop(key, None)
+    payload = {key: data[key] for key in DEPLOYMENT_FIELDS}
+    payload.update({section: data[section] for section in PERSISTED_SECTIONS})
+    return payload
+
+
+def embedding_space_id(cfg: EmbeddingConfig) -> str:
+    """Identity of the vector space an index and its caches belong to.
+
+    Endpoint, model, explicit revision and dimension are all part of it, plus a
+    preprocessing marker. Timeout, retries, batch sizes and credentials are
+    deliberately excluded: rotating them must not force re-embedding. Two
+    endpoints serving the same model name are *not* assumed compatible.
+    """
+    payload = {
+        "provider": "openai-compatible",
+        "base": cfg.base.strip().rstrip("/"),
+        "model": cfg.model,
+        "model_revision": cfg.model_revision,
+        "space_version": cfg.space_version,
+        "dim": int(cfg.dim),
+        "preprocessing": EMBEDDING_PREPROCESSING_VERSION,
+    }
+    raw = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return "space-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
 def config_from_sections(base: AppConfig, sections: dict[str, Any] | None) -> AppConfig:
@@ -293,16 +353,14 @@ def config_from_sections(base: AppConfig, sections: dict[str, Any] | None) -> Ap
 
 
 def build_identity(cfg: AppConfig) -> dict[str, Any]:
-    """What an index is built from: chunking, embedding space and endpoint.
+    """What an index is built from: chunking and the embedding space.
 
     Changing any of these requires a rebuild; everything else is a runtime
     parameter that a new snapshot can carry without touching the vectors.
     """
     return {
         "chunking": asdict(cfg.chunking),
-        "embedding_model": cfg.embedding.model,
-        "embedding_dim": cfg.embedding.dim,
-        "embedding_base": cfg.embedding.base,
+        "embedding_space_id": embedding_space_id(cfg.embedding),
     }
 
 
@@ -317,6 +375,8 @@ def with_active_build(desired: AppConfig, active: AppConfig) -> AppConfig:
     serving.embedding.base = active.embedding.base
     serving.embedding.model = active.embedding.model
     serving.embedding.dim = active.embedding.dim
+    serving.embedding.model_revision = active.embedding.model_revision
+    serving.embedding.space_version = active.embedding.space_version
     return serving
 
 
@@ -400,18 +460,29 @@ def load_config(path: str | Path | None = None) -> AppConfig:
 
 
 def save_config(cfg: AppConfig, path: str | Path) -> None:
-    """Write a durable config file without credentials.
+    """Write the deployment config file without credentials, atomically.
 
-    The file is an operator convenience (deployment paths and secrets still come
-    from the environment), so it uses the same non-sensitive export as the
-    control state. ``to_dict()`` must never be written to disk.
+    The file keeps every deployment field (directories, manifest path, upload
+    limits) because an operator may set them there; dropping them silently
+    moved the data directory on the next start. Secrets are absent, and the
+    replacement is a same-directory temp file + ``os.replace`` so a failed write
+    cannot leave a truncated config behind. ``to_dict()`` is never written.
     """
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(
-        json.dumps(export_public_config(cfg), ensure_ascii=False, indent=2),
-        encoding="utf-8",
+    payload = json.dumps(
+        deployment_config_payload(cfg), ensure_ascii=False, indent=2
     )
+    tmp = p.with_name(p.name + ".tmp")
+    try:
+        tmp.write_text(payload, encoding="utf-8")
+        os.replace(tmp, p)
+    except BaseException:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        raise
 
 
 class ConfigError(ValueError):

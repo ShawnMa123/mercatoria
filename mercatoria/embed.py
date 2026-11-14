@@ -34,6 +34,11 @@ def _normalize(matrix: np.ndarray) -> np.ndarray:
 class EmbeddingClient:
     def __init__(self, cfg: EmbeddingConfig):
         self.cfg = cfg
+        # Cache identity is the whole space, not just the model name: two
+        # endpoints can serve the same model name and return different vectors.
+        from .config import embedding_space_id
+
+        self.space_id = embedding_space_id(cfg)
         self._http = JsonHttp(cfg.base, cfg.timeout)
         self._cache: sqlite3.Connection | None = None
         self._cache_lock = threading.Lock()
@@ -49,13 +54,17 @@ class EmbeddingClient:
             )
             self._cache.execute("PRAGMA journal_mode=WAL")
             self._cache.execute("PRAGMA busy_timeout=5000")
+            # A new table rather than a column: rows written before spaces
+            # existed have no trustworthy identity, so they are never read. The
+            # old ``embeddings`` table is left untouched (deleting the cache
+            # file reclaims it).
             self._cache.execute(
-                """CREATE TABLE IF NOT EXISTS embeddings (
-                       model TEXT NOT NULL,
+                """CREATE TABLE IF NOT EXISTS embeddings_by_space (
+                       space_id TEXT NOT NULL,
                        text_hash TEXT NOT NULL,
                        dim INTEGER NOT NULL,
                        vec BLOB NOT NULL,
-                       PRIMARY KEY (model, text_hash)
+                       PRIMARY KEY (space_id, text_hash)
                    )"""
             )
 
@@ -68,8 +77,8 @@ class EmbeddingClient:
             return None
         with self._cache_lock:
             row = self._cache.execute(
-                "SELECT dim, vec FROM embeddings WHERE model=? AND text_hash=?",
-                (self.cfg.model, self._key(text)),
+                "SELECT dim, vec FROM embeddings_by_space WHERE space_id=? AND text_hash=?",
+                (self.space_id, self._key(text)),
             ).fetchone()
         if not row:
             return None
@@ -80,9 +89,10 @@ class EmbeddingClient:
             return
         with self._cache_lock:
             self._cache.execute(
-                "INSERT OR REPLACE INTO embeddings(model, text_hash, dim, vec) VALUES (?,?,?,?)",
+                """INSERT OR REPLACE INTO embeddings_by_space
+                   (space_id, text_hash, dim, vec) VALUES (?,?,?,?)""",
                 (
-                    self.cfg.model,
+                    self.space_id,
                     self._key(text),
                     int(vector.shape[0]),
                     sqlite3.Binary(vector.astype(np.float32).tobytes()),

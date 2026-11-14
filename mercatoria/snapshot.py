@@ -19,7 +19,7 @@ from typing import Any, Callable, Iterator
 
 import numpy as np
 
-from .config import AppConfig, ConfigError, config_from_sections
+from .config import AppConfig, ConfigError, config_from_sections, embedding_space_id
 from .control import ControlState
 from .retrieve import Retriever
 from .store import Index, index_path, open_index
@@ -113,6 +113,15 @@ def validate_index(
                 f"embedding space mismatch: index model={index.embedding_model}, "
                 f"configured={cfg.embedding.model}"
             )
+        recorded_space = index.embedding_space_id
+        if recorded_space:
+            current_space = embedding_space_id(cfg.embedding)
+            if recorded_space != current_space:
+                problems.append(
+                    f"embedding space mismatch: index space={recorded_space}, "
+                    f"configured={current_space} "
+                    f"(endpoint/model/revision/dim differ; rebuild required)"
+                )
         recorded_base = ""
         if isinstance(index.config, dict):
             recorded_base = str((index.config.get("embedding") or {}).get("base") or "")

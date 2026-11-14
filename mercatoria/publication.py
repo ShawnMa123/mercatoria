@@ -30,7 +30,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from .config import AppConfig, ConfigError, config_from_sections, export_public_config
+from .config import AppConfig, ConfigError, config_from_sections, snapshot_config_payload
 from .control import ControlState, ControlStore, manifest_id
 from .snapshot import (
     ServingSnapshot,
@@ -182,7 +182,7 @@ class PublicationCoordinator:
             base_generation=expected_generation,
             expect_empty=expect_empty,
             created_by_job_id=created_by_job_id,
-            config=export_public_config(prepared.config),
+            config=snapshot_config_payload(prepared.config),
         )
         prepared.generation = state.generation
         prepared.snapshot_version = state.snapshot_version
@@ -423,5 +423,5 @@ def import_legacy(control: ControlStore, cfg: AppConfig) -> ControlState | None:
         build_profile_id=cfg.chunking_hash(),
         runtime_config_id=cfg.runtime_fingerprint(),
         expect_empty=True,
-        config=export_public_config(cfg),
+        config=snapshot_config_payload(cfg),
     )

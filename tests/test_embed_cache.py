@@ -20,12 +20,17 @@ class EmbeddingCacheConcurrencyTests(unittest.TestCase):
             client = EmbeddingClient(cfg)
             client._post = lambda texts: np.ones((len(texts), 3), dtype=np.float32)  # type: ignore[method-assign]
 
-            with ThreadPoolExecutor(max_workers=8) as pool:
-                list(pool.map(lambda i: client.embed([f"text-{i}"]), range(16)))
+            try:
+                with ThreadPoolExecutor(max_workers=8) as pool:
+                    list(pool.map(lambda i: client.embed([f"text-{i}"]), range(16)))
 
-            rows = client._cache.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
-            self.assertEqual(rows, 16)
-            client._cache.close()
+                rows = client._cache.execute(
+                    "SELECT COUNT(*) FROM embeddings_by_space WHERE space_id=?",
+                    (client.space_id,),
+                ).fetchone()[0]
+                self.assertEqual(rows, 16)
+            finally:
+                client._cache.close()
 
 
 if __name__ == "__main__":
