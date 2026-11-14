@@ -82,10 +82,10 @@ class ApiTests(unittest.TestCase):
         self.client = TestClient(self.app)
 
     def tearDown(self) -> None:
-        service = self.app.state.service
-        if service.index is not None:
-            service.index.conn.close()
-        service.registry.close()
+        # The service owns the control database, the registry and the data
+        # directory lock; Windows cannot delete a temp directory with those
+        # handles still open.
+        self.app.state.service.close()
         self.tmp.cleanup()
 
     def test_health_and_retrieve(self) -> None:
@@ -253,22 +253,30 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(indexes["indexes"])
         self.assertEqual(self.client.get("/health").status_code, 200)
 
-    def test_config_update_clears_retrieval_cache(self) -> None:
+    def test_config_update_replaces_serving_snapshot(self) -> None:
         self.client.post("/v1/retrieve", json={"queries": ["关税"]})
-        retriever = self.app.state.service.require_retriever()
-        self.assertTrue(retriever._cache)
+        service = self.app.state.service
+        before = service.require_retriever()
+        before_snapshot = service.current().snapshot_version
+        self.assertTrue(before._cache)
         resp = self.client.put("/v1/config", json={"retrieval": {"bm25_k1": 2.0}})
         self.assertEqual(resp.status_code, 200)
-        self.assertFalse(retriever._cache)
+        # A config change publishes a new snapshot over the same index: the
+        # old retriever is retired rather than mutated under a live request.
+        after = service.require_retriever()
+        self.assertIsNot(after, before)
+        self.assertFalse(after._cache)
+        self.assertEqual(after.cfg.retrieval.bm25_k1, 2.0)
+        self.assertNotEqual(resp.json()["snapshot_version"], before_snapshot)
+        self.assertEqual(resp.json()["active_index"], service.current().index_version)
 
-    def test_config_update_syncs_rerank_flag(self) -> None:
+    def test_config_update_republishes_rerank_flag(self) -> None:
         service = self.app.state.service
-        retriever = service.require_retriever()
-        self.assertFalse(retriever.rerank_enabled)
+        self.assertFalse(service.require_retriever().rerank_enabled)
         self.client.put("/v1/config", json={"rerank": {"enabled": True}})
-        self.assertTrue(retriever.rerank_enabled)
+        self.assertTrue(service.require_retriever().rerank_enabled)
         self.client.put("/v1/config", json={"rerank": {"enabled": False}})
-        self.assertFalse(retriever.rerank_enabled)
+        self.assertFalse(service.require_retriever().rerank_enabled)
 
     def test_article_endpoint_returns_full_text(self) -> None:
         resp = self.client.get("/v1/articles/cn-test-law:1")

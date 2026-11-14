@@ -72,10 +72,7 @@ class ArticleRouteTests(unittest.TestCase):
         self.client = TestClient(self.app)
 
     def tearDown(self) -> None:
-        service = self.app.state.service
-        if service.index is not None:
-            service.index.close()
-        service.registry.close()
+        self.app.state.service.close()
         self.tmp.cleanup()
 
     def test_slash_in_article_id_is_routed(self) -> None:

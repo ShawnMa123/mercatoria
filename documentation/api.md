@@ -16,7 +16,8 @@
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| GET | `/health` | 健康、活动索引、schema、配置摘要 |
+| GET | `/health`、`/health/ready` | 健康、快照/索引版本、schema、配置摘要、可写状态 |
+| GET | `/health/live` | 存活（不依赖索引） |
 | GET / PUT | `/v1/config` | 读取 / 热更新配置 |
 | POST | `/retrieve`、`/v1/retrieve` | 纯检索 |
 | GET | `/v1/articles/{article_id}` | 完整法条 + 邻条 + 交叉引用 |
@@ -33,8 +34,10 @@
 | POST | `/v1/admin/rebuild` | 重建索引（后台/同步） |
 | GET | `/v1/jobs/{job_id}` | job 状态 |
 | GET | `/v1/admin/rebuild/{job_id}` | 同上（别名） |
-| POST | `/v1/admin/activate/{version}` | 切换活动索引 |
-| GET | `/v1/admin/indexes` | 列出索引与当前版本 |
+| POST | `/v1/admin/activate/{snapshot_version}` | 回滚到保留的完整状态 |
+| POST | `/v1/admin/indexes/{index_version}/activate` | 发布已构建的候选索引 |
+| GET | `/v1/admin/snapshots` | 历史状态（generation）列表 |
+| GET | `/v1/admin/indexes` | 列出索引文件、当前版本与 staged 候选 |
 | GET | `/` | 服务名与端点清单 |
 
 ### 2. `GET /health`
@@ -42,6 +45,11 @@
 ```json
 {
   "status": "ready",
+  "snapshot_version": "3",
+  "index_version": "20261113-112706-384123-72d4a2df2417",
+  "chunks": 11562,
+  "documents": 143,
+  "writable": true,
   "pending_rebuild": false,
   "index": {
     "version": "20261113-112706-384123-72d4a2df2417",
@@ -58,10 +66,13 @@
 
 ### 3. `GET|PUT /v1/config`
 
-`GET` → `{"config": {...}, "active_index": "...", "pending_rebuild": false}`。
-`PUT` 为**部分更新**：只传要改的 section/key，未知 key 忽略，`"save": true` 落盘到 `config.json`。
-修改 `chunking`/`embedding` 置 `pending_rebuild=true`；任何修改都会清空检索缓存并同步
-`rerank_enabled`。
+`GET` → `{"config": {...}, "config_version": "...", "active_index": "...", "snapshot_version": "3", "pending_rebuild": false, "writable": true}`。
+`PUT` 为**部分更新**：只传要改的 section/key；未知字段、类型不符（如 `top_k: "5"`、
+`enabled: "false"`）或越界一律 422，且不产生任何部分应用。`"save": true` 落盘到当前配置路径。
+
+嵌套对象按字段深度合并，不会把 `confidence` 之类的 dataclass 换成 dict。
+仅改检索/回答参数时，发布新的 `snapshot_version` 但复用 `index_version`；
+改 `chunking`/`embedding` 只记录为期望状态并置 `pending_rebuild=true`，需显式 rebuild 才生效。
 
 ```json
 {"retrieval": {"top_k": 8, "confidence": {"medium": 0.6}},
@@ -184,10 +195,14 @@
 响应：`{"job_id": "...", "status": "running", "documents": ["a.md"]}`；重复内容按 sha256
 去重（`duplicate: true`）。上限：单文件 20 MB、单批 200 MB；超限 413；有 job 在跑 409。
 
-**列表** `GET /v1/documents?status=ready` → `{"documents": [...], "count": n}`。
+**删除是逻辑发布**：`DELETE` 只把记录标为 `deleted`（原文件、解析稿、parsed revision 全部保留），
+等新 manifest 发布成功后才从在线索引消失；重建失败会恢复原状态。需要物理清理请按保留策略另行处理。
+
+**列表** `GET /v1/documents?status=ready` → `{"documents": [...], "count": n}`；已逻辑删除的记录不出现，
+详情返回 404。
 记录字段：`doc_id`、`filename`、`source_doc`、`jurisdiction`、`language`、`precision`、
 `applies_to[]`、`effective_from/to`、`sha256`、`status`
-（`queued|parsing|parsed|indexing|ready|failed`）、`chunk_count`、`parsed_path`、
+（`queued|parsing|parsed|indexing|ready|failed`；内部另有 `deleted`）、`chunk_count`、`parsed_path`、
 `original_path`、`error`。
 
 `GET /v1/documents/{doc_id}` 详情；`PATCH` 可改元数据（触发重建）；`DELETE` 删除并重建；
@@ -202,8 +217,10 @@
 | `POST /v1/admin/manifest` | 无 | `{"documents": n, "path": "corpus/manifest.json"}` |
 | `POST /v1/admin/rebuild` | `{"background": true, "activate": true, "chunking"?: {}, "embedding"?: {}}` | 后台 `{job_id,status,pending_rebuild}`；`background=false` 返回完整 job |
 | `GET /v1/jobs/{job_id}` | — | `job_id`、`kind`（`rebuild|ingest|delete|reindex|update`）、`status`（`running|done|error`）、`started_at`、`finished_at`、`result`、`error`、`progress{stage,done,total}` |
-| `POST /v1/admin/activate/{version}` | — | `{"active": "<version>"}` |
-| `GET /v1/admin/indexes` | — | `{"indexes": [...], "current": "..."}` |
+| `POST /v1/admin/activate/{snapshot_version}` | — | 追加新 generation，恢复目标的索引与 manifest；未知 404，索引已淘汰/不可加载 409 |
+| `POST /v1/admin/indexes/{index_version}/activate` | — | 发布候选索引（文档集合必须与当前 manifest 一致） |
+| `GET /v1/admin/snapshots` | — | `{"current": {...}, "snapshots": [...]}`，每项含 `snapshot_version`、`generation`、`index_version`、`manifest_id`、`build_profile_id`、`runtime_config_id`、`created_at` |
+| `GET /v1/admin/indexes` | — | `{"indexes": [...], "current": "...", "snapshot_version": "3", "staged": [...]}` |
 
 ### 10. 错误码
 
@@ -211,7 +228,8 @@
 |---|---|
 | 400 | 参数非法（空/超 16 查询、`top_k` 越界、日期格式、`neighbors`/`follow_refs` 越界、无文件） |
 | 404 | 未知 article/doc/job/索引版本 |
-| 409 | 已有 ingest/rebuild job 在跑 |
+| 409 | 已有 ingest/rebuild job 在跑；本进程只读（数据目录被另一进程占用）；发布/回滚目标不可用或文档集合不匹配 |
+| 422 | 配置字段未知、类型不符或越界 |
 | 413 | 超过单文件/单批大小限制 |
 | 500 | embedding 网关不可恢复错误（未开降级） |
 | 503 | 索引未构建/为空/由更新 schema 写入 |
@@ -224,7 +242,8 @@
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/health` | health, active index, schema |
+| GET | `/health`, `/health/ready` | health, snapshot/index version, schema, writability |
+| GET | `/health/live` | liveness, index-independent |
 | GET / PUT | `/v1/config` | read / hot-update config |
 | POST | `/retrieve`, `/v1/retrieve` | retrieval only |
 | GET | `/v1/articles/{article_id}` | full article + neighbours + references |
@@ -239,21 +258,31 @@
 | POST | `/v1/admin/rebuild` | rebuild index |
 | GET | `/v1/jobs/{job_id}` | job status |
 | GET | `/v1/admin/rebuild/{job_id}` | alias |
-| POST | `/v1/admin/activate/{version}` | switch active index |
-| GET | `/v1/admin/indexes` | index files + current |
+| POST | `/v1/admin/activate/{snapshot_version}` | roll back to a retained state |
+| POST | `/v1/admin/indexes/{index_version}/activate` | publish a built candidate |
+| GET | `/v1/admin/snapshots` | retained generations |
+| GET | `/v1/admin/indexes` | index files, current and staged candidates |
 | GET | `/` | service info |
 
 ### 2. `/health`
 
-`200` with `status`, `pending_rebuild`, `index{version,chunks,documents,embedding_model,
-chunking_hash,built_at,schema_version,index_schema_outdated}`, `config`.
-`503` with `{"status": "not_built"|"empty", "error": ..., "corpus": {...}?}`.
+`200` with `status`, `snapshot_version`, `index_version`, `chunks`, `documents`, `writable`,
+`pending_rebuild`, `index{version,chunks,documents,embedding_model,chunking_hash,built_at,
+schema_version,index_schema_outdated}`, `config`.
+
+A published but empty index is `200` with `status="ready"` and `chunks=0`: retrieve returns
+`chunks=[]` and chat answers `unavailable`. `503 {"status": "not_built"}` means no control state
+was ever published — a different condition, not an empty library.
 
 ### 3. `/v1/config`
 
-`GET` → `{config, active_index, pending_rebuild}`. `PUT` merges partial sections; unknown
-keys ignored; `"save": true` persists to `config.json`. Chunking/embedding changes set
-`pending_rebuild=true`; every update clears retrieval caches and re-syncs `rerank_enabled`.
+`GET` → `{config, config_version, active_index, snapshot_version, pending_rebuild, writable}`.
+`PUT` merges partial sections; unknown fields, wrong types (`top_k: "5"`, `enabled: "false"`) or
+out-of-range values return 422 and apply nothing. `"save": true` persists to the configured path.
+Nested objects merge field by field, so a dataclass such as `confidence` is never replaced by a
+dict. Retrieval/answer-only changes publish a new `snapshot_version` over the same `index_version`;
+chunking/embedding changes are recorded as desired state with `pending_rebuild=true` until a
+rebuild publishes a matching index.
 
 ### 4. `POST /v1/retrieve`
 
@@ -302,6 +331,9 @@ invalid ids are dropped.
 Upload (multipart): `files` (≤200; md/markdown/txt/docx/pdf), `jurisdiction` (CN),
 `language` (auto), `precision` (auto), `applies_to`, `effective_from`, `effective_to`,
 `source_doc`. Returns `{job_id,status,documents}`; sha256 dedupe; 20 MB/file, 200 MB/batch.
+`DELETE` is a logical publish: the record is marked `deleted` (files, parsed text and revision
+stay on disk), the document leaves the index only when the new manifest publishes, and a failed
+rebuild restores the previous status. Deleted records are hidden from the list and return 404.
 Records: `doc_id, filename, source_doc, jurisdiction, language, precision, applies_to,
 dates, sha256, status, chunk_count, parsed_path, original_path, error`.
 Chunk listing: `?limit=100&offset=0` (limit ≤500).
@@ -309,9 +341,13 @@ Chunk listing: `?limit=100&offset=0` (limit ≤500).
 ### 9. Admin
 
 `manifest`, `rebuild{background,activate,chunking?,embedding?}`, `jobs` (kind/status/
-progress/result/error), `activate/{version}`, `indexes`.
+progress/result/error), `snapshots`, `indexes`, `activate/{snapshot_version}` (append a
+generation restoring that state; 404 unknown, 409 unavailable target) and
+`indexes/{index_version}/activate` (publish a built candidate whose document set matches).
 
 ### 10. Status codes
 
-400 invalid input; 404 unknown resource; 409 job already running; 413 size limits;
-500 unrecoverable embedding error; 503 index missing/empty/newer schema.
+400 invalid input; 404 unknown resource; 409 job already running, process read-only (data
+directory owned by another process) or publish/rollback target unusable; 413 size limits;
+422 invalid config field/type/range; 500 unrecoverable embedding error; 503 index missing or
+written by a newer schema.

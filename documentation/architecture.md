@@ -72,15 +72,21 @@ flowchart LR
   IX --> E["Embedding（批量 / 并发 / 重试 / 缓存）"]
   E --> T[("tmp index.db")]
   ID --> T
-  T -->|"os.replace 原子落盘"| D[("index-*.db")]
-  D -->|"current.txt"| A["激活 / activate"]
-  A --> R["进程内 Index 加载"]
-  R --> H["/v1/admin/rebuild → reload"]
+  T -->|"os.replace 原子落盘"| D[("index-*.db 候选")]
+  D --> V["校验：schema / 数量 / 维度 / NaN / 空间指纹 / manifest"]
+  V -->|"通过"| C[("control.db<br/>control_states + control_head")]
+  C --> R["ServingSnapshot 加载"]
+  R --> H["进程内快照替换（租约到期后释放旧 Index）"]
+  C -.->|"导出"| X["current.txt"]
 ```
 
-- **写入原子性**：新索引写 `*.tmp` → `os.replace` → 更新 `current.txt`；`reload()` 失败旧索引继续服务。
-- **schema 版本**：`meta.schema_version=2`；旧库自动回退，新库打开返回 503 并提示重建。
-- **多版本共存**：`index-*.db` 全部保留，可 `POST /v1/admin/activate/{version}` 回滚。
+- **唯一权威**：`control.db` 的 `control_head` 决定线上版本；`current.txt` 只是导出与迁移输入，重启也不读它做判断。
+- **发布顺序**：构建候选 → 完整校验/加载 → `BEGIN IMMEDIATE` + CAS(base generation) 追加 generation 并移动 head → 替换进程内快照。校验或加载失败不移动 head，旧快照继续服务。
+- **stage 与 activate 分离**：`activate=false` 只留候选文件，head、快照、`current.txt` 均不变，重启也不会自动激活。
+- **请求级快照**：一个请求只有一个 `ServingSnapshot`（索引 + 冻结配置 + 检索器），发布中不会混用两个状态；旧快照在最后一个租约释放后关闭。
+- **写入所有权**：`data/documents/write.lock` 是跨进程文件锁；第二个服务只读运行（`writable=false`，管理写操作 409），离线 CLI 检测到锁时拒绝写入。
+- **schema 版本**：索引 `meta.schema_version=2`，control `PRAGMA user_version=1`；旧库自动回退，新库打开返回 503 并提示重建。
+- **多版本共存**：`index-*.db` 全部保留，`POST /v1/admin/activate/{snapshot_version}` 回滚整个状态，`/v1/admin/indexes/{index_version}/activate` 发布已构建的候选。
 
 ### 4. 关键设计决策
 
@@ -119,6 +125,11 @@ index_token_count  索引文本 token 数（BM25 长度归一化）
 **SQLite v2**：`docs`、`chunks`、`postings(term,chunk_id,tf)`、`terms(term,df)`、
 `vectors(chunk_id,dim,vec)`、`meta`（`version`、`built_at`、`schema_version`、
 `embedding_model`、`embedding_dim`、`chunking_hash`、`index_text_hash`、`avgdl`、`config`）。
+
+**control.db**（`data/documents/`）：`control_states`（不可变 generation：`index_version`、
+`manifest`、`manifest_id`、`build_profile_id`、`runtime_config_id`、`created_by_job_id`、
+`created_at`）+ `control_head`（单行当前 generation）。**registry.db**：上传文档记录与状态，
+逻辑删除用 `status=deleted` 表达。
 
 ---
 
@@ -164,9 +175,22 @@ flowchart LR
 
 ### 3. Index lifecycle
 
-New index → `*.tmp` → `os.replace` → `current.txt`; failed reload keeps the old index serving.
-`schema_version=2` with backward-compatible loading and a 503 rebuild hint for newer schemas.
-All `index-*.db` files are kept, so activation can be rolled back by version.
+New index → `*.tmp` → `os.replace` → candidate `index-*.db` → validation (schema, counts,
+dimensions, NaN, embedding space, manifest) → append a generation in `control.db` and move the
+single `control_head` row (CAS on the base generation) → load a `ServingSnapshot` and swap it in.
+
+- The control head is the only authority. `current.txt` is an export and the migration input;
+  no restart reads it to decide what serves.
+- A candidate that fails validation or loading never moves the head: the old snapshot keeps serving.
+- `activate=false` leaves a candidate file only; head, snapshot and `current.txt` are untouched.
+- One snapshot per request (index + frozen config + retriever), so a publish cannot mix two states;
+  a retired snapshot closes after its last lease.
+- `data/documents/write.lock` is a cross-process lock: a second service serves reads only
+  (`writable=false`, management writes 409) and an offline CLI refuses to write.
+- `schema_version=2` for indexes, `PRAGMA user_version=1` for control; newer schemas are refused
+  with a rebuild hint.
+- All `index-*.db` files are kept: `activate/{snapshot_version}` rolls back a whole state,
+  `indexes/{index_version}/activate` publishes an already built candidate.
 
 ### 4. Design decisions
 
@@ -190,3 +214,7 @@ All `index-*.db` files are kept, so activation can be rolled back by version.
   `precision`, `applies_to`, `effective_from/to`, `snapshot_date`, `superseded_by`.
 - **SQLite v2**: `docs`, `chunks`, `postings`, `terms`, `vectors`, `meta`
   (`schema_version`, `chunking_hash`, `index_text_hash`, …).
+- **`control.db`** (`data/documents/`): immutable `control_states` rows (`index_version`,
+  `manifest`, `manifest_id`, `build_profile_id`, `runtime_config_id`, `created_by_job_id`,
+  `created_at`) plus the single-row `control_head`. **`registry.db`** holds uploaded document
+  records; a logical delete is `status=deleted`.
