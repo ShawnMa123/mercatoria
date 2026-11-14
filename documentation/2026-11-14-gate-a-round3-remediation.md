@@ -20,7 +20,9 @@ Review 基线：`52175dc`（分支 `fix/gate-a-round2`）。
 | `9e1cd69` | fix(control): committed-view reads and a real commit/pin boundary (H01) |
 | `e47efec` | fix(ingest): one post-commit boundary for the whole projection tail (H02) |
 | `d3392aa` | fix(manifest): one owner for the manifest write entry points (H03) |
-| 本文件所在提交 | docs: round 3 behaviour and evidence |
+| `8545165` | docs: round 3 behaviour (control reads, commit boundary, manifest writes) |
+| `04e8eb4` | fix(control): close the committed-view reader under its own lock |
+| 本文件所在提交 | docs: round 3 commit list |
 
 既有历史（`075b0cf`、`43cabd2`、`6393fd2`、`abc2d5f`、`52175dc`）未变更。
 
