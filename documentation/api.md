@@ -30,7 +30,7 @@
 | DELETE | `/v1/documents/{doc_id}` | 删除并重建 |
 | POST | `/v1/documents/{doc_id}/reindex` | 单文档重解析/重索引 |
 | GET | `/v1/documents/{doc_id}/chunks` | 分页查看 chunk |
-| POST | `/v1/admin/manifest` | 从语料目录重建 manifest |
+| POST | `/v1/admin/manifest` | 从语料目录重建 manifest（管理互斥，原子替换） |
 | POST | `/v1/admin/rebuild` | 重建索引（后台/同步） |
 | GET | `/v1/jobs/{job_id}` | job 状态 |
 | GET | `/v1/admin/rebuild/{job_id}` | 同上（别名） |
@@ -89,8 +89,8 @@
 `pending_rebuild=true`，需显式 rebuild 才生效；`embedding.timeout/retries`（以及凭证轮换）属于运行参数，
 立即重建客户端并发布，且不会使已有向量失效。
 
-**管理互斥**：config、rebuild、上传、删除、元数据、reindex、候选激活与回滚同一时刻只允许一个在飞。
-并发管理写返回 409：
+**管理互斥**：config、rebuild、上传、删除、元数据、reindex、manifest 生成、候选激活与回滚同一时刻只允许一个在飞。
+并发管理写返回 409（且不改动任何状态或文件）：
 
 ```json
 {"detail": "management operation 'ingest' is in progress; cannot start 'config'",
@@ -241,7 +241,7 @@
 
 | 端点 | 请求 | 响应 |
 |---|---|---|
-| `POST /v1/admin/manifest` | 无 | `{"documents": n, "path": "corpus/manifest.json"}` |
+| `POST /v1/admin/manifest` | 无 | `{"documents": n, "path": "corpus/manifest.json"}`；与其它管理操作互斥（忙时 409，不触碰文件），文件用临时文件 + `os.replace` 原子替换，读取方只会看到旧的完整 JSON 或新的完整 JSON |
 | `POST /v1/admin/rebuild` | `{"background": true, "activate": true, "chunking"?: {}, "embedding"?: {}}` | 后台 `{job_id,status,pending_rebuild}`；`background=false` 返回完整 job。job `result` 含 `committed`、`installed`、`snapshot_version`、`warnings` |
 | `GET /v1/jobs/{job_id}` | — | `job_id`、`kind`（`rebuild|ingest|delete|reindex|update`）、`status`（`running|done|error`）、`started_at`、`finished_at`、`result`、`error`、`progress{stage,done,total}` |
 | `POST /v1/admin/activate/{snapshot_version}` | — | 追加新 generation，恢复目标的索引、manifest 与该 generation 持久化的配置；未知 404，索引已淘汰/不可加载 409 |
@@ -296,7 +296,7 @@
 | GET/PATCH/DELETE | `/v1/documents/{doc_id}` | detail / metadata update / delete |
 | POST | `/v1/documents/{doc_id}/reindex` | re-parse and re-index |
 | GET | `/v1/documents/{doc_id}/chunks` | paginated chunks |
-| POST | `/v1/admin/manifest` | rebuild manifest |
+| POST | `/v1/admin/manifest` | rebuild manifest (management-exclusive, atomic replace) |
 | POST | `/v1/admin/rebuild` | rebuild index |
 | GET | `/v1/jobs/{job_id}` | job status |
 | GET | `/v1/admin/rebuild/{job_id}` | alias |
@@ -345,9 +345,9 @@ recorded as desired state with `pending_rebuild=true` until an explicit rebuild 
 index. Runtime client parameters such as `embedding.timeout`/`retries` (and credential rotation)
 rebuild the client and publish immediately without invalidating vectors.
 
-**Management exclusivity**: config, rebuild, upload, delete, metadata, reindex, candidate
-activation and rollback are serialized. A concurrent management write returns 409
-`management_busy` before changing anything:
+**Management exclusivity**: config, rebuild, upload, delete, metadata, reindex, manifest
+generation, candidate activation and rollback are serialized. A concurrent management write returns
+409 `management_busy` before changing anything (no state and no file is touched):
 
 ```json
 {"detail": "management operation 'ingest' is in progress; cannot start 'config'",

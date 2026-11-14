@@ -70,6 +70,10 @@ python -m mercatoria.cli manifest         # 生成 corpus/manifest.json
 python -m mercatoria.cli rebuild          # 全量索引，结束自动激活
 ```
 
+- manifest 是构建输入：`manifest` 与 `rebuild` 都要先取 `data/documents/write.lock`，
+  服务在跑时（或另一个 CLI 在写）会直接拒绝，非 0 退出且不改动文件；
+  在线改 manifest 请用 `POST /v1/admin/manifest`（同一管理所有权，忙时 409）。
+- 写 manifest 用临时文件 + `os.replace` 原子替换：读取方只会看到旧的完整 JSON 或新的完整 JSON。
 - 首次构建需要为每个 chunk 调 embedding（批量 16、并发 4、带重试与 SQLite 缓存）；
   11.5k chunks 在网关正常时约 1–10 分钟。
 - 重建会按每个 chunk 的 `index_text` 哈希复用旧向量；只有文本真的变了才重新 embedding。
@@ -266,6 +270,11 @@ Raw statute text, indexes, databases and vectors are never committed (`.gitignor
 python -m mercatoria.cli manifest
 python -m mercatoria.cli rebuild
 ```
+
+The manifest is a build input: both commands take `data/documents/write.lock` first, so they refuse
+to run next to a live service (non-zero exit, file untouched). Rewrite it online with
+`POST /v1/admin/manifest` (same management ownership, 409 when busy); the file itself is replaced
+with a same-directory temp file + `os.replace`, so a reader sees the old or the new complete JSON.
 
 First build embeds every chunk (batch 16, concurrency 4, retries, SQLite cache); rebuilds
 reuse vectors per chunk by hashing the exact `index_text`. Output:

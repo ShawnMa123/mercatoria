@@ -91,16 +91,24 @@ flowchart LR
 - **数据就绪门**：证据读取（retrieve/chat/articles/chunks）在短发布门内确认"已提交 head == 在线快照"并一次性 pin 住，
   再释放门去执行 embedding/LLM；不一致先确定性 reload，仍失败返回 503。提交前已 pin 的请求可用旧快照完成。
 - **并发安装保护**：加载可在发布门之外进行，安装前在锁内复核 head；过期快照被丢弃并关闭，`SnapshotHolder` 拒绝安装更旧的 generation。
-- **管理互斥**：config、rebuild、ingest、delete、metadata、reindex、候选激活、rollback 由唯一管理 token 串行化；
+- **提交边界**：发布在同一个发布门内完成"控制事务提交 → export → 安装在线快照"，门内只有这几步（索引加载、embedding/rerank/LLM 客户端构造都在门外）。
+  因此请求的"读 head + pin"与提交互斥：既不会读到未提交的 head，也不会看到"已提交但本进程尚未安装"的中间态，旧租约仍可用旧快照跑完。
+- **控制读取隔离**：`ControlStore` 有写连接与只读连接两条；写连接只在 `BEGIN IMMEDIATE` 事务内使用，公开读取（head/state/states/desired_config）
+  走 `query_only` 的第二条连接，只可能看到已提交状态。事务内部读当前 head 用私有的 `_head_on(conn)`，不递归调用公开读方法。
+  锁顺序固定为：发布门 → 控制写锁（发布）或 发布门 → 控制读锁（读 head + pin）；没有"先拿控制锁再等发布门"的路径。
+- **管理互斥**：config、rebuild、ingest、delete、metadata、reindex、manifest 生成、候选激活、rollback 由唯一管理 token 串行化；
   后台任务在入口接纳时取得 token、终态释放（跨线程，因此不是 RLock）。忙时其它管理写 409，且不先改 cfg/desired。
   受控快照同时提供 build 配置与 base generation，避免"旧 cfg + 新 base"。
 - **写入所有权**：`data/documents/write.lock` 是跨进程文件锁，在打开 control/registry 之前获取；拿不到锁的第二个实例直接启动失败（不再提供"只读副本"），离线 CLI 检测到锁时拒绝写入。
+  manifest 是构建输入，因此两个写入口都受保护：`POST /v1/admin/manifest` 走管理 token（忙时 409、不动文件），
+  `python -m mercatoria manifest` 取同一目录锁（锁忙则非 0 退出、不动文件）；写文件统一走临时文件 + `os.replace`。
 - **配置持久化**：control state 记录该 generation 的非敏感配置，`desired_config` 单行表记录运维意图；
   runtime 发布与该次接受的 desired 在同一个控制事务内提交（不会 head 前进而意图落后）。
   部署路径/限额/凭证始终来自部署环境（config.json + env），`save=true` 只额外原子导出完整的无密钥部署文件。
   重启后同一 `snapshot_version` 绑定同一配置。
-- **提交后收尾**：commit 之后的 export、最终 progress、chunk 统计、registry 投影失败都只记 `warnings`（或带 committed 的
-  `PostCommitError`），不触发提交前补偿；job 结果记录 `committed` 与版本，投影可由下一次发布修复。
+- **提交后收尾**：commit 之后的 export、最终 progress、chunk 统计、registry 枚举/投影/结果组装都在同一个收尾边界内，
+  失败只记 `warnings`（或带 committed/version 的 `PostCommitError`），不触发提交前补偿；job 结果记 `committed` 与版本，投影可由下一次发布修复。
+  delete/update 的"恢复旧状态"只在 `committed_failure(exc)` 为空、即确认未提交时执行，不按异常类型或猜测的 head 判断。
 - **embedding 空间身份**：`embedding_space_id` 覆盖 provider/端点/model/显式 revision/space_version/dim/预处理版本；
   索引 meta 记录该 id，跨空间不复用向量；持久缓存表 `embeddings_by_space` 以 space_id 为键。timeout/重试/凭证不在身份内。
 - **schema 版本**：索引 `meta.schema_version=2`，control `PRAGMA user_version=2`；旧库自动回退，新库打开返回 503 并提示重建。
@@ -238,15 +246,31 @@ export `current.txt` → load a `ServingSnapshot` and swap it in.
   publication gate, then release the gate for the actual work; a mismatch reloads once and then
   answers 503. A request that already holds a lease finishes on the old snapshot.
 - Management writes are serialized by one token (config, rebuild, ingest, delete, metadata,
-  reindex, activation, rollback). The token is taken at admission and released at completion
-  (possibly from the worker thread), so a concurrent management write gets 409 without first
-  changing config or desired state. Build config and base generation come from the same controlled
-  snapshot.
+  reindex, manifest generation, activation, rollback). The token is taken at admission and released
+  at completion (possibly from the worker thread), so a concurrent management write gets 409 without
+  first changing config, desired state or a file. Build config and base generation come from the
+  same controlled snapshot.
+- A publication holds the gate across the control commit, the `current.txt` export and the snapshot
+  install; only preparation (index load, client construction) runs outside it. A request therefore
+  cannot observe an uncommitted head, or a committed one this process has not installed yet, and a
+  commit cannot land between its head check and its pin.
+- `ControlStore` has a writer connection (used only inside its serialized `BEGIN IMMEDIATE`
+  transaction) and a `query_only` reader used by every public read, so a request thread only ever
+  sees committed rows; transaction internals read the head through the private `_head_on(conn)`.
+  Lock order is fixed: gate -> control write lock (publish) or gate -> control read lock (head check
+  + pin), and no path takes a control lock before waiting for the gate.
 - Loading runs outside the publication gate; installing re-checks the head under it, and the holder
   refuses an older generation, so a slow reload cannot move the process backwards.
 - `data/documents/write.lock` is a cross-process lock taken before any writable store is opened:
   a second instance fails to start instead of serving a head it never follows, and an offline CLI
-  refuses to write.
+  refuses to write. The manifest is a build input, so both of its write entry points are covered:
+  `POST /v1/admin/manifest` takes the management token (409 and no file change when busy) and
+  `python -m mercatoria manifest` takes the same directory lock (non-zero exit, no file change);
+  both replace the file atomically.
+- Everything after a commit (export, final progress, chunk counts, registry enumeration/projection,
+  result assembly) sits behind one boundary: a failure is a warning or a `PostCommitError` carrying
+  the committed result, never a pre-commit failure. Delete/update restore the previous registry
+  state only when `committed_failure(exc)` is empty.
 - Control states persist the non-sensitive config they serve with; `desired_config` holds the
   operator's intent, and a runtime publication commits both in one control transaction. Deployment
   paths, limits and credentials stay in the environment; `save=true` additionally exports the full
