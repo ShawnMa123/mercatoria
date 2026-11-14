@@ -78,6 +78,40 @@
 
 默认仍关闭：Agent 调用对延迟更敏感；需要更优排序时按请求 `"rerank": true`。
 
+#### 5.1 上游 rerank 模型可用性（2026-11-14 实测）
+
+`GET /api/v1/models` 列出平台 373 个模型，其中 rerank 类 4 个：
+
+| 模型 | 标价（每百万 token） | 本账号实测 |
+|---|---|---|
+| `gte-rerank-v2`（当前默认） | 0.8 | 可用 |
+| `qwen3-rerank` | 0.5 | **403 Model.AccessDenied** |
+| `qwen3.7-text-rerank` | 0.5 | **403 Model.AccessDenied** |
+| `qwen3-vl-rerank` | 0.5（图像 token） | **403 Model.AccessDenied** |
+
+`compatible-mode/v1/rerank` 在该网关上不存在（404），只能用 dashscope 原生路径。
+复测 `gte-rerank-v2`（n=100，seed=7，与上表同口径，2026-11-14）：
+
+| 策略 | Hit@5 | MRR | p50 | p95 |
+|---|---|---|---|---|
+| off | 0.9000 | 0.7679 | 45 ms | 75 ms |
+| always | 0.9100 | 0.8007 | 544 ms | 1168 ms |
+
+质量与 11-13 记录逐位一致；延迟劣化约 18%（p50 462→544 ms）/ 42%（p95 820→1168 ms），
+说明网关侧变慢，而非代码路径变化。
+
+同一批 100 题上复核 fusion（`always`，`candidates=10`）：
+
+| fusion | Hit@5 | MRR | p50 |
+|---|---|---|---|
+| `weighted` 0.5（默认） | 0.9100 | **0.8007** | 531 ms |
+| `weighted` 0.8 | 0.8900 | 0.7917 | 522 ms |
+| `rerank`（纯重排分） | 0.8900 | 0.7726 | 496 ms |
+| `max` | 0.9000 | 0.7706 | 479 ms |
+
+纯重排反而掉 2.0pp Hit@5 / 2.8pp MRR：第一阶段分数带有重排模型看不到的精确法条信号，
+所以即便换成更强的 reranker，融合权重也不应设为“只用重排分”。
+
 ### 6. 回答质量（抽样 n=16）
 
 | 指标 | 数值 |
@@ -168,6 +202,21 @@ bonus is negative and defaults to 0.
 
 Rerank stays off by default; enable per request when ranking quality matters more than
 latency.
+
+#### 5.1 Upstream rerank models (measured 2026-11-14)
+
+`GET /api/v1/models` lists 373 platform models, 4 of them rerankers: `gte-rerank-v2`
+(0.8 per million tokens, callable), `qwen3-rerank`, `qwen3.7-text-rerank` and
+`qwen3-vl-rerank` (0.5, all three answer `403 Model.AccessDenied` for this key).
+`compatible-mode/v1/rerank` does not exist on this gateway (404); only the native
+dashscope path works. Re-running `gte-rerank-v2` at n=100/seed=7 reproduced the table
+above digit for digit (off 0.9000/0.7679, always 0.9100/0.8007) while latency drifted
+18% at p50 (462→544 ms) and 42% at p95 (820→1168 ms) — gateway-side, not code.
+Fusion was re-checked on the same 100 questions (`always`, `candidates=10`): `weighted` 0.5
+0.9100/0.8007 (best), `weighted` 0.8 0.8900/0.7917, rerank-only 0.8900/0.7726, `max`
+0.9000/0.7706. Pure rerank costs 2.0pp Hit@5 and 2.8pp MRR, so the first-stage score carries
+signal the cross-encoder cannot see; do not switch to rerank-only fusion even with a stronger
+model.
 
 ### 6. Answer quality (sample n=16)
 
