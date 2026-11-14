@@ -76,15 +76,28 @@
 
 `PUT` 为**部分更新**：只传要改的 section/key；未知字段、类型不符（如 `top_k: "5"`、
 `enabled: "false"`）、越界或非法端点 URL 一律 422，且不产生任何部分应用。
-接受的配置**一律持久化**到 control DB（`desired_config` + 发布时的 state config），
-`"save": true` 只为运维把脱敏配置写到 `config_path`，不再是"临时生效"开关；
-`save: false` 不会让更新在重启后消失。
+接受的配置**一律持久化**到 control DB：runtime 更新与该次接受的 desired 意图在**同一个控制事务**内提交
+（head 与 `desired_config` 不会一前一后分裂），仅 pending build 的更新是单行原子 upsert。
+`"save": true` 额外把**完整部署配置**（目录、manifest 路径、上传限额 + 非敏感 section）原子写入
+`config_path`（同目录临时文件 + `os.replace`）；该文件不含任何 api_key，`save: false` 不会让更新在重启后消失。
+文件写入失败只是 `warnings`（已提交状态不回滚）；命令返回体新增 `warnings: []`。
 
 嵌套对象按字段深度合并，不会把 `confidence` 之类的 dataclass 换成 dict。
 仅改检索/回答参数时，在**当前活动 build** 上发布新 `snapshot_version`（复用 `index_version`），
 待重建的 chunking/embedding 变更不会随之泄漏进在线状态。
-改 `chunking`、`embedding.base/model/dim` 属于 build 身份变更：只记录为期望状态并置
-`pending_rebuild=true`，需显式 rebuild 才生效；`embedding.timeout/retries` 等属于运行参数，立即重建客户端并发布。
+改 `chunking`、`embedding.base/model/dim/model_revision/space_version` 属于 build 身份变更：只记录为期望状态并置
+`pending_rebuild=true`，需显式 rebuild 才生效；`embedding.timeout/retries`（以及凭证轮换）属于运行参数，
+立即重建客户端并发布，且不会使已有向量失效。
+
+**管理互斥**：config、rebuild、上传、删除、元数据、reindex、候选激活与回滚同一时刻只允许一个在飞。
+并发管理写返回 409：
+
+```json
+{"detail": "management operation 'ingest' is in progress; cannot start 'config'",
+ "error": {"code": "management_busy", "retryable": true,
+           "details": {"current": "ingest", "requested": "config"}}}
+```
+
 
 ```json
 {"retrieval": {"top_k": 8, "confidence": {"medium": 0.6}},
@@ -242,8 +255,10 @@
   没有指针即 `not_built`，指针损坏 fail closed，已有 head 后 `current.txt` 不再参与判断。
 - 候选文件内记录了 `{manifest, build config, base generation}`；激活用这份记录 prepare（完整校验并构造客户端），
   base 过期返回 409，不会用"当前 manifest"替代，也不会用当前 head 生成新 base 强行覆盖。
+- **缺少候选记录、缺少 base 字段或 manifest 记录无效一律 409**，提示重新构建；不按文件年龄/名字或当前 head 猜 base。
+  需要恢复旧索引时走 `activate/{snapshot_version}` 回滚（目标的完整 ControlState），不提供隐式 force 通道。
+  记录中的 `base_generation: null` 只表示"显式期望空库"，与"缺信息"不同。
 - vec/chunk 必须逐条对应：同数量但错 ID、缺失、多余、NaN/Inf、维度不符都拒发，拒绝后 head 与在线版本不变。
-
 
 ### 10. 错误码
 
@@ -251,11 +266,15 @@
 |---|---|
 | 400 | 参数非法（空/超 16 查询、`top_k` 越界、日期格式、`neighbors`/`follow_refs` 越界、无文件） |
 | 404 | 未知 article/doc/job/索引版本 |
-| 409 | 已有 ingest/rebuild job 在跑；发布/回滚目标不可用、候选 base 过期或文档集合/配置不可用；候选索引 chunk/vector 不一致 |
+| 409 | 另一管理操作在飞（`management_busy`）；发布/回滚目标不可用、候选 base 过期、候选缺少自身证据或文档集合/配置不可用；候选索引 chunk/vector 不一致 |
 | 422 | 配置字段未知、类型不符、越界或端点 URL 非法 |
 | 413 | 超过单文件/单批大小限制 |
 | 500 | embedding 网关不可恢复错误（未开降级） |
-| 503 | 索引未构建/为空/由更新 schema 写入；发布已提交但本进程未能安装（`not_ready`，见 `/health`） |
+| 503 | 索引未构建/为空/由更新 schema 写入；发布已提交但本进程未能安装（`not_ready`，见 `/health`）；数据接口发现 head 与在线快照不一致且无法恢复 |
+
+**数据接口的就绪门**：`/v1/retrieve`、`/v1/chat`、`/v1/articles/*`、`/v1/documents/{id}/chunks` 等证据读取不只看
+`/health`：每次请求在短发布门内确认"已提交 head == 在线快照"再取得租约；不一致时先做一次确定性 reload，
+仍失败即 503，不会把旧快照当作当前状态返回。已持有租约的在途请求可以用旧快照完成。
 
 ---
 
@@ -311,14 +330,30 @@ is only present while a rebuild is pending.
 
 `PUT` merges partial sections; unknown fields, wrong types (`top_k: "5"`, `enabled: "false"`),
 out-of-range values or an invalid endpoint URL return 422 and apply nothing. Accepted values are
-always persisted in the control DB; `"save": true` only writes the redacted config file to
-`config_path` for operators, and `save: false` no longer means "temporary".
+always persisted in the control DB: a runtime publication and the accepted desired intent are
+committed in **one control transaction**, and a pending-build-only update is a single atomic row
+upsert. `"save": true` additionally writes the **complete deployment config** (directories, manifest
+path, upload limits and the non-sensitive sections) atomically to `config_path`
+(same-directory temp file + `os.replace`); that file never contains an api_key, and `save: false`
+no longer means "temporary". A failed file write is reported in `warnings` and does not undo the
+committed state.
 Nested objects merge field by field, so a dataclass such as `confidence` is never replaced by a
 dict. Retrieval/answer-only changes publish a new `snapshot_version` on the **active** build over
 the same `index_version`, and a pending chunking/embedding change does not leak into it.
-Chunking and `embedding.base/model/dim` are build identity: they are recorded as desired state with
-`pending_rebuild=true` until an explicit rebuild publishes a matching index. Runtime client
-parameters such as `embedding.timeout`/`retries` rebuild the client and publish immediately.
+Chunking and `embedding.base/model/dim/model_revision/space_version` are build identity: they are
+recorded as desired state with `pending_rebuild=true` until an explicit rebuild publishes a matching
+index. Runtime client parameters such as `embedding.timeout`/`retries` (and credential rotation)
+rebuild the client and publish immediately without invalidating vectors.
+
+**Management exclusivity**: config, rebuild, upload, delete, metadata, reindex, candidate
+activation and rollback are serialized. A concurrent management write returns 409
+`management_busy` before changing anything:
+
+```json
+{"detail": "management operation 'ingest' is in progress; cannot start 'config'",
+ "error": {"code": "management_busy", "retryable": true,
+           "details": {"current": "ingest", "requested": "config"}}}
+```
 
 ### 4. `POST /v1/retrieve`
 
@@ -379,12 +414,25 @@ Chunk listing: `?limit=100&offset=0` (limit ≤500).
 `manifest`, `rebuild{background,activate,chunking?,embedding?}`, `jobs` (kind/status/
 progress/result/error), `snapshots`, `indexes`, `activate/{snapshot_version}` (append a
 generation restoring that state; 404 unknown, 409 unavailable target) and
-`indexes/{index_version}/activate` (publish a built candidate whose document set matches).
+`indexes/{index_version}/activate`.
+
+Candidate activation reads the manifest, build config and base generation recorded by that build
+and CAS-checks the base. A candidate without a record, without a `base_generation` field or with an
+invalid manifest record is refused with 409 and no state change; there is no implicit base from the
+current head. `base_generation: null` means "the head must still be empty", not "unknown". Use
+`activate/{snapshot_version}` to restore a retained state.
 
 ### 10. Status codes
 
-400 invalid input; 404 unknown resource; 409 job already running, publish/rollback target
-unusable, candidate base expired, or candidate chunk/vector alignment invalid; 413 size limits;
-422 invalid config field/type/range/URL; 500 unrecoverable embedding error; 503 index missing or
-written by a newer schema, or a publication committed but this process could not install it
-(`not_ready`, see `/health`).
+400 invalid input; 404 unknown resource; 409 another management operation in flight
+(`management_busy`), publish/rollback target unusable, candidate base expired, candidate missing its
+own evidence, or chunk/vector alignment invalid; 413 size limits; 422 invalid config
+field/type/range/URL; 500 unrecoverable embedding error; 503 index missing or written by a newer
+schema, a publication committed but this process could not install it (`not_ready`, see `/health`),
+or a data route could not line up the committed head with an online snapshot.
+
+Evidence reads (`/v1/retrieve`, `/v1/chat`, `/v1/articles/*`, `/v1/documents/{id}/chunks`) gate on the
+committed head themselves: they confirm head == online snapshot inside the short publication gate and
+pin that snapshot before releasing the gate. A mismatch triggers one deterministic reload and then
+503; the old snapshot is never served to a new request. A request that already holds a lease
+completes on its snapshot.

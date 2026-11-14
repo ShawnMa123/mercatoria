@@ -86,11 +86,23 @@ flowchart LR
 - **stage 与 activate 分离**：`activate=false` 只留候选文件，head、快照、`current.txt` 均不变，重启也不会自动激活。
   迁移只认显式 `current.txt` 指针：没有指针即 `not_built`，指针损坏 fail closed，已有 head 后该文件不参与判断。
 - **候选自描述**：每次 build 在索引内记录自己的 manifest、build 配置与 base generation；激活读取该记录并 CAS 该 base。
+  记录缺失/缺 base 字段/manifest 无效一律 409，不借当前 head 补 base；旧状态恢复走 snapshot rollback。
 - **请求级快照**：一个请求只有一个 `ServingSnapshot`（索引 + 冻结配置 + 检索器），发布中不会混用两个状态；旧快照在最后一个租约释放后关闭。
+- **数据就绪门**：证据读取（retrieve/chat/articles/chunks）在短发布门内确认"已提交 head == 在线快照"并一次性 pin 住，
+  再释放门去执行 embedding/LLM；不一致先确定性 reload，仍失败返回 503。提交前已 pin 的请求可用旧快照完成。
 - **并发安装保护**：加载可在发布门之外进行，安装前在锁内复核 head；过期快照被丢弃并关闭，`SnapshotHolder` 拒绝安装更旧的 generation。
+- **管理互斥**：config、rebuild、ingest、delete、metadata、reindex、候选激活、rollback 由唯一管理 token 串行化；
+  后台任务在入口接纳时取得 token、终态释放（跨线程，因此不是 RLock）。忙时其它管理写 409，且不先改 cfg/desired。
+  受控快照同时提供 build 配置与 base generation，避免"旧 cfg + 新 base"。
 - **写入所有权**：`data/documents/write.lock` 是跨进程文件锁，在打开 control/registry 之前获取；拿不到锁的第二个实例直接启动失败（不再提供"只读副本"），离线 CLI 检测到锁时拒绝写入。
-- **配置持久化**：control state 记录该 generation 的非敏感配置，`desired_config` 单行表记录待重建的运维意图；
-  部署路径/限额/凭证始终来自部署环境（config.json + env）。重启后同一 `snapshot_version` 绑定同一配置。
+- **配置持久化**：control state 记录该 generation 的非敏感配置，`desired_config` 单行表记录运维意图；
+  runtime 发布与该次接受的 desired 在同一个控制事务内提交（不会 head 前进而意图落后）。
+  部署路径/限额/凭证始终来自部署环境（config.json + env），`save=true` 只额外原子导出完整的无密钥部署文件。
+  重启后同一 `snapshot_version` 绑定同一配置。
+- **提交后收尾**：commit 之后的 export、最终 progress、chunk 统计、registry 投影失败都只记 `warnings`（或带 committed 的
+  `PostCommitError`），不触发提交前补偿；job 结果记录 `committed` 与版本，投影可由下一次发布修复。
+- **embedding 空间身份**：`embedding_space_id` 覆盖 provider/端点/model/显式 revision/space_version/dim/预处理版本；
+  索引 meta 记录该 id，跨空间不复用向量；持久缓存表 `embeddings_by_space` 以 space_id 为键。timeout/重试/凭证不在身份内。
 - **schema 版本**：索引 `meta.schema_version=2`，control `PRAGMA user_version=2`；旧库自动回退，新库打开返回 503 并提示重建。
 - **多版本共存**：`index-*.db` 全部保留，`POST /v1/admin/activate/{snapshot_version}` 回滚整个状态（索引 + manifest + 该代配置），`/v1/admin/indexes/{index_version}/activate` 发布已构建的候选。
 
@@ -149,8 +161,13 @@ index_token_count  索引文本 token 数（BM25 长度归一化）
 - 旧版配置中的 `save=false` 更新从未持久化，无法事后恢复：升级后同版本号可能继续反映旧值，
   下一次 PUT 会写入持久配置。`save` 字段仍被接受，但不再影响是否持久化。
 - 旧索引若无 `meta.config`，`embedding.base` 无法核对（只校验 model/dim/chunking）；建议重建。
+- `embedding_space_id` 是本轮新增的索引 meta。没有该 id 的旧索引不会被复用向量（重建时重新 embedding），
+  也不会做空间一致性校验（仍校验 model/dim/index 记录的 base）。
+- 持久缓存迁移：新的 `embeddings_by_space(space_id, text_hash, dim, vec)` 表独立于旧的 `embeddings(model, …)` 表。
+  旧行没有可信空间标识，**不再读取**；删除 embedding cache 文件可回收空间，下一次重建会重新填充。
+- 只改 `embedding.timeout/retries/api_key` 不改变 space id，向量与缓存继续复用；改 base/model/dim/revision/space_version 必须重建。
 - 回滚说明：`POST /v1/admin/activate/{snapshot_version}` 追加新 generation 并恢复该代索引、manifest 与配置；
-  仅当目标索引文件与配置仍可用时成功，否则 409。
+  仅当目标索引文件与配置仍可用时成功，否则 409。候选激活要求候选自身记录完整，否则 409。
 - 备份：`data/documents/control.db`（WAL 请用一致性备份）、`data/documents/registry.db`、
   `data/index/`；恢复后以 control head 为准，`current.txt` 可重新导出。
 
@@ -209,19 +226,34 @@ export `current.txt` → load a `ServingSnapshot` and swap it in.
 - A candidate that fails validation or loading never moves the head: the old snapshot keeps serving.
 - `activate=false` leaves a candidate file only; head, snapshot and `current.txt` are untouched.
   Each build records its own manifest, build config and base generation, and activation uses that
-  record (an expired base returns 409).
+  record (an expired base returns 409). A candidate without a record, without `base_generation`, or
+  with an invalid manifest is refused with 409 — the current head is never borrowed as a base.
 - After the commit, an export failure is a warning and an install failure is `not_ready`
   (`PostCommitError`, `result.committed=true`); neither is ever compensated as "not committed".
+  Final progress, chunk counts and the registry projection are post-commit too: they append
+  warnings to the job result instead of failing the rebuild.
 - One snapshot per request (index + frozen config + retriever), so a publish cannot mix two states;
   a retired snapshot closes after its last lease.
+- Evidence reads confirm "committed head == online snapshot" and pin that snapshot inside the short
+  publication gate, then release the gate for the actual work; a mismatch reloads once and then
+  answers 503. A request that already holds a lease finishes on the old snapshot.
+- Management writes are serialized by one token (config, rebuild, ingest, delete, metadata,
+  reindex, activation, rollback). The token is taken at admission and released at completion
+  (possibly from the worker thread), so a concurrent management write gets 409 without first
+  changing config or desired state. Build config and base generation come from the same controlled
+  snapshot.
 - Loading runs outside the publication gate; installing re-checks the head under it, and the holder
   refuses an older generation, so a slow reload cannot move the process backwards.
 - `data/documents/write.lock` is a cross-process lock taken before any writable store is opened:
   a second instance fails to start instead of serving a head it never follows, and an offline CLI
   refuses to write.
 - Control states persist the non-sensitive config they serve with; `desired_config` holds the
-  operator's not-yet-built intent. Deployment paths, limits and credentials stay in the
-  environment, so the same `snapshot_version` serves the same config across restarts.
+  operator's intent, and a runtime publication commits both in one control transaction. Deployment
+  paths, limits and credentials stay in the environment; `save=true` additionally exports the full
+  deployment file (no credentials) atomically.
+- `embedding_space_id` (provider/endpoint/model/revision/space_version/dim/preprocessing) gates
+  vector reuse and keys the persistent `embeddings_by_space` cache; timeout, retries and credentials
+  are outside it.
 - `schema_version=2` for indexes, `PRAGMA user_version=2` for control; newer schemas are refused
   with a rebuild hint.
 - All `index-*.db` files are kept: `activate/{snapshot_version}` rolls back a whole state,
@@ -271,9 +303,16 @@ export `current.txt` → load a `ServingSnapshot` and swap it in.
   still accepted but no longer decides whether an update survives a restart.
 - An index without `meta.config` cannot prove its `embedding.base` (only model/dim/chunking are
   checked); rebuild it to gain the endpoint check.
+- `embedding_space_id` is new index metadata. An index without it never has its vectors reused
+  (the rebuild re-embeds) and gets no space check beyond model/dim/recorded base.
+- Persistent cache migration: `embeddings_by_space(space_id, text_hash, dim, vec)` is separate from
+  the old `embeddings(model, …)` table. Old rows have no trustworthy space identity and are never
+  read; deleting the cache file reclaims them and a rebuild repopulates it.
+- Changing only `embedding.timeout/retries/api_key` keeps the space id, so vectors and cache entries
+  stay valid; changing base/model/dim/revision/space_version requires a rebuild.
 - Rollback: `POST /v1/admin/activate/{snapshot_version}` appends a generation restoring that
   index, manifest and config; it succeeds only while the target index and config remain usable
-  (otherwise 409).
+  (otherwise 409). Candidate activation requires the candidate's own record (otherwise 409).
 - Backup set: `data/documents/control.db` (use a consistent WAL backup), `data/documents/registry.db`
   and `data/index/`. After restore the control head is authoritative and `current.txt` can be
   re-exported.
