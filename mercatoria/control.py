@@ -232,15 +232,22 @@ class ControlStore:
         ).fetchone()
         return _loads(row[0]) if row is not None else None
 
+    @staticmethod
+    def _write_desired(
+        conn: sqlite3.Connection, config: dict[str, Any], at: str | None = None
+    ) -> None:
+        """Upsert the desired row on ``conn`` (inside the caller's transaction)."""
+        conn.execute(
+            """INSERT INTO desired_config(singleton, config, updated_at)
+               VALUES (1, ?, ?)
+               ON CONFLICT(singleton) DO UPDATE SET
+                   config=excluded.config, updated_at=excluded.updated_at""",
+            (json.dumps(config, ensure_ascii=False), at or _now()),
+        )
+
     def set_desired_config(self, config: dict[str, Any]) -> None:
         with self._lock:
-            self.conn.execute(
-                """INSERT INTO desired_config(singleton, config, updated_at)
-                   VALUES (1, ?, ?)
-                   ON CONFLICT(singleton) DO UPDATE SET
-                       config=excluded.config, updated_at=excluded.updated_at""",
-                (json.dumps(config, ensure_ascii=False), _now()),
-            )
+            self._write_desired(self.conn, config)
 
     def publish(
         self,
@@ -253,6 +260,7 @@ class ControlStore:
         created_by_job_id: str | None = None,
         config: dict[str, Any] | None = None,
         expect_empty: bool = False,
+        desired_config: dict[str, Any] | None = None,
     ) -> ControlState:
         """Append a generation and move the head, or raise ControlConflict.
 
@@ -261,6 +269,10 @@ class ControlStore:
         ``expect_empty=True`` is the explicit first-publication CAS: the head
         must not exist yet, so two candidates built from nothing cannot both
         publish.
+
+        ``desired_config`` is written in the *same* transaction: a crash can
+        never leave the active state advanced while the accepted operator intent
+        is the previous value, and a failed desired write rolls the head back.
         """
         with self._lock:
             conn = self.conn
@@ -311,6 +323,8 @@ class ControlStore:
                        ON CONFLICT(singleton) DO UPDATE SET generation=excluded.generation""",
                     (state.generation,),
                 )
+                if desired_config is not None:
+                    self._write_desired(conn, desired_config, state.created_at)
                 conn.execute("COMMIT")
             except BaseException:
                 conn.execute("ROLLBACK")

@@ -135,6 +135,16 @@ def _meta_get(conn: sqlite3.Connection, key: str, default: Any = None) -> Any:
 
 SYNTHETIC_ARTICLE_MARKERS = (":doc", ":preamble", ":section-", ":chunk-")
 
+
+class _Unset:
+    """Distinguish "caller did not bind a base" from an explicit ``None``."""
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return "BASE_UNSET"
+
+
+BASE_UNSET = _Unset()
+
 # Cap on articles returned by follow_refs so one densely referenced article
 # cannot blow up a response.
 ARTICLE_FOLLOW_LIMIT = 20
@@ -682,6 +692,7 @@ def build_index(
     activate: bool = True,
     progress: Callable[[str, int, int], None] | None = None,
     publish: Any = None,
+    base_generation: Any = BASE_UNSET,
 ) -> dict[str, Any]:
     """Build a complete index file and optionally publish it.
 
@@ -695,6 +706,11 @@ def build_index(
     ``publish`` is the owning :class:`PublicationCoordinator`. Callers that do
     not pass one get a coordinator without a snapshot holder (offline CLI):
     the commit happens, the process-local install does not.
+
+    ``base_generation`` lets the caller bind the base to the same snapshot it
+    took the build config from (``None`` = the head must be empty). Left unset,
+    the base is read here, which is only correct for offline callers that own
+    the directory exclusively.
     """
     from .embed import EmbeddingClient
     from .control import ControlStore
@@ -702,9 +718,10 @@ def build_index(
     version = _version(cfg)
     probe = ControlStore(cfg.resolved_control_path())
     try:
-        # Captured before building: publication fails if the head moved
-        # meanwhile instead of silently overwriting a newer state.
-        base_generation = probe.head_generation()
+        if base_generation is BASE_UNSET:
+            # Captured before building: publication fails if the head moved
+            # meanwhile instead of silently overwriting a newer state.
+            base_generation = probe.head_generation()
         source_index = _published_index_path(probe, cfg.resolved_index_dir())
     finally:
         probe.close()
@@ -949,7 +966,12 @@ def build_index(
         result["snapshot_version"] = publication.snapshot_version
         result["warnings"] = list(publication.warnings)
     if progress:
-        progress("done", len(chunk_rows), len(chunk_rows))
+        # This runs after the commit. A broken progress sink must not turn a
+        # published state into a "failed, uncommitted" job.
+        try:
+            progress("done", len(chunk_rows), len(chunk_rows))
+        except Exception as exc:
+            result["warnings"].append(f"final progress report failed: {exc}")
     return result
 
 

@@ -21,7 +21,7 @@ from .documents import DocumentRegistry, combined_manifest
 from .manifest import build_manifest, load_manifest
 from .parse import ParseError, parse_document
 from .publication import PostCommitError
-from .store import build_index, index_path
+from .store import BASE_UNSET, build_index, index_path
 
 Progress = Callable[[str, int, int], None]
 
@@ -82,6 +82,7 @@ def ingest_batch(
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
     publish: Any = None,
+    base_generation: Any = BASE_UNSET,
 ) -> dict[str, Any]:
     if not items:
         raise IngestError("no files")
@@ -219,18 +220,13 @@ def ingest_batch(
             activate=True,
             progress=index_progress,
             publish=publish,
+            base_generation=base_generation,
         )
     except PostCommitError as exc:
         # The publication committed: the documents are in the live document set
         # even though this process could not install the snapshot. Marking them
         # failed would contradict the committed head.
-        counts = _chunk_counts(
-            str(index_path(cfg.resolved_index_dir(), exc.result.index_version))
-        )
-        for doc in parsed:
-            registry.update(
-                doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0)
-            )
+        _project_committed(registry, parsed, cfg, exc.result.index_version)
         raise
     except Exception as exc:
         for doc in parsed:
@@ -238,12 +234,34 @@ def ingest_batch(
                 doc["doc_id"], status="failed", error=f"index rebuild failed: {exc}"[:500]
             )
         raise
-    if progress:
-        progress("index", len(manifest["docs"]), len(manifest["docs"]))
 
-    counts = _chunk_counts(result["path"])
+    warnings: list[str] = result.setdefault("warnings", [])
+    # Post-commit from here on: progress, counts and the registry projection are
+    # derived from an already published state.
+    if progress:
+        try:
+            progress("index", len(manifest["docs"]), len(manifest["docs"]))
+        except Exception as exc:
+            warnings.append(f"progress report failed after commit: {exc}")
+    counts: dict[str, int] = {}
+    try:
+        counts = _chunk_counts(result["path"])
+    except Exception as exc:
+        warnings.append(f"chunk counts unavailable: {exc}")
+    failures = 0
+    last_error = None
     for doc in parsed:
-        registry.update(doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0))
+        try:
+            registry.update(
+                doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0)
+            )
+        except Exception as exc:
+            failures += 1
+            last_error = exc
+    if failures:
+        warnings.append(
+            f"registry projection failed for {failures} document(s): {last_error}"
+        )
 
     return {
         "documents": skipped + parsed + failed,
@@ -252,7 +270,32 @@ def ingest_batch(
         "version": result["version"],
         "chunks": result["chunks"],
         "documents_total": result["documents"],
+        "committed": result.get("committed", False),
+        "installed": result.get("installed", False),
+        "snapshot_version": result.get("snapshot_version"),
+        "warnings": warnings,
     }
+
+
+def _project_committed(
+    registry: DocumentRegistry,
+    parsed: list[dict[str, Any]],
+    cfg: AppConfig,
+    index_version: str,
+) -> None:
+    """Best-effort registry projection for a committed-but-not-installed build."""
+    counts: dict[str, int] = {}
+    try:
+        counts = _chunk_counts(str(index_path(cfg.resolved_index_dir(), index_version)))
+    except Exception:
+        pass
+    for doc in parsed:
+        try:
+            registry.update(
+                doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0)
+            )
+        except Exception:
+            pass
 
 
 def _chunk_counts(index_path: str) -> dict[str, int]:
@@ -272,11 +315,18 @@ def rebuild_with_uploads(
     progress: Progress | None = None,
     activate: bool = True,
     publish: Any = None,
+    base_generation: Any = BASE_UNSET,
 ) -> dict[str, Any]:
     """Rebuild using the static corpus plus every parsed upload.
 
     ``activate=False`` leaves a candidate index unpublished; registry statuses
     only move to "ready" when the build actually became the served state.
+
+    Every step after the commit (chunk counts, registry projection) is *post
+    commit*: a failure there is recorded as a warning and must never travel back
+    to the caller as "the rebuild failed", because that would trigger a
+    pre-commit compensation and leave the registry contradicting the published
+    manifest.
     """
     base = _base_manifest(cfg)
     manifest = combined_manifest(base, registry)
@@ -288,15 +338,34 @@ def rebuild_with_uploads(
         activate=activate,
         progress=progress,
         publish=publish,
+        base_generation=base_generation,
     )
-    if not activate:
+    if not activate or not result.get("committed"):
         return result
-    counts = _chunk_counts(result["path"])
+    warnings = result.setdefault("warnings", [])
+    counts: dict[str, int] = {}
+    try:
+        counts = _chunk_counts(result["path"])
+    except Exception as exc:  # projection is derived data, not the commit
+        warnings.append(f"chunk counts unavailable: {exc}")
+    failures = 0
+    last_error = None
     for record in registry.list():
-        if record["status"] in {"parsed", "indexing", "ready"}:
+        if record["status"] not in {"parsed", "indexing", "ready"}:
+            continue
+        try:
             registry.update(
-                record["doc_id"], status="ready", chunk_count=counts.get(record["doc_id"], 0)
+                record["doc_id"],
+                status="ready",
+                chunk_count=counts.get(record["doc_id"], 0),
             )
+        except Exception as exc:  # keep the committed state authoritative
+            failures += 1
+            last_error = exc
+    if failures:
+        warnings.append(
+            f"registry projection failed for {failures} document(s): {last_error}"
+        )
     return result
 
 
@@ -308,6 +377,7 @@ def reindex_document(
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
     publish: Any = None,
+    base_generation: Any = BASE_UNSET,
 ) -> dict[str, Any]:
     record = registry.get(doc_id)
     if not record:
@@ -335,7 +405,12 @@ def reindex_document(
     parsed_path.write_text(parsed.text, encoding="utf-8")
     registry.update(doc_id, status="parsed", parsed_path=str(parsed_path), error=None)
     return rebuild_with_uploads(
-        cfg, registry, embed_fn=embed_fn, progress=progress, publish=publish
+        cfg,
+        registry,
+        embed_fn=embed_fn,
+        progress=progress,
+        publish=publish,
+        base_generation=base_generation,
     )
 
 

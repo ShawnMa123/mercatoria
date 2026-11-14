@@ -264,7 +264,9 @@ class SnapshotHolder:
         """Pin the current snapshot for one request.
 
         Yields ``None`` when nothing is published; the caller turns that into a
-        503 instead of guessing.
+        503 instead of guessing. This does **not** compare the snapshot with the
+        committed head: serving paths use :meth:`acquire` with the head they
+        just read, under the publication gate.
         """
         with self._lock:
             snapshot = self._current
@@ -277,6 +279,24 @@ class SnapshotHolder:
                 with self._lock:
                     snapshot.refs -= 1
                     self._maybe_close(snapshot)
+
+    def acquire(self, generation: int) -> ServingSnapshot | None:
+        """Pin the current snapshot only if it is exactly ``generation``.
+
+        Returns ``None`` when the committed generation is not the online one,
+        so a caller can recover or refuse instead of serving the old state.
+        """
+        with self._lock:
+            snapshot = self._current
+            if snapshot is None or snapshot.generation != generation:
+                return None
+            snapshot.refs += 1
+            return snapshot
+
+    def release(self, snapshot: ServingSnapshot) -> None:
+        with self._lock:
+            snapshot.refs -= 1
+            self._maybe_close(snapshot)
 
     def _maybe_close(self, snapshot: ServingSnapshot) -> None:
         if snapshot.retired and snapshot.refs <= 0:

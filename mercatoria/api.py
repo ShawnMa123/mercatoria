@@ -5,10 +5,10 @@ from __future__ import annotations
 import copy
 import threading
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
@@ -44,7 +44,6 @@ from .snapshot import (
     ServingSnapshot,
     SnapshotError,
     SnapshotHolder,
-    manifest_from_index,
 )
 from .store import (
     CorpusUnavailable,
@@ -56,6 +55,54 @@ from .store import (
 )
 
 CONFIG_SECTIONS = ("chunking", "embedding", "retrieval", "rerank", "answer")
+
+
+class ManagementBusy(RuntimeError):
+    """Another management operation owns the configuration and build inputs."""
+
+    def __init__(self, current: str, requested: str):
+        super().__init__(
+            f"management operation '{current}' is in progress; "
+            f"cannot start '{requested}'"
+        )
+        self.current = current
+        self.requested = requested
+
+
+class ManagementGate:
+    """One management operation at a time, released by token, not by thread.
+
+    A configuration update, rebuild, upload, delete, metadata update, reindex,
+    activation or rollback mutates the same config/base/registry inputs. Letting
+    two of them interleave produced a build with the *old* config on the *new*
+    base (and silently lost one of two concurrent config fields). The gate is a
+    plain lock plus an owner token, because the owner is released from the
+    background worker thread, which a thread-affine RLock cannot express.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._owner: str | None = None
+        self._token: object | None = None
+
+    @property
+    def owner(self) -> str | None:
+        with self._lock:
+            return self._owner
+
+    def claim(self, kind: str) -> object:
+        with self._lock:
+            if self._token is not None:
+                raise ManagementBusy(self._owner or "unknown", kind)
+            token = object()
+            self._owner, self._token = kind, token
+            return token
+
+    def release(self, token: object) -> None:
+        with self._lock:
+            if self._token is token:
+                self._owner = None
+                self._token = None
 
 
 def _now() -> str:
@@ -142,7 +189,9 @@ class Service:
         self.desired_error: str | None = None
         self.pending_rebuild = False
         self.jobs: dict[str, dict[str, Any]] = {}
-        self.job_lock = threading.Lock()
+        # One management operation at a time; the token is released by whoever
+        # finishes the operation (possibly a background worker thread).
+        self.management = ManagementGate()
         self.snapshots = SnapshotHolder()
         # Ownership comes before anything else: a process that cannot take the
         # directory lock must not open (or migrate) the writable control and
@@ -246,6 +295,35 @@ class Service:
         snapshot = self.snapshots.current()
         return copy.deepcopy(snapshot.config if snapshot is not None else self.cfg)
 
+    @contextmanager
+    def serving_lease(self) -> Iterator[ServingSnapshot | None]:
+        """Lease the committed head for one request, never a stale snapshot.
+
+        The head check and the pin happen under the publication gate, so a
+        commit cannot land between them (a check-then-lease would leave that
+        window). A committed head that is not online yet triggers one
+        deterministic reload; if it still cannot be served the request yields
+        ``None`` and the caller answers 503 rather than the old state. A request
+        that already holds a lease keeps it and finishes on its snapshot.
+        """
+        for _attempt in range(2):
+            with self.coordinator.gate:
+                head = self.control.head_generation()
+                snapshot = (
+                    self.snapshots.acquire(head) if head is not None else None
+                )
+            if head is None:
+                yield None
+                return
+            if snapshot is not None:
+                try:
+                    yield snapshot
+                finally:
+                    self.snapshots.release(snapshot)
+                return
+            self.reload()
+        yield None
+
     def require_retriever(self) -> Retriever:
         snapshot = self.snapshots.current()
         if snapshot is None:
@@ -257,6 +335,14 @@ class Service:
     # -- configuration -----------------------------------------------------
 
     def apply_config(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Accept one config update as the only management operation in flight."""
+        token = self._claim_management("config")
+        try:
+            return self._apply_config(body)
+        finally:
+            self._release_management(token)
+
+    def _apply_config(self, body: dict[str, Any]) -> dict[str, Any]:
         """Persist the desired config and publish its runtime part immediately.
 
         A build change (chunking or embedding space) is desired state only: it
@@ -265,27 +351,34 @@ class Service:
         leaks into the running state. Everything accepted here is durable
         (control DB), because a temporary, restart-losing setting meant a
         snapshot_version could serve a different config after a restart.
+
+        The runtime publication and the accepted desired intent are one control
+        transaction, so a crash or a failed desired write cannot leave the head
+        ahead of the operator's intent (or the reverse).
         """
         updated = merge_config_update(self.cfg, body)
         snapshot = self.snapshots.current()
         active = snapshot.config if snapshot is not None else self.deployment_cfg
         serving = with_active_build(updated, active)
+        desired_payload = snapshot_config_payload(updated)
         runtime_changed = (
             snapshot is not None
             and serving.runtime_fingerprint() != snapshot.runtime_config_id
         )
         warnings: list[str] = []
-        try:
-            if runtime_changed:
-                self.coordinator.publish_runtime(serving)
-        except PostCommitError as exc:
-            # The new state is committed. Adopt the accepted config, but do not
-            # pretend the old snapshot is current: readiness reports not-ready.
-            self.control.set_desired_config(snapshot_config_payload(updated))
-            self.cfg = updated
-            self.error = str(exc)
-            raise
-        self.control.set_desired_config(snapshot_config_payload(updated))
+        if runtime_changed:
+            try:
+                self.coordinator.publish_runtime(serving, desired_config=desired_payload)
+            except PostCommitError as exc:
+                # Generation and desired intent are one transaction, so the
+                # accepted config is durable. Do not pretend the old snapshot
+                # is current: readiness reports not-ready.
+                self.cfg = updated
+                self.error = str(exc)
+                raise
+        else:
+            # Pending-only acceptance: one atomic row upsert, no head move.
+            self.control.set_desired_config(desired_payload)
         self.cfg = updated
         if body.get("save"):
             # The control DB already accepted the change; the deployment file is
@@ -319,6 +412,24 @@ class Service:
 
     # -- jobs --------------------------------------------------------------
 
+    def _claim_management(self, kind: str) -> object:
+        return self.management.claim(kind)
+
+    def _release_management(self, token: object) -> None:
+        self.management.release(token)
+
+    def _build_inputs(self, *, desired: bool = False) -> tuple[AppConfig, int | None]:
+        """Config and base generation from one controlled snapshot.
+
+        Ordinary document operations build with the active config; an explicit
+        rebuild builds the desired one. The management token guarantees no other
+        publication can move the head between this snapshot and the CAS, so the
+        build cannot pair an old config with a newer base.
+        """
+        snapshot = self.snapshots.current()
+        cfg = copy.deepcopy(self.cfg) if desired else self.active_build_cfg()
+        return cfg, (snapshot.generation if snapshot is not None else None)
+
     def _new_job(self, kind: str) -> dict[str, Any]:
         job_id = uuid.uuid4().hex[:10]
         job = {
@@ -334,17 +445,13 @@ class Service:
         self.jobs[job_id] = job
         return job
 
-    def _claim_job(self) -> None:
-        if not self.job_lock.acquire(blocking=False):
-            raise IngestError("another ingest/rebuild job is running")
-
     def _progress(self, job: dict[str, Any]):
         def progress(stage: str, done: int, total: int) -> None:
             job["progress"] = {"stage": stage, "done": done, "total": total}
 
         return progress
 
-    def _finish_job(self, job: dict[str, Any], work) -> None:
+    def _finish_job(self, job: dict[str, Any], work, token: object) -> None:
         try:
             job["result"] = work()
             job["status"] = "done"
@@ -359,62 +466,94 @@ class Service:
             job["error"] = f"{type(exc).__name__}: {exc}"
         finally:
             job["finished_at"] = _now()
-            self.job_lock.release()
+            self._release_management(token)
 
-    def _run_or_queue(self, job: dict[str, Any], work, background: bool) -> dict[str, Any]:
+    def _start_background(self, job: dict[str, Any], work, token: object) -> None:
+        try:
+            threading.Thread(
+                target=lambda: self._finish_job(job, work, token), daemon=True
+            ).start()
+        except BaseException as exc:
+            # The worker never ran, so ownership must not stay claimed.
+            job["status"] = "error"
+            job["error"] = f"{type(exc).__name__}: {exc}"
+            job["finished_at"] = _now()
+            self._release_management(token)
+            raise
+
+    def _run_or_queue(
+        self, job: dict[str, Any], work, token: object, background: bool
+    ) -> dict[str, Any]:
         if background:
-            threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+            self._start_background(job, work, token)
             return {"job_id": job["job_id"], "status": "running"}
-        self._finish_job(job, work)
+        self._finish_job(job, work, token)
         return {"job_id": job["job_id"], **job}
 
     # -- management operations --------------------------------------------
 
     def start_rebuild(self, body: dict[str, Any]) -> dict[str, Any]:
-        config_body = {
-            key: body[key] for key in CONFIG_SECTIONS if isinstance(body.get(key), dict)
-        }
-        if body.get("save"):
-            config_body["save"] = True
-        if config_body:
-            self.apply_config(config_body)
-        self._claim_job()
-        job = self._new_job("rebuild")
-        cfg = copy.deepcopy(self.cfg)
-        activate = bool(body.get("activate", True))
+        token = self._claim_management("rebuild")
+        try:
+            config_body = {
+                key: body[key] for key in CONFIG_SECTIONS if isinstance(body.get(key), dict)
+            }
+            if body.get("save"):
+                config_body["save"] = True
+            if config_body:
+                # Apply under the token we already own: a busy rebuild must not
+                # change the config before reporting 409.
+                self._apply_config(config_body)
+            # This rebuild is about to publish the desired profile, so record it
+            # first: a crash mid-build keeps the accepted intent.
+            self.control.set_desired_config(snapshot_config_payload(self.cfg))
+            job = self._new_job("rebuild")
+            cfg, base_generation = self._build_inputs(desired=True)
+            activate = bool(body.get("activate", True))
 
-        def work() -> dict[str, Any]:
-            result = rebuild_with_uploads(
-                cfg,
-                self.registry,
-                embed_fn=self.embed_fn,
-                progress=self._progress(job),
-                activate=activate,
-                publish=self.coordinator,
+            def work() -> dict[str, Any]:
+                result = rebuild_with_uploads(
+                    cfg,
+                    self.registry,
+                    embed_fn=self.embed_fn,
+                    progress=self._progress(job),
+                    activate=activate,
+                    publish=self.coordinator,
+                    base_generation=base_generation,
+                )
+                self._sync_after_publish(result)
+                return result
+
+            return self._run_or_queue(
+                job, work, token, bool(body.get("background", True))
             )
-            self._sync_after_publish(result)
-            return result
-
-        return self._run_or_queue(job, work, bool(body.get("background", True)))
+        except BaseException:
+            self._release_management(token)
+            raise
 
     def start_ingest(self, items: list[UploadItem]) -> dict[str, Any]:
-        self._claim_job()
-        job = self._new_job("ingest")
-        cfg = self.active_build_cfg()
+        token = self._claim_management("ingest")
+        try:
+            job = self._new_job("ingest")
+            cfg, base_generation = self._build_inputs()
 
-        def work() -> dict[str, Any]:
-            result = ingest_batch(
-                cfg,
-                self.registry,
-                items,
-                embed_fn=self.embed_fn,
-                progress=self._progress(job),
-                publish=self.coordinator,
-            )
-            self._sync_after_publish(result)
-            return result
+            def work() -> dict[str, Any]:
+                result = ingest_batch(
+                    cfg,
+                    self.registry,
+                    items,
+                    embed_fn=self.embed_fn,
+                    progress=self._progress(job),
+                    publish=self.coordinator,
+                    base_generation=base_generation,
+                )
+                self._sync_after_publish(result)
+                return result
 
-        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+            self._start_background(job, work, token)
+        except BaseException:
+            self._release_management(token)
+            raise
         return {
             "job_id": job["job_id"],
             "status": "running",
@@ -422,124 +561,139 @@ class Service:
         }
 
     def start_delete(self, doc_id: str) -> dict[str, Any]:
-        record = self.registry.get_raw(doc_id)
-        if record is None or record["status"] == "deleted":
-            raise IngestError(f"document not found: {doc_id}")
-        self._claim_job()
-        job = self._new_job("delete")
-        cfg = self.active_build_cfg()
-        previous = record["status"]
+        token = self._claim_management("delete")
+        try:
+            record = self.registry.get_raw(doc_id)
+            if record is None or record["status"] == "deleted":
+                raise IngestError(f"document not found: {doc_id}")
+            job = self._new_job("delete")
+            cfg, base_generation = self._build_inputs()
+            previous = record["status"]
 
-        def work() -> dict[str, Any]:
-            # Logical delete: the record, the original file and the parsed
-            # revision stay on disk. The document only leaves the manifest
-            # once the new index is published, so a failed rebuild leaves the
-            # old state completely intact.
-            self.registry.update(doc_id, status="deleted")
-            try:
-                result = rebuild_with_uploads(
-                    cfg,
-                    self.registry,
-                    embed_fn=self.embed_fn,
-                    progress=self._progress(job),
-                    publish=self.coordinator,
-                )
-            except PostCommitError:
-                # Committed: restoring the old status would disagree with the
-                # published manifest. Readiness reports the install failure.
-                raise
-            except Exception:
-                self.registry.update(doc_id, status=previous)
-                raise
-            self._sync_after_publish(result)
-            return {"deleted": doc_id, **result}
+            def work() -> dict[str, Any]:
+                # Logical delete: the record, the original file and the parsed
+                # revision stay on disk. The document only leaves the manifest
+                # once the new index is published, so a failed rebuild leaves the
+                # old state completely intact.
+                self.registry.update(doc_id, status="deleted")
+                try:
+                    result = rebuild_with_uploads(
+                        cfg,
+                        self.registry,
+                        embed_fn=self.embed_fn,
+                        progress=self._progress(job),
+                        publish=self.coordinator,
+                        base_generation=base_generation,
+                    )
+                except PostCommitError:
+                    # Committed: restoring the old status would disagree with the
+                    # published manifest. Readiness reports the install failure.
+                    raise
+                except Exception:
+                    self.registry.update(doc_id, status=previous)
+                    raise
+                self._sync_after_publish(result)
+                return {"deleted": doc_id, **result}
 
-        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+            self._start_background(job, work, token)
+        except BaseException:
+            self._release_management(token)
+            raise
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
     def start_reindex(self, doc_id: str) -> dict[str, Any]:
-        if self.registry.get(doc_id) is None:
-            raise IngestError(f"document not found: {doc_id}")
-        self._claim_job()
-        job = self._new_job("reindex")
-        cfg = self.active_build_cfg()
+        token = self._claim_management("reindex")
+        try:
+            if self.registry.get(doc_id) is None:
+                raise IngestError(f"document not found: {doc_id}")
+            job = self._new_job("reindex")
+            cfg, base_generation = self._build_inputs()
 
-        def work() -> dict[str, Any]:
-            result = reindex_document(
-                cfg,
-                self.registry,
-                doc_id,
-                embed_fn=self.embed_fn,
-                progress=self._progress(job),
-                publish=self.coordinator,
-            )
-            self._sync_after_publish(result)
-            return result
-
-        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
-        return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
-
-    def start_update(self, doc_id: str, fields: dict[str, Any]) -> dict[str, Any]:
-        record = self.registry.get(doc_id)
-        if record is None:
-            raise IngestError(f"document not found: {doc_id}")
-        values: dict[str, Any] = {}
-        for key in (
-            "jurisdiction",
-            "language",
-            "precision",
-            "source_doc",
-            "effective_from",
-            "effective_to",
-        ):
-            if key in fields:
-                values[key] = fields[key]
-        if "jurisdiction" in values:
-            values["jurisdiction"] = str(values["jurisdiction"]).strip().upper()
-        if "source_doc" in values:
-            source = str(values["source_doc"]).strip()
-            if not source:
-                raise IngestError("source_doc cannot be empty")
-            values["source_doc"] = source
-        if "applies_to" in fields:
-            raw = fields["applies_to"]
-            if isinstance(raw, str):
-                raw = raw.replace(";", ",").split(",")
-            if not isinstance(raw, list):
-                raise IngestError("applies_to must be a list or comma-separated string")
-            values["applies_to"] = [
-                str(item).strip().lower() for item in raw if str(item).strip()
-            ]
-        if not values:
-            raise IngestError("no updatable fields")
-        self._claim_job()
-        job = self._new_job("update")
-        cfg = self.active_build_cfg()
-        previous = {key: record.get(key) for key in values}
-
-        def work() -> dict[str, Any]:
-            self.registry.update(doc_id, **values)
-            try:
-                result = rebuild_with_uploads(
+            def work() -> dict[str, Any]:
+                result = reindex_document(
                     cfg,
                     self.registry,
+                    doc_id,
                     embed_fn=self.embed_fn,
                     progress=self._progress(job),
                     publish=self.coordinator,
+                    base_generation=base_generation,
                 )
-            except PostCommitError:
-                # Committed: the published manifest already carries the new
-                # metadata, so restoring the old values would contradict it.
-                raise
-            except Exception:
-                # A failed rebuild must not leave metadata that disagrees
-                # with the index that is still serving.
-                self.registry.update(doc_id, **previous)
-                raise
-            self._sync_after_publish(result)
-            return {"updated": doc_id, "fields": values, **result}
+                self._sync_after_publish(result)
+                return result
 
-        threading.Thread(target=lambda: self._finish_job(job, work), daemon=True).start()
+            self._start_background(job, work, token)
+        except BaseException:
+            self._release_management(token)
+            raise
+        return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
+
+    def start_update(self, doc_id: str, fields: dict[str, Any]) -> dict[str, Any]:
+        token = self._claim_management("update")
+        try:
+            record = self.registry.get(doc_id)
+            if record is None:
+                raise IngestError(f"document not found: {doc_id}")
+            values: dict[str, Any] = {}
+            for key in (
+                "jurisdiction",
+                "language",
+                "precision",
+                "source_doc",
+                "effective_from",
+                "effective_to",
+            ):
+                if key in fields:
+                    values[key] = fields[key]
+            if "jurisdiction" in values:
+                values["jurisdiction"] = str(values["jurisdiction"]).strip().upper()
+            if "source_doc" in values:
+                source = str(values["source_doc"]).strip()
+                if not source:
+                    raise IngestError("source_doc cannot be empty")
+                values["source_doc"] = source
+            if "applies_to" in fields:
+                raw = fields["applies_to"]
+                if isinstance(raw, str):
+                    raw = raw.replace(";", ",").split(",")
+                if not isinstance(raw, list):
+                    raise IngestError("applies_to must be a list or comma-separated string")
+                values["applies_to"] = [
+                    str(item).strip().lower() for item in raw if str(item).strip()
+                ]
+            if not values:
+                raise IngestError("no updatable fields")
+            job = self._new_job("update")
+            cfg, base_generation = self._build_inputs()
+            previous = {key: record.get(key) for key in values}
+
+            def work() -> dict[str, Any]:
+                self.registry.update(doc_id, **values)
+                try:
+                    result = rebuild_with_uploads(
+                        cfg,
+                        self.registry,
+                        embed_fn=self.embed_fn,
+                        progress=self._progress(job),
+                        publish=self.coordinator,
+                        base_generation=base_generation,
+                    )
+                except PostCommitError:
+                    # Committed: the published manifest already carries the new
+                    # metadata, so restoring the old values would contradict it.
+                    raise
+                except Exception:
+                    # A failed rebuild must not leave metadata that disagrees
+                    # with the index that is still serving.
+                    self.registry.update(doc_id, **previous)
+                    raise
+                self._sync_after_publish(result)
+                return {"updated": doc_id, "fields": values, **result}
+
+            self._start_background(job, work, token)
+        except BaseException:
+            self._release_management(token)
+            raise
         return {"job_id": job["job_id"], "status": "running", "doc_id": doc_id}
 
     def publish_staged(self, index_version: str) -> dict[str, Any]:
@@ -553,37 +707,54 @@ class Service:
         path = index_path(self.cfg.resolved_index_dir(), index_version)
         if not path.is_file():
             raise FileNotFoundError(f"index version not found: {index_version}")
+        token = self._claim_management("activate")
         try:
-            index = open_index(path)
-        except (ValueError, RuntimeError) as exc:
-            raise SnapshotError(
-                f"candidate {index_version} cannot be opened: {exc}"
-            ) from exc
-        try:
-            record = index.candidate if isinstance(index.candidate, dict) else None
-            manifest = record.get("manifest") if record else None
-            if not isinstance(manifest, dict) or "docs" not in manifest:
-                manifest = manifest_from_index(index)
-            if record is not None:
-                expected = record.get("base_generation")
-            else:
-                expected = self.control.head_generation()
-            candidate_config = index.config if isinstance(index.config, dict) else {}
-        finally:
-            index.close()
-        if candidate_config:
             try:
-                cfg = config_from_sections(self.deployment_cfg, candidate_config)
-            except ConfigError as exc:
+                index = open_index(path)
+            except (ValueError, RuntimeError) as exc:
                 raise SnapshotError(
-                    f"candidate {index_version} has an unusable config: {exc}"
+                    f"candidate {index_version} cannot be opened: {exc}"
                 ) from exc
-        else:
-            snapshot = self.snapshots.current()
-            cfg = snapshot.config if snapshot is not None else self.cfg
-        result = self.coordinator.publish(
-            index_version, manifest, cfg, expected_generation=expected
-        )
+            try:
+                record = index.candidate if isinstance(index.candidate, dict) else None
+                if record is None:
+                    raise SnapshotError(
+                        f"candidate {index_version} has no recorded manifest/base; "
+                        "rebuild it before activating (an explicit rebuild or a "
+                        "snapshot rollback are the supported recovery paths)"
+                    )
+                if "base_generation" not in record:
+                    raise SnapshotError(
+                        f"candidate {index_version} does not record a base generation; "
+                        "rebuild it instead of guessing the current head"
+                    )
+                manifest = record.get("manifest")
+                if not isinstance(manifest, dict) or not isinstance(
+                    manifest.get("docs"), list
+                ):
+                    raise SnapshotError(
+                        f"candidate {index_version} has an invalid manifest record; "
+                        "rebuild it before activating"
+                    )
+                expected = record["base_generation"]
+                candidate_config = index.config if isinstance(index.config, dict) else {}
+            finally:
+                index.close()
+            if candidate_config:
+                try:
+                    cfg = config_from_sections(self.deployment_cfg, candidate_config)
+                except ConfigError as exc:
+                    raise SnapshotError(
+                        f"candidate {index_version} has an unusable config: {exc}"
+                    ) from exc
+            else:
+                snapshot = self.snapshots.current()
+                cfg = snapshot.config if snapshot is not None else self.cfg
+            result = self.coordinator.publish(
+                index_version, manifest, cfg, expected_generation=expected
+            )
+        finally:
+            self._release_management(token)
         self._sync_state(self.snapshots.current())
         return {**result.describe(), "base_generation": expected}
 
@@ -597,7 +768,11 @@ class Service:
         target = self.control.get(int(snapshot_version))
         if target is None:
             raise KeyError(f"unknown snapshot_version: {snapshot_version}")
-        result = self.coordinator.rollback(target)
+        token = self._claim_management("rollback")
+        try:
+            result = self.coordinator.rollback(target)
+        finally:
+            self._release_management(token)
         self._sync_state(self.snapshots.current())
         return {**result.describe(), "source_snapshot_version": target.snapshot_version}
 
@@ -640,6 +815,23 @@ def create_app(
 
     def write_error(exc: Exception, status: int = 409) -> HTTPException:
         return HTTPException(status_code=status, detail=str(exc))
+
+    @app.exception_handler(ManagementBusy)
+    async def management_busy(_request, exc: ManagementBusy) -> JSONResponse:
+        # A management write was refused before changing anything: the current
+        # operation owns the config/build inputs.
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": str(exc),
+                "error": {
+                    "code": "management_busy",
+                    "message": str(exc),
+                    "retryable": True,
+                    "details": {"current": exc.current, "requested": exc.requested},
+                },
+            },
+        )
 
     @app.get("/health")
     @app.get("/health/ready")
@@ -725,11 +917,8 @@ def create_app(
     @app.post("/retrieve")
     @app.post("/v1/retrieve")
     def retrieve(body: dict[str, Any]) -> Any:
-        snapshot = service.current()
-        if snapshot is None:
-            return unavailable()
         try:
-            with service.snapshots.lease() as leased:
+            with service.serving_lease() as leased:
                 if leased is None:
                     return unavailable()
                 return _retrieve(body, leased)
@@ -759,7 +948,7 @@ def create_app(
         return depth
 
     def _with_index(call) -> Any:
-        with service.snapshots.lease() as snapshot:
+        with service.serving_lease() as snapshot:
             if snapshot is None:
                 raise HTTPException(status_code=503, detail=service.error or "index is not built")
             return call(snapshot)
@@ -821,11 +1010,8 @@ def create_app(
             # An agent that already rewrote the question must be able to opt
             # out of the history-concatenation heuristic.
             query = _retrieval_query(question, history) if rewrite else question
-        snapshot = service.current()
-        if snapshot is None:
-            return unavailable()
         try:
-            with service.snapshots.lease() as leased:
+            with service.serving_lease() as leased:
                 if leased is None:
                     return unavailable()
                 result = _retrieve({**body, "queries": body.get("queries") or [query]}, leased)
@@ -972,10 +1158,13 @@ def create_app(
         record = service.registry.get(doc_id)
         if record is None:
             raise HTTPException(status_code=404, detail="document not found")
-        snapshot = service.current()
-        active = snapshot.index.docs if snapshot is not None else {}
-        record["snapshot_version"] = snapshot.snapshot_version if snapshot else None
-        record["active"] = doc_id in active
+        with service.serving_lease() as snapshot:
+            if snapshot is None:
+                raise HTTPException(
+                    status_code=503, detail=service.error or "index is not built"
+                )
+            record["snapshot_version"] = snapshot.snapshot_version
+            record["active"] = doc_id in snapshot.index.docs
         return record
 
     @app.delete("/v1/documents/{doc_id}")

@@ -80,6 +80,19 @@ class PostCommitError(RuntimeError):
         self.result = result
 
 
+def committed_failure(exc: BaseException) -> PublicationResult | None:
+    """The publication result if ``exc`` happened *after* a commit.
+
+    This is the explicit record callers branch on, not an exception type name:
+    every post-commit path either appends a warning to the result or raises an
+    error carrying ``committed=True`` and the result.
+    """
+    result = getattr(exc, "result", None)
+    if getattr(exc, "committed", False) and isinstance(result, PublicationResult):
+        return result
+    return None
+
+
 def prepare_snapshot(
     index_version: str,
     manifest: dict[str, Any],
@@ -172,7 +185,8 @@ class PublicationCoordinator:
     # -- commit ------------------------------------------------------------
 
     def _commit(self, prepared: ServingSnapshot, *, expected_generation: int | None,
-                created_by_job_id: str | None) -> ControlState:
+                created_by_job_id: str | None,
+                desired_config: dict[str, Any] | None = None) -> ControlState:
         expect_empty = expected_generation is None
         state = self.control.publish(
             index_version=prepared.index_version,
@@ -183,6 +197,7 @@ class PublicationCoordinator:
             expect_empty=expect_empty,
             created_by_job_id=created_by_job_id,
             config=snapshot_config_payload(prepared.config),
+            desired_config=desired_config,
         )
         prepared.generation = state.generation
         prepared.snapshot_version = state.snapshot_version
@@ -197,12 +212,14 @@ class PublicationCoordinator:
         expected_generation: int | None,
         created_by_job_id: str | None = None,
         install: bool = True,
+        desired_config: dict[str, Any] | None = None,
     ) -> PublicationResult:
         """Prepare, commit, export, then (optionally) install one new state.
 
         ``expected_generation=None`` means "the head must still be empty": a
         first publication cannot quietly overwrite a state that appeared while
-        it was being built.
+        it was being built. ``desired_config`` is committed in the same control
+        transaction as the generation.
         """
         prepared = self.prepare(index_version, manifest, cfg)
         try:
@@ -210,6 +227,7 @@ class PublicationCoordinator:
                 prepared,
                 expected_generation=expected_generation,
                 created_by_job_id=created_by_job_id,
+                desired_config=desired_config,
             )
         except BaseException:
             prepared.close()
@@ -226,7 +244,9 @@ class PublicationCoordinator:
             return result
         return self._install_or_fail(prepared, result)
 
-    def publish_runtime(self, cfg: AppConfig) -> PublicationResult:
+    def publish_runtime(
+        self, cfg: AppConfig, *, desired_config: dict[str, Any] | None = None
+    ) -> PublicationResult:
         """Publish a config-only state over the current index."""
         state = self.control.head()
         if state is None:
@@ -236,6 +256,7 @@ class PublicationCoordinator:
             state.manifest,
             cfg,
             expected_generation=state.generation,
+            desired_config=desired_config,
         )
 
     def publish_built(
@@ -358,6 +379,7 @@ __all__ = [
     "PostCommitError",
     "PublicationCoordinator",
     "PublicationResult",
+    "committed_failure",
     "prepare_snapshot",
     "legacy_index_version",
     "import_legacy",

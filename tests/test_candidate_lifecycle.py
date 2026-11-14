@@ -261,15 +261,70 @@ class StagedActivationTests(CandidateTestCase):
         self.assertEqual(self.head()["generation"], 1)
         self.assertEqual(service.current().index_version, first["version"])
 
-    def test_candidate_without_record_uses_current_base(self) -> None:
-        """Compatibility: a candidate built before candidate records existed."""
+    def test_candidate_without_record_is_rejected(self) -> None:
+        """G07: no recorded evidence means no implicit base from the current head."""
         path = self.copy_version("legacy-candidate")
         self.sql(path, "DELETE FROM meta WHERE key='candidate'")
         service = self.service()
         client = self.client(service)
+        head_before = self.head()
+        online_before = service.current().snapshot_version
         resp = client.post("/v1/admin/indexes/legacy-candidate/activate")
-        self.assertEqual(resp.status_code, 200, resp.text)
-        self.assertEqual(self.head()["index_version"], "legacy-candidate")
+        self.assertEqual(resp.status_code, 409, resp.text)
+        self.assertIn("no recorded manifest/base", resp.text)
+        self.assertEqual(self.head(), head_before)
+        self.assertEqual(service.current().snapshot_version, online_before)
+
+    def test_candidate_without_base_field_is_rejected(self) -> None:
+        path = self.copy_version("no-base")
+        conn = sqlite3.connect(path)
+        try:
+            row = conn.execute(
+                "SELECT value FROM meta WHERE key='candidate'"
+            ).fetchone()
+            record = json.loads(row[0])
+            record.pop("base_generation", None)
+            conn.execute(
+                "UPDATE meta SET value=? WHERE key='candidate'", (json.dumps(record),)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        service = self.service()
+        head_before = self.head()
+        resp = self.client(service).post("/v1/admin/indexes/no-base/activate")
+        self.assertEqual(resp.status_code, 409, resp.text)
+        self.assertIn("base generation", resp.text)
+        self.assertEqual(self.head(), head_before)
+
+    def test_candidate_with_invalid_manifest_is_rejected(self) -> None:
+        path = self.copy_version("bad-manifest")
+        record = {"base_generation": self.head()["generation"], "manifest": {}}
+        conn = sqlite3.connect(path)
+        try:
+            conn.execute(
+                "UPDATE meta SET value=? WHERE key='candidate'",
+                (json.dumps(record),),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        service = self.service()
+        head_before = self.head()
+        resp = self.client(service).post("/v1/admin/indexes/bad-manifest/activate")
+        self.assertEqual(resp.status_code, 409, resp.text)
+        self.assertIn("invalid manifest", resp.text)
+        self.assertEqual(self.head(), head_before)
+
+    def test_recorded_base_none_still_means_expected_empty(self) -> None:
+        self.forget_control()
+        empty = {"manifest_version": "test", "corpus_dir": ".", "documents": 0, "docs": []}
+        staged = self.staged(empty)
+        service = self.service()
+        first = self.client(service).post(f"/v1/admin/indexes/{staged['version']}/activate")
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(first.json()["base_generation"], None)
+        self.assertEqual(self.head()["generation"], 1)
 
 
 class VectorAlignmentTests(CandidateTestCase):
