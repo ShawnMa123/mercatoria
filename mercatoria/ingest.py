@@ -25,6 +25,10 @@ from .store import BASE_UNSET, build_index, index_path
 
 Progress = Callable[[str, int, int], None]
 
+# Statuses a published document can be projected from: the build consumed them,
+# so the committed manifest already describes them.
+READY_STATUSES = {"parsed", "indexing", "ready"}
+
 
 class IngestError(RuntimeError):
     pass
@@ -237,31 +241,13 @@ def ingest_batch(
 
     warnings: list[str] = result.setdefault("warnings", [])
     # Post-commit from here on: progress, counts and the registry projection are
-    # derived from an already published state.
+    # derived from an already published state, so a failure there is a warning.
     if progress:
         try:
             progress("index", len(manifest["docs"]), len(manifest["docs"]))
         except Exception as exc:
             warnings.append(f"progress report failed after commit: {exc}")
-    counts: dict[str, int] = {}
-    try:
-        counts = _chunk_counts(result["path"])
-    except Exception as exc:
-        warnings.append(f"chunk counts unavailable: {exc}")
-    failures = 0
-    last_error = None
-    for doc in parsed:
-        try:
-            registry.update(
-                doc["doc_id"], status="ready", chunk_count=counts.get(doc["doc_id"], 0)
-            )
-        except Exception as exc:
-            failures += 1
-            last_error = exc
-    if failures:
-        warnings.append(
-            f"registry projection failed for {failures} document(s): {last_error}"
-        )
+    _finish_committed(registry, result, doc_ids=[doc["doc_id"] for doc in parsed])
 
     return {
         "documents": skipped + parsed + failed,
@@ -322,11 +308,12 @@ def rebuild_with_uploads(
     ``activate=False`` leaves a candidate index unpublished; registry statuses
     only move to "ready" when the build actually became the served state.
 
-    Every step after the commit (chunk counts, registry projection) is *post
-    commit*: a failure there is recorded as a warning and must never travel back
-    to the caller as "the rebuild failed", because that would trigger a
-    pre-commit compensation and leave the registry contradicting the published
-    manifest.
+    Every step after the commit (chunk counts, registry enumeration, per-document
+    projection) is *post commit*: it runs through :func:`_finish_committed`, so a
+    failure there is recorded as a warning and can never travel back to the
+    caller as "the rebuild failed". Letting one escape would trigger a pre-commit
+    compensation in the caller and leave the registry contradicting the
+    published manifest.
     """
     base = _base_manifest(cfg)
     manifest = combined_manifest(base, registry)
@@ -342,22 +329,74 @@ def rebuild_with_uploads(
     )
     if not activate or not result.get("committed"):
         return result
-    warnings = result.setdefault("warnings", [])
+    return _finish_committed(registry, result)
+
+
+def _finish_committed(
+    registry: DocumentRegistry,
+    result: dict[str, Any],
+    doc_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """The whole post-commit tail. It never looks like a pre-commit failure.
+
+    The published manifest is the authority; a registry projection is derived
+    data. Every failure here is appended to ``result["warnings"]`` and the
+    committed result is returned unchanged, so callers keep the real outcome.
+    """
+    warnings: list[str] = result.setdefault("warnings", [])
+    path = result.get("path")
+    if not path:
+        warnings.append(
+            "post-commit registry projection skipped: the build result has no index path"
+        )
+        return result
+    try:
+        _project_after_commit(
+            registry, index_path=str(path), warnings=warnings, doc_ids=doc_ids
+        )
+    except Exception as exc:  # last resort: the commit still happened
+        warnings.append(f"post-commit registry projection failed: {exc}")
+    return result
+
+
+def _project_after_commit(
+    registry: DocumentRegistry,
+    *,
+    index_path: str,
+    warnings: list[str],
+    doc_ids: list[str] | None = None,
+) -> None:
+    """Mark committed documents ready and record their chunk counts.
+
+    ``doc_ids=None`` covers every record the build consumed (the rebuild path);
+    the ingest path names the documents it just added. Enumeration, iteration,
+    chunk counting and each update are guarded separately, because one broken
+    step must not skip the rest or hide the committed result.
+    """
     counts: dict[str, int] = {}
     try:
-        counts = _chunk_counts(result["path"])
+        counts = _chunk_counts(index_path)
     except Exception as exc:  # projection is derived data, not the commit
         warnings.append(f"chunk counts unavailable: {exc}")
+    if doc_ids is None:
+        try:
+            records = list(registry.list())
+        except Exception as exc:
+            warnings.append(f"registry enumeration failed after commit: {exc}")
+            return
+        targets = [
+            str(record["doc_id"])
+            for record in records
+            if record.get("status") in READY_STATUSES
+        ]
+    else:
+        targets = list(doc_ids)
     failures = 0
-    last_error = None
-    for record in registry.list():
-        if record["status"] not in {"parsed", "indexing", "ready"}:
-            continue
+    last_error: BaseException | None = None
+    for doc_id in targets:
         try:
             registry.update(
-                record["doc_id"],
-                status="ready",
-                chunk_count=counts.get(record["doc_id"], 0),
+                doc_id, status="ready", chunk_count=counts.get(doc_id, 0)
             )
         except Exception as exc:  # keep the committed state authoritative
             failures += 1
@@ -366,7 +405,6 @@ def rebuild_with_uploads(
         warnings.append(
             f"registry projection failed for {failures} document(s): {last_error}"
         )
-    return result
 
 
 def reindex_document(

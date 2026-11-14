@@ -38,7 +38,12 @@ from .ingest import (
 )
 from .lock import DirectoryLock
 from .manifest import write_manifest
-from .publication import PostCommitError, PublicationCoordinator, import_legacy
+from .publication import (
+    PostCommitError,
+    PublicationCoordinator,
+    committed_failure,
+    import_legacy,
+)
 from .retrieve import Retriever
 from .snapshot import (
     ServingSnapshot,
@@ -587,12 +592,13 @@ class Service:
                         publish=self.coordinator,
                         base_generation=base_generation,
                     )
-                except PostCommitError:
-                    # Committed: restoring the old status would disagree with the
-                    # published manifest. Readiness reports the install failure.
-                    raise
-                except Exception:
-                    self.registry.update(doc_id, status=previous)
+                except BaseException as exc:
+                    # Only an *uncommitted* failure means the old manifest is
+                    # still live. A committed result (even a post-commit one)
+                    # is reported as is; restoring the status would contradict
+                    # the published head.
+                    if committed_failure(exc) is None:
+                        self.registry.update(doc_id, status=previous)
                     raise
                 self._sync_after_publish(result)
                 return {"deleted": doc_id, **result}
@@ -680,14 +686,12 @@ class Service:
                         publish=self.coordinator,
                         base_generation=base_generation,
                     )
-                except PostCommitError:
-                    # Committed: the published manifest already carries the new
-                    # metadata, so restoring the old values would contradict it.
-                    raise
-                except Exception:
-                    # A failed rebuild must not leave metadata that disagrees
-                    # with the index that is still serving.
-                    self.registry.update(doc_id, **previous)
+                except BaseException as exc:
+                    # Only an uncommitted failure keeps the old manifest live; a
+                    # committed manifest already carries the new metadata, so
+                    # restoring the old values would contradict it.
+                    if committed_failure(exc) is None:
+                        self.registry.update(doc_id, **previous)
                     raise
                 self._sync_after_publish(result)
                 return {"updated": doc_id, "fields": values, **result}
