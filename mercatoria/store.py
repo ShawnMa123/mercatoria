@@ -592,26 +592,21 @@ class Index:
 
 
 def _reusable_vectors(
-    index_dir: Path,
+    path: Path | None,
     model: str,
     chunking_hash: str,
     wanted: set[str],
     hashes: dict[str, str],
 ) -> dict[str, np.ndarray]:
-    """Vectors from the active index for unchanged chunk IDs.
+    """Vectors from the *published* index for unchanged chunk IDs.
 
     Rebuilding after an upload should only embed the new chunks. Reading the
-    current SQLite file directly keeps this independent of the in-memory Index
-    held by the serving process. A different chunking_hash means the indexed
-    text changed (e.g. the context header was toggled), so the old vectors no
-    longer match their chunk IDs and must be recomputed.
+    published SQLite file directly keeps this independent of the in-memory
+    Index held by the serving process. A different chunking_hash means the
+    indexed text changed (e.g. the context header was toggled), so the old
+    vectors no longer match their chunk IDs and must be recomputed.
     """
-    current = index_dir / "current.txt"
-    if not current.is_file():
-        return {}
-    name = current.read_text(encoding="utf-8").strip()
-    path = index_dir / name
-    if not name or not path.is_file():
+    if path is None or not path.is_file():
         return {}
     conn = sqlite3.connect(path)
     try:
@@ -648,14 +643,27 @@ def build_index(
     activate: bool = True,
     progress: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, Any]:
-    """Build a complete index file and optionally activate it.
+    """Build a complete index file and optionally publish it.
 
     ``embed_fn`` is injectable so tests and offline experiments can avoid the
     network. In production it defaults to the configured external gateway.
+
+    ``activate=False`` only leaves a candidate file behind: the control head,
+    the served snapshot and ``current.txt`` are untouched, so a staged build
+    cannot become live through a restart either.
     """
     from .embed import EmbeddingClient
+    from .control import ControlStore
 
     version = _version(cfg)
+    probe = ControlStore(cfg.resolved_control_path())
+    try:
+        # Captured before building: publication fails if the head moved
+        # meanwhile instead of silently overwriting a newer state.
+        base_generation = probe.head_generation()
+        source_index = _published_index_path(probe, cfg.resolved_index_dir())
+    finally:
+        probe.close()
     out = Path(output_path)
     if out.suffix != ".db" or out.is_dir():
         out = out / f"index-{version}.db"
@@ -780,7 +788,7 @@ def build_index(
             matrix = np.zeros((0, 0), dtype=np.float32)
         else:
             reuse = _reusable_vectors(
-                out.parent,
+                source_index,
                 cfg.embedding.model,
                 cfg.chunking_hash(),
                 set(chunk_ids),
@@ -854,11 +862,7 @@ def build_index(
     conn.close()
 
     os.replace(tmp, out)
-    if activate:
-        activate_index(out.parent, version)
-    if progress:
-        progress("done", len(chunk_rows), len(chunk_rows))
-    return {
+    result = {
         "version": version,
         "path": str(out),
         "documents": len(manifest["docs"]),
@@ -866,20 +870,73 @@ def build_index(
         "articles": int(article_count),
         "embedding_dim": dim,
         "avgdl": float(avgdl),
+        "activated": False,
+        "generation": None,
+        "snapshot_version": None,
     }
+    if activate:
+        from .publication import publish_index
+
+        control = ControlStore(cfg.resolved_control_path())
+        try:
+            state = publish_index(
+                control, cfg, version, manifest, base_generation=base_generation
+            )
+        finally:
+            control.close()
+        result["activated"] = True
+        result["generation"] = state.generation
+        result["snapshot_version"] = state.snapshot_version
+    if progress:
+        progress("done", len(chunk_rows), len(chunk_rows))
+    return result
 
 
 def _current_file(index_dir: Path) -> Path:
     return index_dir / "current.txt"
 
 
-def activate_index(index_dir: str | Path, version: str) -> None:
+def index_path(index_dir: str | Path, version: str) -> Path:
+    """File name of one index version. The version is the whole name."""
+    return Path(index_dir) / f"index-{version}.db"
+
+
+def _published_index_path(control: Any, index_dir: Path) -> Path | None:
+    """Index file the control head points at, else the legacy export."""
+    head = control.head()
+    if head is not None:
+        path = index_path(index_dir, head.index_version)
+        if path.is_file():
+            return path
+    current = _current_file(index_dir)
+    if current.is_file():
+        try:
+            name = current.read_text(encoding="utf-8").strip()
+        except OSError:
+            name = ""
+        if name:
+            path = index_dir / name
+            if path.is_file():
+                return path
+    return None
+
+
+def export_current(index_dir: str | Path, version: str) -> None:
+    """Write ``current.txt`` atomically.
+
+    This file is an export for old tooling and the migration input; the control
+    head decides what serves requests. Replacement is atomic so a reader never
+    sees a truncated name.
+    """
     d = Path(index_dir)
     d.mkdir(parents=True, exist_ok=True)
-    matches = sorted(d.glob(f"index-{version}*.db"))
-    if not matches:
+    name = index_path(d, version).name
+    if not (d / name).is_file():
         raise FileNotFoundError(f"index version not found: {version}")
-    _current_file(d).write_text(matches[-1].name, encoding="utf-8")
+    target = _current_file(d)
+    tmp = target.with_name(target.name + ".tmp")
+    tmp.write_text(name, encoding="utf-8")
+    os.replace(tmp, target)
 
 
 def open_index(path: str | Path) -> Index:
@@ -888,10 +945,23 @@ def open_index(path: str | Path) -> Index:
         raise IndexNotFound(f"index not found: {p}")
     conn = sqlite3.connect(p, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    return Index(p, conn)
+    try:
+        return Index(p, conn)
+    except BaseException as exc:
+        # A truncated or foreign file must not leak an open handle: on Windows
+        # that keeps the data directory undeletable for the rest of the process.
+        conn.close()
+        if isinstance(exc, sqlite3.Error):
+            raise IndexNotFound(f"{p} is not a usable index: {exc}") from exc
+        raise
 
 
 def open_current(index_dir: str | Path) -> Index:
+    """Open whatever ``current.txt`` names.
+
+    Migration and test helper only: serving code reads the control head and
+    opens that exact version, so an unpublished candidate is never picked up.
+    """
     d = Path(index_dir)
     cur = _current_file(d)
     if cur.is_file():

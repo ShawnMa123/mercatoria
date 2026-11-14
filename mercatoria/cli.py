@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from .config import load_config
 from .documents import DocumentRegistry, combined_manifest
+from .lock import DirectoryLock, LockBusy
 from .manifest import load_manifest, write_manifest
 from .store import build_index
 
@@ -22,33 +24,48 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
 
 def _cmd_rebuild(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    manifest_path = Path(args.manifest or cfg.resolved_manifest_path())
-    if manifest_path.is_file():
-        manifest = load_manifest(manifest_path)
-    else:
-        manifest = write_manifest(cfg.resolved_corpus_dir(), manifest_path)
-    registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
+    # Same lock as the service: an offline rebuild must not move the control
+    # head of a data directory a live process is serving.
+    lock = DirectoryLock(cfg.resolved_write_lock_path())
     try:
-        merged = combined_manifest(manifest, registry)
+        lock.acquire()
+    except LockBusy as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print(
+            "stop the service first, or use POST /v1/admin/rebuild with the same --config",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        manifest_path = Path(args.manifest or cfg.resolved_manifest_path())
+        if manifest_path.is_file():
+            manifest = load_manifest(manifest_path)
+        else:
+            manifest = write_manifest(cfg.resolved_corpus_dir(), manifest_path)
+        registry = DocumentRegistry(cfg.resolved_documents_dir() / "registry.db")
+        try:
+            merged = combined_manifest(manifest, registry)
+        finally:
+            registry.close()
+        if args.limit:
+            docs = merged["docs"][: args.limit]
+            merged = {**merged, "docs": docs, "documents": len(docs)}
+
+        def progress(stage: str, done: int, total: int) -> None:
+            if stage in {"chunk", "embed", "done"}:
+                print(f"{stage}: {done}/{total}", flush=True)
+
+        result = build_index(
+            merged,
+            cfg,
+            args.out or cfg.resolved_index_dir(),
+            activate=not args.no_activate,
+            progress=progress,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     finally:
-        registry.close()
-    if args.limit:
-        docs = merged["docs"][: args.limit]
-        merged = {**merged, "docs": docs, "documents": len(docs)}
-
-    def progress(stage: str, done: int, total: int) -> None:
-        if stage in {"chunk", "embed", "done"}:
-            print(f"{stage}: {done}/{total}", flush=True)
-
-    result = build_index(
-        merged,
-        cfg,
-        args.out or cfg.resolved_index_dir(),
-        activate=not args.no_activate,
-        progress=progress,
-    )
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0
+        lock.release()
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
@@ -75,7 +92,11 @@ def main(argv: list[str] | None = None) -> int:
     p_rebuild.add_argument("--manifest", default=None)
     p_rebuild.add_argument("--out", default=None, help="index directory or .db path")
     p_rebuild.add_argument("--limit", type=int, default=0, help="only first N docs (smoke)")
-    p_rebuild.add_argument("--no-activate", action="store_true")
+    p_rebuild.add_argument(
+        "--no-activate",
+        action="store_true",
+        help="build a candidate only; the served state is unchanged",
+    )
     p_rebuild.set_defaults(func=_cmd_rebuild)
 
     p_serve = sub.add_parser("serve", help="run the HTTP API")

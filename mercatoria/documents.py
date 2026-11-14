@@ -38,7 +38,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_sha ON documents(sha256);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 """
 
-STATUSES = {"queued", "parsing", "parsed", "indexing", "ready", "failed"}
+STATUSES = {"queued", "parsing", "parsed", "indexing", "ready", "failed", "deleted"}
 
 
 def _now() -> str:
@@ -77,6 +77,13 @@ class DocumentRegistry:
         return data
 
     def get(self, doc_id: str) -> dict[str, Any] | None:
+        """Live document or None. A logically deleted document is not found."""
+        record = self.get_raw(doc_id)
+        if record is None or record["status"] == "deleted":
+            return None
+        return record
+
+    def get_raw(self, doc_id: str) -> dict[str, Any] | None:
         row = self.conn.execute("SELECT * FROM documents WHERE doc_id=?", (doc_id,)).fetchone()
         return self._row(row)
 
@@ -85,7 +92,9 @@ class DocumentRegistry:
         return self._row(row)
 
     def list(self) -> list[dict[str, Any]]:
-        rows = self.conn.execute("SELECT * FROM documents ORDER BY created_at DESC").fetchall()
+        rows = self.conn.execute(
+            "SELECT * FROM documents WHERE status != 'deleted' ORDER BY created_at DESC"
+        ).fetchall()
         return [self._row(row) for row in rows if row is not None]
 
     def insert(self, record: dict[str, Any]) -> None:

@@ -7,6 +7,7 @@ only secrets/endpoints; chunking and retrieval parameters live in JSON.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -198,6 +199,35 @@ class AppConfig:
     def resolved_documents_dir(self) -> Path:
         return _resolve(self.documents_dir)
 
+    def resolved_control_path(self) -> Path:
+        """Publication authority: the control head lives with the registry."""
+        return self.resolved_documents_dir() / "control.db"
+
+    def resolved_write_lock_path(self) -> Path:
+        """Cross-process writer lock, shared by the API and offline CLI."""
+        return self.resolved_documents_dir() / "write.lock"
+
+    def runtime_fingerprint(self) -> str:
+        """Id of everything a request can observe except the built index.
+
+        Chunking and the embedding space are part of the index, not of this
+        fingerprint: changing them is a rebuild, not a new runtime snapshot.
+        """
+        payload = {
+            "retrieval": asdict(self.retrieval),
+            "rerank": {k: v for k, v in asdict(self.rerank).items() if k != "api_key"},
+            "answer": {k: v for k, v in asdict(self.answer).items() if k != "api_key"},
+            "embedding": {
+                "base": self.embedding.base,
+                "model": self.embedding.model,
+                "dim": self.embedding.dim,
+                "timeout": self.embedding.timeout,
+                "retries": self.embedding.retries,
+            },
+        }
+        raw = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+
     def chunking_hash(self) -> str:
         payload = {
             "chunking": asdict(self.chunking),
@@ -302,3 +332,140 @@ def save_config(cfg: AppConfig, path: str | Path) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+class ConfigError(ValueError):
+    """Unknown field, wrong type or out-of-range value in a config update."""
+
+
+# Bounds for knobs where a wrong value silently degrades every request. A field
+# without an entry is still type-checked; ranges are a review aid, not policy.
+_RANGES: dict[tuple[str, ...], tuple[float, float]] = {
+    ("chunking", "max_chars"): (1, 1_000_000),
+    ("chunking", "min_chars"): (0, 1_000_000),
+    ("chunking", "overlap"): (0, 1_000_000),
+    ("embedding", "batch_size"): (1, 1000),
+    ("embedding", "max_batch"): (1, 1000),
+    ("embedding", "concurrency"): (1, 1024),
+    ("embedding", "timeout"): (1, 3600),
+    ("embedding", "retries"): (1, 20),
+    ("embedding", "query_cache_size"): (0, 1_000_000),
+    ("retrieval", "top_k"): (1, 100),
+    ("retrieval", "vector_weight"): (0.0, 1.0),
+    ("retrieval", "bm25_k1"): (0.0, 100.0),
+    ("retrieval", "bm25_b"): (0.0, 1.0),
+    ("retrieval", "similarity_threshold"): (0.0, 1.0),
+    ("retrieval", "multi_query_bonus"): (0.0, 10.0),
+    ("retrieval", "bm25_saturation"): (0.0, 1000.0),
+    ("retrieval", "quota_min_ratio"): (0.0, 1.0),
+    ("rerank", "candidates"): (1, 1000),
+    ("rerank", "top_n"): (0, 1000),
+    ("rerank", "weight"): (0.0, 1.0),
+    ("rerank", "min_score"): (0.0, 1000.0),
+    ("rerank", "timeout"): (0.1, 3600),
+    ("rerank", "retries"): (1, 20),
+    ("answer", "max_tokens"): (1, 1_000_000),
+    ("answer", "temperature"): (0.0, 2.0),
+    ("answer", "timeout"): (1, 3600),
+    ("answer", "max_context_chunks"): (1, 1000),
+}
+
+_CHOICES: dict[tuple[str, ...], set[str]] = {
+    ("chunking", "unit"): {"article", "section", "fixed"},
+    ("rerank", "style"): {"dashscope", "cohere"},
+    ("rerank", "fusion"): {"max", "weighted", "rerank"},
+}
+
+# Top-level keys a config update may touch. Deployment paths and limits are
+# environment/deployment concerns and are not remotely editable.
+_EDITABLE_TOP = {"chunking", "embedding", "retrieval", "rerank", "answer"}
+
+
+def _coerce(path: tuple[str, ...], value: Any, current: Any) -> Any:
+    name = ".".join(path)
+    if isinstance(current, bool):
+        if not isinstance(value, bool):
+            raise ConfigError(f"{name} must be a boolean")
+        return value
+    if isinstance(current, int):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ConfigError(f"{name} must be an integer")
+        return value
+    if isinstance(current, float):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ConfigError(f"{name} must be a number")
+        return float(value)
+    if isinstance(current, str):
+        if not isinstance(value, str):
+            raise ConfigError(f"{name} must be a string")
+        return value
+    if isinstance(current, list):
+        if not isinstance(value, list) or any(not isinstance(v, str) for v in value):
+            raise ConfigError(f"{name} must be a list of strings")
+        return list(value)
+    if current is None:
+        if value is not None and not isinstance(value, str):
+            raise ConfigError(f"{name} must be a string or null")
+        return value
+    if isinstance(value, type(current)):
+        return value
+    raise ConfigError(f"{name} has an unsupported type")
+
+
+def _check_range(path: tuple[str, ...], value: Any) -> None:
+    bounds = _RANGES.get(path)
+    if bounds is not None and isinstance(value, (int, float)):
+        low, high = bounds
+        if not low <= float(value) <= high:
+            raise ConfigError(f"{'.'.join(path)} must be in [{low}, {high}]")
+    choices = _CHOICES.get(path)
+    if choices is not None and value not in choices:
+        raise ConfigError(f"{'.'.join(path)} must be one of {sorted(choices)}")
+
+
+def _merge_section(path: tuple[str, ...], current: Any, value: Any) -> Any:
+    if not isinstance(value, dict):
+        raise ConfigError(f"{'.'.join(path)} must be an object")
+    fields = type(current).__dataclass_fields__
+    for key, item in value.items():
+        field_path = path + (key,)
+        if key not in fields:
+            raise ConfigError(f"unknown field: {'.'.join(field_path)}")
+        child = getattr(current, key)
+        if is_dataclass(child):
+            setattr(current, key, _merge_section(field_path, child, item))
+        else:
+            coerced = _coerce(field_path, item, child)
+            _check_range(field_path, coerced)
+            setattr(current, key, coerced)
+    return current
+
+
+def merge_config_update(cfg: AppConfig, body: dict[str, Any] | None) -> AppConfig:
+    """Apply a validated deep merge and return a *new* config.
+
+    Nothing is mutated in place: the caller swaps in the result only after the
+    whole update validated, so a rejected field never leaves a half-applied
+    state behind, and a live snapshot keeps the config it was built with.
+    """
+    if body is None:
+        return copy.deepcopy(cfg)
+    if not isinstance(body, dict):
+        raise ConfigError("config update must be a JSON object")
+    updated = copy.deepcopy(cfg)
+    for section, value in body.items():
+        if section == "save":
+            continue
+        if section not in _EDITABLE_TOP:
+            raise ConfigError(f"unknown or non-editable field: {section}")
+        setattr(updated, section, _merge_section((section,), getattr(updated, section), value))
+    if updated.chunking.overlap >= updated.chunking.max_chars:
+        raise ConfigError("chunking.overlap must be smaller than chunking.max_chars")
+    if updated.ingest_workers < 1:
+        raise ConfigError("ingest_workers must be positive")
+    return updated
+
+
+def needs_index_rebuild(before: AppConfig, after: AppConfig) -> bool:
+    """True when the change alters the indexed text or the embedding space."""
+    return before.chunking_hash() != after.chunking_hash()

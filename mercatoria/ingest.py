@@ -100,6 +100,14 @@ def ingest_batch(
             )
         digest = hashlib.sha256(item.data).hexdigest()
         existing = registry.get_by_sha(digest)
+        if existing and existing["status"] == "deleted":
+            # A logical delete keeps the row (and its unique sha256) so the
+            # content can still be traced; re-uploading the same bytes is a new
+            # intent. Same doc_id replaces the row, a different one (other
+            # jurisdiction) drops the stale identity first.
+            if _doc_id(item, digest) != existing["doc_id"]:
+                registry.delete(existing["doc_id"])
+            existing = None
         if existing and existing["status"] == "failed":
             # A failed row still holds the unique sha256. Clear its files and
             # row so the same content can be retried with a new document id.
@@ -247,8 +255,13 @@ def rebuild_with_uploads(
     *,
     embed_fn: Callable[[list[str]], Any] | None = None,
     progress: Progress | None = None,
+    activate: bool = True,
 ) -> dict[str, Any]:
-    """Rebuild using the static corpus plus every parsed upload."""
+    """Rebuild using the static corpus plus every parsed upload.
+
+    ``activate=False`` leaves a candidate index unpublished; registry statuses
+    only move to "ready" when the build actually became the served state.
+    """
     base = _base_manifest(cfg)
     manifest = combined_manifest(base, registry)
     result = build_index(
@@ -256,9 +269,11 @@ def rebuild_with_uploads(
         cfg,
         cfg.resolved_index_dir(),
         embed_fn=embed_fn,
-        activate=True,
+        activate=activate,
         progress=progress,
     )
+    if not activate:
+        return result
     counts = _chunk_counts(result["path"])
     for record in registry.list():
         if record["status"] in {"parsed", "indexing", "ready"}:
