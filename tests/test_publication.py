@@ -222,6 +222,9 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(wrong_type.status_code, 422)
         bool_as_string = client.put("/v1/config", json={"rerank": {"enabled": "false"}})
         self.assertEqual(bool_as_string.status_code, 422)
+        secret = client.put("/v1/config", json={"embedding": {"api_key": "sk-plaintext"}})
+        self.assertEqual(secret.status_code, 422)
+        self.assertNotEqual(service.cfg.embedding.api_key, "sk-plaintext")
         # A rejected update applies nothing at all.
         self.assertEqual(service.cfg.retrieval.top_k, before)
         self.assertFalse(service.cfg.rerank.enabled)

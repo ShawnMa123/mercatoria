@@ -380,6 +380,14 @@ _CHOICES: dict[tuple[str, ...], set[str]] = {
 # environment/deployment concerns and are not remotely editable.
 _EDITABLE_TOP = {"chunking", "embedding", "retrieval", "rerank", "answer"}
 
+# Plaintext credentials never travel through the config API: they come from the
+# environment, and a persisted config would otherwise store them on disk.
+_SECRET_FIELDS = {
+    ("embedding", "api_key"),
+    ("rerank", "api_key"),
+    ("answer", "api_key"),
+}
+
 
 def _coerce(path: tuple[str, ...], value: Any, current: Any) -> Any:
     name = ".".join(path)
@@ -431,6 +439,11 @@ def _merge_section(path: tuple[str, ...], current: Any, value: Any) -> Any:
         field_path = path + (key,)
         if key not in fields:
             raise ConfigError(f"unknown field: {'.'.join(field_path)}")
+        if field_path in _SECRET_FIELDS:
+            raise ConfigError(
+                f"{'.'.join(field_path)} is environment-only; set the corresponding "
+                "environment variable instead"
+            )
         child = getattr(current, key)
         if is_dataclass(child):
             setattr(current, key, _merge_section(field_path, child, item))
