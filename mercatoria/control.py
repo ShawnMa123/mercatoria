@@ -1,0 +1,247 @@
+"""Publication authority: immutable control states behind one control head.
+
+The database is the *only* record of what is live. ``current.txt`` is an
+export for legacy tooling and the migration input; nothing reads it to decide
+which index serves requests.
+
+A control state is written exactly once and never updated. Publishing appends a
+generation and moves the single head row inside one transaction, so a crash
+before commit leaves the previous state in force and a crash after commit is
+fully recovered by reading the head again.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sqlite3
+import threading
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+SCHEMA_VERSION = 1
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS control_states (
+    generation INTEGER PRIMARY KEY,
+    manifest_id TEXT NOT NULL,
+    index_version TEXT NOT NULL,
+    build_profile_id TEXT NOT NULL,
+    runtime_config_id TEXT NOT NULL,
+    created_by_job_id TEXT,
+    created_at TEXT NOT NULL,
+    manifest TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS control_head (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    generation INTEGER NOT NULL
+);
+"""
+
+
+class ControlError(RuntimeError):
+    pass
+
+
+class ControlConflict(ControlError):
+    """The head moved since the caller read its base generation."""
+
+
+class ControlSchemaTooNew(ControlError):
+    """The control database was written by a newer mercatoria build."""
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def manifest_id(manifest: dict[str, Any]) -> str:
+    """Stable id of a document set: identities plus the fields that matter."""
+    docs = [
+        {
+            "doc_id": doc.get("doc_id"),
+            "path": doc.get("path"),
+            "jurisdiction": doc.get("jurisdiction"),
+            "effective_from": doc.get("effective_from"),
+            "effective_to": doc.get("effective_to"),
+        }
+        for doc in manifest.get("docs") or []
+    ]
+    docs.sort(key=lambda doc: str(doc.get("doc_id")))
+    raw = json.dumps(docs, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+@dataclass(frozen=True)
+class ControlState:
+    generation: int
+    index_version: str
+    manifest: dict[str, Any] = field(repr=False, compare=False)
+    manifest_id: str = ""
+    build_profile_id: str = ""
+    runtime_config_id: str = ""
+    created_by_job_id: str | None = None
+    created_at: str = ""
+
+    @property
+    def snapshot_version(self) -> str:
+        """Opaque, outward-facing identifier of this control generation."""
+        return str(self.generation)
+
+    def describe(self) -> dict[str, Any]:
+        return {
+            "snapshot_version": self.snapshot_version,
+            "generation": self.generation,
+            "index_version": self.index_version,
+            "manifest_id": self.manifest_id,
+            "build_profile_id": self.build_profile_id,
+            "runtime_config_id": self.runtime_config_id,
+            "documents": len(self.manifest.get("docs") or []),
+            "created_by_job_id": self.created_by_job_id,
+            "created_at": self.created_at,
+        }
+
+
+class ControlStore:
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+        self.conn = sqlite3.connect(
+            self.path, check_same_thread=False, isolation_level=None
+        )
+        self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")
+        self._migrate()
+
+    def _migrate(self) -> None:
+        version = int(self.conn.execute("PRAGMA user_version").fetchone()[0])
+        if version > SCHEMA_VERSION:
+            self.conn.close()
+            raise ControlSchemaTooNew(
+                f"control schema {version} is newer than this build ({SCHEMA_VERSION})"
+            )
+        if version < 1:
+            # Additive only, and idempotent: a half-created schema is completed
+            # on the next start, an existing one keeps its rows.
+            self.conn.executescript(SCHEMA)
+            self.conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+
+    def close(self) -> None:
+        self.conn.close()
+
+    def _row(self, row: sqlite3.Row | None) -> ControlState | None:
+        if row is None:
+            return None
+        try:
+            manifest = json.loads(row["manifest"])
+        except json.JSONDecodeError:
+            manifest = {"docs": []}
+        return ControlState(
+            generation=int(row["generation"]),
+            index_version=str(row["index_version"]),
+            manifest=manifest if isinstance(manifest, dict) else {"docs": []},
+            manifest_id=str(row["manifest_id"]),
+            build_profile_id=str(row["build_profile_id"]),
+            runtime_config_id=str(row["runtime_config_id"]),
+            created_by_job_id=row["created_by_job_id"],
+            created_at=str(row["created_at"]),
+        )
+
+    def head_generation(self) -> int | None:
+        row = self.conn.execute("SELECT generation FROM control_head WHERE singleton=1").fetchone()
+        return int(row[0]) if row else None
+
+    def head(self) -> ControlState | None:
+        generation = self.head_generation()
+        if generation is None:
+            return None
+        return self.get(generation)
+
+    def get(self, generation: int) -> ControlState | None:
+        row = self.conn.execute(
+            "SELECT * FROM control_states WHERE generation=?", (int(generation),)
+        ).fetchone()
+        return self._row(row)
+
+    def states(self, limit: int = 50) -> list[ControlState]:
+        rows = self.conn.execute(
+            "SELECT * FROM control_states ORDER BY generation DESC LIMIT ?", (int(limit),)
+        ).fetchall()
+        return [state for state in (self._row(row) for row in rows) if state is not None]
+
+    def publish(
+        self,
+        *,
+        index_version: str,
+        manifest: dict[str, Any],
+        build_profile_id: str,
+        runtime_config_id: str,
+        base_generation: int | None = None,
+        created_by_job_id: str | None = None,
+    ) -> ControlState:
+        """Append a generation and move the head, or raise ControlConflict.
+
+        ``base_generation=None`` means "whatever the head is now" and is only
+        safe while the caller holds the data-directory write lock.
+        """
+        with self._lock:
+            conn = self.conn
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                current = self.head_generation()
+                if base_generation is not None and current != base_generation:
+                    raise ControlConflict(
+                        f"control head moved: expected generation {base_generation}, "
+                        f"found {current}"
+                    )
+                generation = (current or 0) + 1
+                state = ControlState(
+                    generation=generation,
+                    index_version=str(index_version),
+                    manifest=manifest,
+                    manifest_id=manifest_id(manifest),
+                    build_profile_id=build_profile_id,
+                    runtime_config_id=runtime_config_id,
+                    created_by_job_id=created_by_job_id,
+                    created_at=_now(),
+                )
+                conn.execute(
+                    """INSERT INTO control_states
+                       (generation, manifest_id, index_version, build_profile_id,
+                        runtime_config_id, created_by_job_id, created_at, manifest)
+                       VALUES (?,?,?,?,?,?,?,?)""",
+                    (
+                        state.generation,
+                        state.manifest_id,
+                        state.index_version,
+                        state.build_profile_id,
+                        state.runtime_config_id,
+                        state.created_by_job_id,
+                        state.created_at,
+                        json.dumps(manifest, ensure_ascii=False),
+                    ),
+                )
+                conn.execute(
+                    """INSERT INTO control_head(singleton, generation) VALUES (1, ?)
+                       ON CONFLICT(singleton) DO UPDATE SET generation=excluded.generation""",
+                    (state.generation,),
+                )
+                conn.execute("COMMIT")
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+            return state
+
+
+__all__ = [
+    "ControlConflict",
+    "ControlError",
+    "ControlSchemaTooNew",
+    "ControlState",
+    "ControlStore",
+    "manifest_id",
+]
