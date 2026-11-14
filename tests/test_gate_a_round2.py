@@ -516,6 +516,10 @@ class ManagementOwnershipTests(GateTestCase):
             self.assertTrue(paused.wait(20))
             retrieved = client.post("/v1/retrieve", json={"queries": ["关税"]})
             self.assertEqual(retrieved.status_code, 200)
+            # Readiness recovery is a committed-state read: it must not need the
+            # management token the upload holds.
+            self.assertEqual(client.get("/health").status_code, 200)
+            self.assertIsNotNone(service.management.owner)
             resume.set()
             self.wait_job(client, resp.json()["job_id"])
 
