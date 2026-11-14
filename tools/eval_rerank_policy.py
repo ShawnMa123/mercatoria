@@ -11,6 +11,7 @@ show the trade-off, not to flip it.
 
 Usage:
     python tools/eval_rerank_policy.py [--sample 100] [--index ...]
+        [--model qwen3.7-text-rerank] [--candidates 20]
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ sys.path.insert(0, str(ROOT))
 from eval_retrieval import score_case  # noqa: E402
 
 from mercatoria.config import load_config  # noqa: E402
+from mercatoria.rerank import RerankClient, RerankError  # noqa: E402
 from mercatoria.retrieve import Retriever  # noqa: E402
 from mercatoria.store import open_current, open_index  # noqa: E402
 
@@ -97,10 +99,24 @@ def main() -> int:
     ap.add_argument("--sample", type=int, default=100)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--top-n", type=int, default=5)
+    ap.add_argument("--model", default=None, help="rerank model id override")
+    ap.add_argument("--candidates", type=int, default=None, help="first-stage pool size")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     cfg = load_config(args.config)
+    if args.model:
+        cfg.rerank.model = args.model
+    if args.candidates:
+        cfg.rerank.candidates = args.candidates
+    # Fail fast on an unusable model: retrieval swallows rerank errors by
+    # design, so without this probe a denied/invalid model would silently
+    # produce a table that is really the "off" row.
+    try:
+        RerankClient(cfg.rerank).rerank("probe", ["probe document"], 1)
+    except (RerankError, ValueError) as exc:
+        print(f"rerank model {cfg.rerank.model!r} is not usable: {exc}", file=sys.stderr)
+        return 2
     index = open_index(args.index) if args.index else open_current(cfg.resolved_index_dir())
     retriever = Retriever(index, cfg)
     cases = [c for c in json.loads(CASES.read_text(encoding="utf-8")) if c.get("expect") != "refuse"]
@@ -117,7 +133,9 @@ def main() -> int:
         "# Rerank 策略帕累托对比（P2-1）",
         "",
         f"- 生成日期：{date.today().isoformat()}",
-        f"- 样本：{len(sample)} 条 dev 题（seed={args.seed}），top_k=10，weighted 0.5",
+        f"- 样本：{len(sample)} 条 dev 题（seed={args.seed}），top_k=10，"
+        f"fusion={cfg.rerank.fusion} {cfg.rerank.weight}",
+        f"- rerank 模型：`{cfg.rerank.model}`（candidates={cfg.rerank.candidates}）",
         "",
         "| 策略 | Hit@5 | MRR | p50 | p95 |",
         "|---|---|---|---|---|",
