@@ -364,6 +364,32 @@ class PublicationFailureTests(RecoveryTestCase):
         self.assertEqual(health.status_code, 200)
         self.assertEqual(health.json()["head_generation"], health.json()["online_generation"])
 
+        # The export is repairable: the next publication rewrites it.
+        repaired = client.post("/v1/admin/rebuild", json={"background": False})
+        self.assertEqual(repaired.json()["status"], "done", repaired.json())
+        current = (self.cfg.resolved_index_dir() / "current.txt").read_text(encoding="utf-8")
+        self.assertEqual(
+            current.strip(), f"index-{self.head()['index_version']}.db"
+        )
+
+    def test_rollback_restores_the_target_config_and_manifest(self) -> None:
+        """R05/R08: a rollback is a full state, not just an index file."""
+        client, service = self.app()
+        target = service.current()
+        target_version = target.snapshot_version
+
+        client.put("/v1/config", json={"retrieval": {"top_k": 3}})
+        self.assertEqual(service.current().config.retrieval.top_k, 3)
+        self.assertNotEqual(service.current().snapshot_version, target_version)
+
+        resp = client.post(f"/v1/admin/activate/{target_version}")
+        self.assertEqual(resp.status_code, 200, resp.text)
+        restored = service.current()
+        self.assertEqual(restored.config.retrieval.top_k, target.config.retrieval.top_k)
+        self.assertEqual(restored.index_version, target.index_version)
+        self.assertEqual(restored.manifest, target.manifest)
+        self.assertGreater(restored.generation, int(target_version))
+
     def test_failed_install_is_not_treated_as_uncommitted(self) -> None:
         """R02/R03: committed + not installed = not ready, never a rollback."""
         client, service = self.app()
