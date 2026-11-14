@@ -10,7 +10,9 @@ metadata lives here.
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -450,10 +452,33 @@ def build_manifest(corpus_dir: str | Path) -> dict[str, Any]:
 
 
 def write_manifest(corpus_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
+    """Regenerate the manifest and replace ``out_path`` atomically.
+
+    The manifest is a build input, read by the API, the CLI and the ingest
+    path. Writing it in place let a concurrent reader parse half a document, so
+    the JSON is written to a temporary file next to the target and swapped in
+    with one ``os.replace``: readers see either the old file or the complete new
+    one, and a failure leaves the previous manifest untouched.
+    """
     manifest = build_manifest(corpus_dir)
-    p = Path(out_path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    target = Path(out_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(manifest, ensure_ascii=False, indent=2)
+    handle, temporary = tempfile.mkstemp(
+        dir=str(target.parent), prefix=f".{target.name}.", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, target)
+    except BaseException:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        raise
     return manifest
 
 

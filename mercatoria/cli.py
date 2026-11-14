@@ -19,7 +19,23 @@ from .store import build_index
 def _cmd_manifest(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     out = Path(args.out or cfg.resolved_manifest_path())
-    manifest = write_manifest(args.corpus or cfg.resolved_corpus_dir(), out)
+    # The manifest is a build input of this data directory, not a private file:
+    # an offline rewrite must not race the service that owns the directory and
+    # is reading the manifest right now. Same lock (and same refusal) as rebuild.
+    lock = DirectoryLock(cfg.resolved_write_lock_path())
+    try:
+        lock.acquire()
+    except LockBusy as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print(
+            "stop the service first, or use POST /v1/admin/manifest with the same --config",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        manifest = write_manifest(args.corpus or cfg.resolved_corpus_dir(), out)
+    finally:
+        lock.release()
     print(json.dumps({"documents": manifest["documents"], "path": str(out)}, ensure_ascii=False))
     return 0
 

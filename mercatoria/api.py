@@ -499,6 +499,23 @@ class Service:
 
     # -- management operations --------------------------------------------
 
+    def write_manifest(self) -> dict[str, Any]:
+        """Regenerate the manifest as one management operation.
+
+        The manifest is a build input: the builder, the candidate check and the
+        upload merge all read it. Rewriting it therefore takes the same
+        ownership as a rebuild (a busy directory answers 409 instead of
+        replacing the file a build is reading), and the write is atomic so a
+        reader never parses half a document.
+        """
+        token = self._claim_management("manifest")
+        try:
+            path = self.cfg.resolved_manifest_path()
+            manifest = write_manifest(self.cfg.resolved_corpus_dir(), path)
+        finally:
+            self._release_management(token)
+        return {"documents": manifest["documents"], "path": str(path)}
+
     def start_rebuild(self, body: dict[str, Any]) -> dict[str, Any]:
         token = self._claim_management("rebuild")
         try:
@@ -1236,10 +1253,9 @@ def create_app(
 
     @app.post("/v1/admin/manifest")
     def rebuild_manifest() -> dict[str, Any]:
-        manifest = write_manifest(
-            service.cfg.resolved_corpus_dir(), service.cfg.resolved_manifest_path()
-        )
-        return {"documents": manifest["documents"], "path": str(service.cfg.resolved_manifest_path())}
+        # A busy directory is answered 409 by the ManagementBusy handler, and the
+        # claim is released even when the write itself fails.
+        return service.write_manifest()
 
     @app.post("/v1/admin/rebuild")
     def rebuild(body: dict[str, Any] | None = None) -> dict[str, Any]:
