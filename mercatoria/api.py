@@ -803,13 +803,22 @@ def create_app(
     app.state.service = service
 
     def unavailable() -> JSONResponse:
+        """503 body: diagnostics only, and never a stale snapshot as current."""
         snapshot = service.current()
+        head = service.control.head_generation()
+        online = snapshot.generation if snapshot is not None else None
+        current = snapshot is not None and online == head
         return JSONResponse(
             status_code=503,
             content={
                 "error": service.error or "index is not built",
-                "snapshot_version": snapshot.snapshot_version if snapshot else None,
-                "corpus": snapshot.index.corpus_block() if snapshot is not None else None,
+                "status": "not_built" if head is None else "not_ready",
+                "head_generation": head,
+                "online_generation": online,
+                # A stale snapshot is reported as an online generation above, not
+                # as the snapshot this response was computed from.
+                "snapshot_version": snapshot.snapshot_version if current else None,
+                "corpus": snapshot.index.corpus_block() if current else None,
             },
         )
 

@@ -778,6 +778,10 @@ class ServingLeaseTests(GateTestCase):
             }
         for name, response in responses.items():
             self.assertEqual(response.status_code, 503, f"{name}: {response.text}")
+        body = responses["retrieve"].json()
+        self.assertEqual(body["status"], "not_ready")
+        self.assertIsNone(body["snapshot_version"])
+        self.assertGreater(body["head_generation"], body["online_generation"])
         self.assertGreater(self.read_head()["generation"], head_before["generation"])
 
         # With the fault gone, the next request follows the committed head.
