@@ -89,6 +89,9 @@
 改 `chunking`、`embedding.base/model/dim/model_revision/space_version` 属于 build 身份变更：只记录为期望状态并置
 `pending_rebuild=true`，需显式 rebuild 才生效；`embedding.timeout/retries`（以及凭证轮换）属于运行参数，
 立即重建客户端并发布，且不会使已有向量失效。
+`answer.*`（模型、`max_tokens`、`max_context_chunks`、`enable_thinking`）同样是运行参数：改完即发布新
+`snapshot_version`，不重建索引。`enable_thinking=false` 会向网关发送 `thinking: {"type": "disabled"}`，
+关掉推理模型的思考段——本机实测 deepseek-v4.1-flash 同一题 15.8 s → 5.6 s，答案的关键词覆盖与引用有效性不变。
 
 **管理互斥**：config、rebuild、上传、删除、元数据、reindex、manifest 生成、候选激活与回滚同一时刻只允许一个在飞。
 并发管理写返回 409（且不改动任何状态或文件）：
@@ -226,7 +229,7 @@
  "count": 73, "returned": 1, "offset": 0, "limit": 1,
  "jurisdictions": ["AU", "CN", "EU", "INT", "JP", "US", "WTO"],
  "filter": {"jurisdiction": "US"},
- "snapshot_version": "7", "index_version": "20261114-135405-968025-e7b9ec63d6c4"}
+ "snapshot_version": "11", "index_version": "20261114-142249-920736-e7b9ec63d6c4"}
 ```
 
 `count` 是过滤后的总数（分页前），`returned` 是本页条数；每项带该文档在当前索引里的

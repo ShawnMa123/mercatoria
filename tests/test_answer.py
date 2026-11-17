@@ -68,6 +68,22 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(result["answer_status"], "unsupported")
         self.assertEqual(result["citations"], [])
 
+    def test_wrapped_citation_form_is_accepted(self) -> None:
+        result = answer_question(
+            self.cfg,
+            "关税怎么征收？",
+            self.chunks,
+            client=FakeChat(f"关税依法征收 [citation: {self.cid}]。"),
+        )
+        self.assertEqual(result["answer_status"], "answered")
+        self.assertEqual(result["citations"][0]["chunk_id"], self.cid)
+
+    def test_wrapped_form_still_rejects_unknown_ids(self) -> None:
+        result = answer_question(
+            self.cfg, "问题", self.chunks, client=FakeChat("答案 [citation: 0123456789abcdef]")
+        )
+        self.assertEqual(result["citations"], [])
+
     def test_references_carry_full_original_text(self) -> None:
         result = answer_question(
             self.cfg,
@@ -99,6 +115,40 @@ class AnswerTests(unittest.TestCase):
         result = answer_question(cfg, "问题", self.chunks)
         self.assertEqual(result["answer_status"], "skipped")
         self.assertEqual(result["references"][0]["text"], self.chunks[0]["text"])
+
+
+class RecordingHttp:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def post(self, path: str, body: dict, headers=None) -> dict:
+        self.calls.append({"path": path, "body": body, "headers": headers})
+        return {"choices": [{"message": {"content": "ok"}}]}
+
+
+class ChatPayloadTests(unittest.TestCase):
+    """The thinking switch must reach the gateway, not just the config."""
+
+    def call(self, **kwargs) -> dict:
+        client = ChatClient(AnswerConfig(**kwargs))
+        http = RecordingHttp()
+        client._http = http  # type: ignore[assignment]
+        client.chat([{"role": "user", "content": "关税"}])
+        return http.calls[0]["body"]
+
+    def test_thinking_disabled_sends_the_flag(self) -> None:
+        body = self.call(enable_thinking=False)
+        self.assertEqual(body["thinking"], {"type": "disabled"})
+
+    def test_thinking_enabled_sends_no_flag(self) -> None:
+        self.assertNotIn("thinking", self.call(enable_thinking=True))
+
+    def test_other_request_fields_are_untouched(self) -> None:
+        body = self.call(enable_thinking=False, model="local-wb/cn:deepseek-v4.1-flash")
+        self.assertEqual(body["model"], "local-wb/cn:deepseek-v4.1-flash")
+        self.assertEqual(body["messages"][-1]["content"], "关税")
+        self.assertEqual(body["max_tokens"], 8192)
+        self.assertEqual(body["temperature"], 0.0)
 
 
 if __name__ == "__main__":

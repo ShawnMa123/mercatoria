@@ -13,7 +13,11 @@ from typing import Any
 from .config import AnswerConfig
 from .http_client import HttpError, JsonHttp
 
-CITATION_RE = re.compile(r"\[([0-9a-f]{16})\]")
+# The prompt asks for a bare ``[chunk_id]``. Models that skip their thinking
+# step occasionally decorate it as ``[citation: chunk_id]`` instead; the id is
+# still verified against the retrieved chunks, so accepting the wrapper costs
+# no accuracy and keeps a correct answer from losing its citations.
+CITATION_RE = re.compile(r"\[(?:citation:\s*)?([0-9a-f]{16})\]")
 REFUSAL_MARKERS = (
     "依据不足",
     "没有相关",
@@ -45,6 +49,11 @@ class ChatClient:
             "temperature": self.cfg.temperature,
             "max_tokens": self.cfg.max_tokens,
         }
+        if not self.cfg.enable_thinking:
+            # Measured on the local gateway: without this, deepseek-v4.1-flash
+            # spends 1200-2000 reasoning tokens per answer (22-39 s per chat);
+            # with it, reasoning_tokens is 0 and the same answer takes 5-6 s.
+            body["thinking"] = {"type": "disabled"}
         try:
             payload = self._http.post("chat/completions", body, headers)
             return str(payload["choices"][0]["message"]["content"] or "")

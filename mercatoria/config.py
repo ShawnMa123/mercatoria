@@ -171,6 +171,11 @@ class AnswerConfig:
     temperature: float = 0.0
     timeout: int = 180
     max_context_chunks: int = 12
+    # Reasoning models spend most of the wall clock on tokens the user never
+    # sees (deepseek-v4.1-flash: 1200-2000 per answer). The gateway turns that
+    # off with ``thinking: {"type": "disabled"}``; 15.8s -> 5.6s on the same
+    # 5-chunk prompt. Models that do not reason simply ignore the field.
+    enable_thinking: bool = True
 
 
 @dataclass
