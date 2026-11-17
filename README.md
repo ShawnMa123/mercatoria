@@ -82,7 +82,7 @@ data/           索引、上传、缓存（gitignored）
 
 上传解析支持 md/txt/docx/pdf（有文本层，无 OCR）。引用解析覆盖同文档条文号、区间与
 `前条/上条/下条/前款`、英文 `section/§/Article`，跨文档仅解析书名号全名匹配；项级引用
-保留在 `unresolved`。服务无内建鉴权，请置于网关之后。检索置信度与 `corpus_gap` 是可靠性
+保留在 `unresolved`。静态 Bearer token 由 `MERCATORIA_API_TOKEN` 开启（留空关闭），建议仍置于网关之后。检索置信度与 `corpus_gap` 是可靠性
 信号，不构成法律意见。
 
 ---
@@ -148,5 +148,7 @@ Endpoints: `/health`, `/v1/config`, `/v1/retrieve`, `/v1/articles/{id}`, `/v1/ar
 
 md/txt/docx/pdf with a text layer (no OCR). Reference parsing covers same-document article
 numbers, ranges, `前条/上条/下条/前款`, English `section/§/Article`, and cross-document only by
-exact 《title》. Item-level references remain `unresolved`. No built-in auth — deploy behind a
-gateway; confidence and `corpus_gap` are reliability signals, not legal advice.
+exact 《title》. Item-level references remain `unresolved`. A static bearer token
+(`MERCATORIA_API_TOKEN`, empty disables it) still belongs behind a gateway; a
+gateway adds rate limits and TLS. Confidence and `corpus_gap` are reliability signals, not
+legal advice.

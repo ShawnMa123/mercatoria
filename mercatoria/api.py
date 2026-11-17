@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hmac
 import json
 import threading
 import uuid
@@ -11,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from .answer import ChatError, answer_question
@@ -836,6 +837,34 @@ def create_app(
 
     app = FastAPI(title="mercatoria", version="0.1.0", lifespan=lifespan)
     app.state.service = service
+    # Static bearer token. Empty means unauthenticated, which is the documented
+    # local/test default; deployments set MERCATORIA_API_TOKEN.
+    app.state.api_token = cfg.api_token.strip()
+    open_paths = {"/health", "/health/ready", "/health/live"}
+
+    @app.middleware("http")
+    async def require_api_token(request: Request, call_next: Any) -> Any:
+        token = request.app.state.api_token
+        if not token or request.url.path in open_paths:
+            return await call_next(request)
+        scheme, _, supplied = request.headers.get("authorization", "").partition(" ")
+        if scheme.lower() != "bearer":
+            supplied = ""
+        if not supplied:
+            supplied = request.headers.get("x-api-key", "")
+        if not hmac.compare_digest(supplied.strip(), token):
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "missing or invalid API token",
+                    "error": {
+                        "code": "unauthorized",
+                        "message": "missing or invalid API token",
+                    },
+                },
+                headers={"WWW-Authenticate": 'Bearer realm="mercatoria"'},
+            )
+        return await call_next(request)
 
     def unavailable() -> JSONResponse:
         """503 body: diagnostics only, and never a stale snapshot as current."""

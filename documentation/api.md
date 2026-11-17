@@ -1,11 +1,12 @@
 # API 接口使用 / API Reference
 
 > 所有接口返回 JSON（上传为 `multipart/form-data`），UTF-8；日期 `YYYY-MM-DD`；
-> 无内建鉴权，请置于网关之后。错误体为 `{"detail": "..."}`，503 为
-> `{"error": "...", "corpus": {...}}`。
+> 除健康探针外全部端点需要静态 Bearer token（`MERCATORIA_API_TOKEN`，留空则关闭鉴权）。
+> 错误体为 `{"detail": "..."}`，503 为 `{"error": "...", "corpus": {...}}`。
 >
 > All endpoints speak JSON (uploads use `multipart/form-data`); dates are `YYYY-MM-DD`;
-> there is no built-in auth. Errors are `{"detail": ...}`; 503 returns
+> every route except the health probes requires a static Bearer token
+> (`MERCATORIA_API_TOKEN`; empty disables auth). Errors are `{"detail": ...}`; 503 returns
 > `{"error": ..., "corpus": ...}`.
 
 ---
@@ -41,8 +42,26 @@
 | GET | `/v1/admin/indexes` | 列出索引文件、当前版本与 staged 候选 |
 | GET | `/` | 服务名与端点清单 |
 
-### 2. `GET /health`
+### 1.1 鉴权
 
+部署时设 `MERCATORIA_API_TOKEN`；留空关闭鉴权（本地开发与测试的默认值）。
+除 `/health`、`/health/ready`、`/health/live` 外，所有端点都要带 token：
+
+```bash
+curl -H "Authorization: Bearer $MERCATORIA_API_TOKEN" ...
+# 也接受 X-API-Key: $MERCATORIA_API_TOKEN
+```
+
+缺失或错误返回 `401`（响应头带 `WWW-Authenticate: Bearer`）：
+
+```json
+{"detail": "missing or invalid API token",
+ "error": {"code": "unauthorized", "message": "missing or invalid API token"}}
+```
+
+健康探针免鉴权；`/health` 响应里的 `config.api_token` 固定显示为 `***`。
+
+### 2. `GET /health`
 ```json
 {
   "status": "ready",
@@ -295,6 +314,7 @@
 | 码 | 场景 |
 |---|---|
 | 400 | 参数非法（空/超 16 查询、`top_k` 越界、日期格式、`neighbors`/`follow_refs` 越界、无文件） |
+| 401 | 缺少或错误的 API token（`MERCATORIA_API_TOKEN` 已配置时） |
 | 404 | 未知 article/doc/job/索引版本 |
 | 409 | 另一管理操作在飞（`management_busy`）；发布/回滚目标不可用、候选 base 过期、候选缺少自身证据或文档集合/配置不可用；候选索引 chunk/vector 不一致 |
 | 422 | 配置字段未知、类型不符、越界或端点 URL 非法 |
@@ -336,6 +356,25 @@
 | GET | `/v1/admin/snapshots` | retained generations |
 | GET | `/v1/admin/indexes` | index files, current and staged candidates |
 | GET | `/` | service info |
+
+### 1.1 Authentication
+
+Set `MERCATORIA_API_TOKEN` at deployment; empty disables auth (the local/test default).
+Every route except `/health`, `/health/ready` and `/health/live` requires the token:
+
+```bash
+curl -H "Authorization: Bearer $MERCATORIA_API_TOKEN" ...
+# X-API-Key: $MERCATORIA_API_TOKEN is accepted too
+```
+
+Missing or wrong token returns `401` with `WWW-Authenticate: Bearer`:
+
+```json
+{"detail": "missing or invalid API token",
+ "error": {"code": "unauthorized", "message": "missing or invalid API token"}}
+```
+
+The health probes stay open; `/health` always reports `config.api_token` as `***`.
 
 ### 2. `/health`
 
@@ -464,7 +503,8 @@ current head. `base_generation: null` means "the head must still be empty", not 
 
 ### 10. Status codes
 
-400 invalid input; 404 unknown resource; 409 another management operation in flight
+400 invalid input; 401 missing or wrong API token (when `MERCATORIA_API_TOKEN` is set);
+404 unknown resource; 409 another management operation in flight
 (`management_busy`), publish/rollback target unusable, candidate base expired, candidate missing its
 own evidence, or chunk/vector alignment invalid; 413 size limits; 422 invalid config
 field/type/range/URL; 500 unrecoverable embedding error; 503 index missing or written by a newer

@@ -107,6 +107,39 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(alias.status_code, 200)
         self.assertTrue(alias.json()["chunks"])
 
+    def test_api_token_guards_every_route_but_probes(self) -> None:
+        self.app.state.api_token = "sk-test-token"
+        try:
+            self.assertEqual(self.client.get("/health").status_code, 200)
+            self.assertEqual(self.client.get("/health/live").status_code, 200)
+            denied = self.client.post("/v1/retrieve", json={"queries": ["关税"]})
+            self.assertEqual(denied.status_code, 401)
+            self.assertEqual(denied.json()["error"]["code"], "unauthorized")
+            self.assertEqual(denied.headers["www-authenticate"], 'Bearer realm="mercatoria"')
+            bearer = {"Authorization": "Bearer sk-test-token"}
+            allowed = self.client.post("/v1/retrieve", json={"queries": ["关税"]}, headers=bearer)
+            self.assertEqual(allowed.status_code, 200)
+            self.assertTrue(allowed.json()["chunks"])
+            key_header = self.client.post(
+                "/v1/retrieve",
+                json={"queries": ["关税"]},
+                headers={"X-API-Key": "sk-test-token"},
+            )
+            self.assertEqual(key_header.status_code, 200)
+            wrong = self.client.post(
+                "/v1/retrieve",
+                json={"queries": ["关税"]},
+                headers={"Authorization": "Bearer sk-test-token-typo"},
+            )
+            self.assertEqual(wrong.status_code, 401)
+        finally:
+            self.app.state.api_token = ""
+
+    def test_public_config_masks_api_token(self) -> None:
+        cfg = load_config(self.config_path)
+        cfg.api_token = "sk-test-token"
+        self.assertEqual(cfg.public_dict()["api_token"], "***")
+
     def test_ask_without_llm(self) -> None:
         resp = self.client.post("/v1/ask", json={"question": "关税怎么征收？"})
         self.assertEqual(resp.status_code, 200)

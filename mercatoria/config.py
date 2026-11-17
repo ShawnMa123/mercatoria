@@ -189,6 +189,11 @@ class AppConfig:
     max_upload_bytes: int = 20 * 1024 * 1024
     max_batch_bytes: int = 200 * 1024 * 1024
     ingest_workers: int = 8
+    # Static bearer token for the HTTP surface. Empty turns authentication off
+    # (local development, tests). Deployment-only: read from the environment or
+    # the config file, never published in state and never written back by
+    # save_config.
+    api_token: str = ""
     chunking: ChunkingConfig = field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
@@ -257,6 +262,8 @@ class AppConfig:
         for section in ("embedding", "rerank", "answer"):
             if data.get(section, {}).get("api_key"):
                 data[section]["api_key"] = "***"
+        if data.get("api_token"):
+            data["api_token"] = "***"
         return data
 
 
@@ -418,6 +425,7 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         max_upload_bytes=int(data.get("max_upload_bytes", AppConfig.max_upload_bytes)),
         max_batch_bytes=int(data.get("max_batch_bytes", AppConfig.max_batch_bytes)),
         ingest_workers=int(data.get("ingest_workers", AppConfig.ingest_workers)),
+        api_token=str(data.get("api_token", AppConfig.api_token)),
         chunking=_merge_dataclass(ChunkingConfig, data.get("chunking")),
         embedding=_merge_dataclass(EmbeddingConfig, data.get("embedding")),
         retrieval=_merge_dataclass(RetrievalConfig, data.get("retrieval")),
@@ -438,6 +446,7 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         cfg.max_batch_bytes = int(_env("MERCATORIA_MAX_BATCH_MB")) * 1024 * 1024
     if _env("MERCATORIA_INGEST_WORKERS"):
         cfg.ingest_workers = int(_env("MERCATORIA_INGEST_WORKERS"))
+    cfg.api_token = _env("MERCATORIA_API_TOKEN", cfg.api_token)
     cfg.embedding.base = _env("EMBEDDING_BASE", cfg.embedding.base)
     cfg.embedding.model = _env("EMBEDDING_MODEL", cfg.embedding.model)
     cfg.embedding.api_key = _env("EMBEDDING_API_KEY", cfg.embedding.api_key)

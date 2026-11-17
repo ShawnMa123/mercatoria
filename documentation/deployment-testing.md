@@ -121,7 +121,9 @@ curl -s localhost:8080/health
 
 ### 7. 反向代理与安全
 
-- 服务**无内建鉴权**：放在 Nginx/Ingress/API Gateway 之后，启用鉴权与限流。
+- 服务内置**静态 Bearer token**：设 `MERCATORIA_API_TOKEN`（`Authorization: Bearer <token>`
+  或 `X-API-Key`），留空则关闭；`/health*` 免鉴权。仍建议放在 Nginx/Ingress/API Gateway
+  之后，补 TLS 与限流。
 - 建议超时：检索 60 s、聊天 300 s（生成可能较慢）、上传 600 s。
 - 请求体上限与 `max_upload_bytes` / `max_batch_bytes` 保持一致，避免网关先截断。
 - 不暴露 `/v1/admin/*` 给终端用户。
@@ -341,7 +343,9 @@ written to `data/embedding-cache.db`, so a resumed build only embeds what is mis
 
 ### 7. Proxy and security
 
-No built-in auth: put it behind Nginx/Ingress/API gateway with auth and rate limits.
+The service has a built-in static bearer token: set `MERCATORIA_API_TOKEN`
+(`Authorization: Bearer <token>` or `X-API-Key`); empty disables it, and `/health*` stays open.
+Keep it behind Nginx/Ingress/API Gateway for TLS and rate limits.
 Suggested timeouts: retrieval 60 s, chat 300 s, upload 600 s. Align gateway body limits with
 `max_upload_bytes` / `max_batch_bytes`. Do not expose `/v1/admin/*` publicly.
 
