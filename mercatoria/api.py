@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import threading
 import uuid
 from contextlib import asynccontextmanager, contextmanager
@@ -149,6 +150,17 @@ def _retrieval_query(question: str, history: list[dict[str, str]]) -> str:
     if len(question) > 24 and not pronoun:
         return question
     return (previous[-1] + " " + question)[:400]
+
+
+def _doc_applies_to(raw: Any) -> list[str]:
+    """The docs table stores applies_to as JSON text, not as a list."""
+    if isinstance(raw, list):
+        return [str(value) for value in raw]
+    try:
+        value = json.loads(raw or "[]")
+    except (TypeError, ValueError):
+        return []
+    return [str(item) for item in value] if isinstance(value, list) else []
 
 
 def _tag_snapshot(result: dict[str, Any], snapshot: ServingSnapshot) -> dict[str, Any]:
@@ -1030,6 +1042,61 @@ def create_app(
 
         return _with_index(payload)
 
+    @app.get("/v1/corpus/documents")
+    def corpus_documents(
+        jurisdiction: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """List the documents that are in the online index right now.
+
+        /v1/documents answers "what did we upload"; this answers "what is
+        actually in the corpus", which for a build-time manifest is the only
+        place that list exists.
+        """
+        if not 1 <= limit <= 500:
+            raise HTTPException(status_code=400, detail="limit must be in [1, 500]")
+        if offset < 0:
+            raise HTTPException(status_code=400, detail="offset must be >= 0")
+        wanted = (jurisdiction or "").strip().upper()
+
+        def payload(snapshot: ServingSnapshot) -> dict[str, Any]:
+            rows: list[dict[str, Any]] = []
+            for doc_id, doc in sorted(
+                snapshot.index.docs.items(),
+                key=lambda item: (str(item[1].get("jurisdiction") or ""), item[0]),
+            ):
+                if wanted and str(doc.get("jurisdiction") or "").upper() != wanted:
+                    continue
+                rows.append(
+                    {
+                        "doc_id": doc_id,
+                        "source_doc": doc.get("source_doc") or doc_id,
+                        "jurisdiction": doc.get("jurisdiction"),
+                        "language": doc.get("language"),
+                        "precision": doc.get("precision"),
+                        "applies_to": _doc_applies_to(doc.get("applies_to")),
+                        "effective_from": doc.get("effective_from"),
+                        "effective_to": doc.get("effective_to"),
+                        "chunks": snapshot.index.doc_chunk_count.get(doc_id, 0),
+                        "articles": len(snapshot.index.doc_articles.get(doc_id, [])),
+                    }
+                )
+            page = rows[offset : offset + limit]
+            return {
+                "documents": page,
+                "count": len(rows),
+                "returned": len(page),
+                "offset": offset,
+                "limit": limit,
+                "jurisdictions": snapshot.index.jurisdictions,
+                "filter": {"jurisdiction": wanted or None},
+                "snapshot_version": snapshot.snapshot_version,
+                "index_version": snapshot.index_version,
+            }
+
+        return _with_index(payload)
+
     @app.post("/chat")
     @app.post("/v1/chat")
     @app.post("/ask")
@@ -1340,6 +1407,7 @@ def create_app(
                 "/v1/retrieve",
                 "/v1/articles/{article_id}",
                 "/v1/articles/batch",
+                "/v1/corpus/documents",
                 "/v1/chat",
                 "/v1/ask",
                 "/v1/documents",

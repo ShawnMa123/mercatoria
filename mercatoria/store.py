@@ -261,6 +261,10 @@ class Index:
             self.articles.items(), key=lambda item: item[1][0]["ordinal"]
         ):
             self.doc_articles.setdefault(article_chunks[0]["doc_id"], []).append(article_id)
+        self.doc_chunk_count: dict[str, int] = {}
+        for chunk in self.chunks:
+            doc_id = chunk["doc_id"]
+            self.doc_chunk_count[doc_id] = self.doc_chunk_count.get(doc_id, 0) + 1
         self.jurisdictions = sorted({c["jurisdiction"] for c in self.chunks})
         self.precision: dict[str, str] = {}
         for c in self.chunks:

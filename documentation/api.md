@@ -22,6 +22,7 @@
 | POST | `/retrieve`、`/v1/retrieve` | 纯检索 |
 | GET | `/v1/articles/{article_id}` | 完整法条 + 邻条 + 交叉引用 |
 | POST | `/v1/articles/batch` | 批量取法条（≤32） |
+| GET | `/v1/corpus/documents` | 在线索引里的语料文档列表（`?jurisdiction=&limit=&offset=`） |
 | POST | `/chat`、`/v1/chat`、`/ask`、`/v1/ask` | 检索 + 可选生成（带引用） |
 | POST | `/v1/documents` | 批量上传并异步入库 |
 | GET | `/v1/documents` | 文档列表（`?status=`） |
@@ -205,6 +206,32 @@
 
 ### 8. 文档管理
 
+**语料列表** `GET /v1/corpus/documents`
+
+`/v1/documents` 回答"上传过什么"，这条回答"在线索引里现在有什么"。构建时通过
+`corpus/manifest.json` 导入的法规不在文档注册表里，只在这里出现。
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `jurisdiction` | 无 | 大小写不敏感；未知值返回空列表，不报错 |
+| `limit` | 100 | 1–500，越界 400 |
+| `offset` | 0 | ≥0，越界 400 |
+
+```json
+{"documents": [
+   {"doc_id": "us-cfr-19-10", "source_doc": "19 CFR Part 10 — PART 10—ARTICLES CONDITIONALLY FREE, SUBJECT TO A REDUCED RATE, ETC.",
+    "jurisdiction": "US", "language": "en", "precision": "degraded",
+    "applies_to": ["customs", "tariff", "origin", "entry"], "effective_from": "2026-11-01", "effective_to": null,
+    "chunks": 1044, "articles": 567}],
+ "count": 73, "returned": 1, "offset": 0, "limit": 1,
+ "jurisdictions": ["AU", "CN", "EU", "INT", "JP", "US", "WTO"],
+ "filter": {"jurisdiction": "US"},
+ "snapshot_version": "5", "index_version": "20261114-132434-543026-e7b9ec63d6c4"}
+```
+
+`count` 是过滤后的总数（分页前），`returned` 是本页条数；每项带该文档在当前索引里的
+`chunks` 与 `articles` 计数。无索引时 503。
+
 **上传** `POST /v1/documents`（multipart）：
 
 | 字段 | 默认 | 说明 |
@@ -290,6 +317,7 @@
 | POST | `/retrieve`, `/v1/retrieve` | retrieval only |
 | GET | `/v1/articles/{article_id}` | full article + neighbours + references |
 | POST | `/v1/articles/batch` | batch fetch (≤32) |
+| GET | `/v1/corpus/documents` | documents in the online index (`?jurisdiction=&limit=&offset=`) |
 | POST | `/chat`, `/v1/chat`, `/ask`, `/v1/ask` | retrieval + optional generation |
 | POST | `/v1/documents` | batch upload, async ingest |
 | GET | `/v1/documents` | list (`?status=`) |
@@ -398,6 +426,15 @@ Adds `answer`, `answer_status` (`answered|partial|unsupported|unavailable|skippe
 invalid ids are dropped.
 
 ### 8. Documents
+
+Corpus listing: `GET /v1/corpus/documents?jurisdiction=&limit=100&offset=0` (`limit` 1–500,
+`offset` ≥0, both 400 otherwise; `jurisdiction` is case-insensitive and an unknown value
+returns an empty page). `/v1/documents` reports uploads; this reports what the online index
+actually contains, including the manifest-built corpus that never goes through the registry.
+Each item: `doc_id, source_doc, jurisdiction, language, precision, applies_to,
+effective_from, effective_to, chunks, articles`. The envelope adds `count` (total after the
+filter), `returned` (this page), `offset`, `limit`, `jurisdictions`, `filter`, and the
+`snapshot_version` / `index_version` the answer came from. 503 when no index is published.
 
 Upload (multipart): `files` (≤200; md/markdown/txt/docx/pdf), `jurisdiction` (CN),
 `language` (auto), `precision` (auto), `applies_to`, `effective_from`, `effective_to`,

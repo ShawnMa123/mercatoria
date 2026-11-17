@@ -308,6 +308,43 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(too_many.status_code, 400)
 
+    def test_corpus_documents_lists_the_baked_index(self) -> None:
+        resp = self.client.get("/v1/corpus/documents")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        # The manifest-built document is in the corpus even though it was never
+        # uploaded, which is exactly what /v1/documents cannot answer.
+        self.assertEqual(self.client.get("/v1/documents").json()["count"], 0)
+        self.assertEqual(body["count"], 1)
+        self.assertEqual(body["returned"], 1)
+        self.assertEqual(body["jurisdictions"], ["CN"])
+        self.assertEqual(body["filter"], {"jurisdiction": None})
+        doc = body["documents"][0]
+        self.assertEqual(doc["doc_id"], "cn-test-law")
+        self.assertEqual(doc["source_doc"], "测试关税法")
+        self.assertEqual(doc["jurisdiction"], "CN")
+        self.assertEqual(doc["precision"], "exact")
+        self.assertEqual(doc["applies_to"], ["customs"])
+        self.assertEqual(doc["effective_from"], "2024-01-01")
+        self.assertEqual(doc["chunks"], 1)
+        self.assertEqual(doc["articles"], 1)
+
+        lower = self.client.get("/v1/corpus/documents?jurisdiction=cn").json()
+        self.assertEqual(lower["count"], 1)
+        self.assertEqual(lower["filter"], {"jurisdiction": "CN"})
+        other = self.client.get("/v1/corpus/documents?jurisdiction=US").json()
+        self.assertEqual(other["count"], 0)
+        self.assertEqual(other["documents"], [])
+
+        page = self.client.get("/v1/corpus/documents?limit=1&offset=1").json()
+        self.assertEqual(page["count"], 1)
+        self.assertEqual(page["returned"], 0)
+        self.assertEqual(page["documents"], [])
+
+        self.assertEqual(self.client.get("/v1/corpus/documents?limit=0").status_code, 400)
+        self.assertEqual(self.client.get("/v1/corpus/documents?limit=501").status_code, 400)
+        self.assertEqual(self.client.get("/v1/corpus/documents?offset=-1").status_code, 400)
+
     def test_chat_rewrite_query_can_be_disabled(self) -> None:
         resp = self.client.post(
             "/v1/chat",
