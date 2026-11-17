@@ -23,9 +23,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=8080
 
+# Dependency source for the build. Defaults to PyPI; hosts that cannot reach it
+# pass --build-arg PIP_INDEX_URL=<mirror>/simple/.
+ARG PIP_INDEX_URL=https://pypi.org/simple
+
 WORKDIR /app
 
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --index-url "$PIP_INDEX_URL" \
     "numpy>=1.26" "fastapi>=0.110" "uvicorn>=0.29" \
     "pymupdf>=1.24" "python-docx>=1.1" "python-multipart>=0.0.9"
 

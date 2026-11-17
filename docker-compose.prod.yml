@@ -1,0 +1,34 @@
+# Production deployment on a plain Linux host (no host-side model gateway).
+#
+# Every model call leaves the container over HTTPS to the MaaS endpoint in
+# .env; the embedding space is baked into the index at build time, so the
+# endpoint/model in .env must stay identical across rebuilds.
+#
+#   cp .env.example .env   # fill in the MaaS key, chmod 600 .env
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# The index is built once inside the base image with the same .env, then baked
+# into the runtime image by the Dockerfile's `index` stage.
+services:
+  mercatoria:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    image: mercatoria:prod
+    container_name: mercatoria
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+    volumes:
+      # Holds registry/control DBs, uploads and the active index. The entrypoint
+      # seeds an empty volume from the index baked into the image.
+      - mercatoria-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mercatoria-data:
