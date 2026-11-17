@@ -144,16 +144,26 @@ class EmbeddingClient:
             missing_texts = [texts[i] for i in missing]
             size = max(1, min(self.cfg.batch_size, self.cfg.max_batch))
             batches = [missing_texts[i : i + size] for i in range(0, len(missing_texts), size)]
+
+            def run(batch: list[str]) -> np.ndarray:
+                vectors = self._post(batch)
+                # Persist per completed batch, not once per embed() call: a
+                # 10k-chunk build against a rate-limited gateway must survive
+                # a later 429/timeout/kill without paying again for vectors
+                # that already came back.
+                for text, vector in zip(batch, vectors):
+                    self._cache_put(text, vector)
+                return vectors
+
             workers = max(1, min(self.cfg.concurrency, len(batches)))
             if workers > 1:
                 with ThreadPoolExecutor(max_workers=workers) as pool:
-                    chunks = list(pool.map(self._post, batches))
+                    chunks = list(pool.map(run, batches))
             else:
-                chunks = [self._post(batch) for batch in batches]
+                chunks = [run(batch) for batch in batches]
             fresh = np.vstack(chunks)
             for index, vector in zip(missing, fresh):
                 results[index] = vector
-                self._cache_put(texts[index], vector)
 
         final = np.vstack([vector for vector in results if vector is not None])
         if self.cfg.dim and final.shape[1] != self.cfg.dim:
