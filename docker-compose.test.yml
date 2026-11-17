@@ -12,7 +12,13 @@ services:
       EMBEDDING_BASE: http://host.docker.internal:3425/v1
       EMBEDDING_MODEL: my-team-2k/qwen3.7-text-embedding
       LLM_BASE: http://host.docker.internal:3425/v1
-      LLM_MODEL: local-wb/cn:deepseek-v4.1-flash
+      # deepseek-v4.1-flash spends 1600-2400 reasoning tokens per answer
+      # (22-39 s); minimax-m3.1-flash answers the same prompts in 7-10 s with
+      # the same citation discipline. This env only seeds a fresh volume: an
+      # existing generation persists its own answer section, so a live
+      # deployment changes model with
+      #   PUT /v1/config {"answer":{"model":"..."}}
+      LLM_MODEL: local-wb/cn:minimax-m3.1-flash
       # gte-rerank-v2 is served on the native DashScope path, not on
       # magpie's /v1/rerank route.
       RERANK_ENABLED: "false"

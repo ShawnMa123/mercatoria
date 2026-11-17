@@ -226,7 +226,7 @@
  "count": 73, "returned": 1, "offset": 0, "limit": 1,
  "jurisdictions": ["AU", "CN", "EU", "INT", "JP", "US", "WTO"],
  "filter": {"jurisdiction": "US"},
- "snapshot_version": "5", "index_version": "20261114-132434-543026-e7b9ec63d6c4"}
+ "snapshot_version": "7", "index_version": "20261114-135405-968025-e7b9ec63d6c4"}
 ```
 
 `count` 是过滤后的总数（分页前），`returned` 是本页条数；每项带该文档在当前索引里的
