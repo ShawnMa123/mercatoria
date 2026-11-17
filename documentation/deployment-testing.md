@@ -96,6 +96,29 @@ curl -s localhost:8080/health
 
 单 worker 即可满足当前规模；多 worker 会各自加载索引（内存 × N）。
 
+远程主机（没有本机模型网关）用 `docker-compose.prod.yml`：`env_file: .env` 注入 MaaS
+端点与密钥（`.env` 保持 `600`），数据目录落在 `mercatoria-data` 卷里。
+
+```bash
+# 1) 依赖镜像；pypi 不可达时加 --build-arg PIP_INDEX_URL=<mirror>/simple/
+docker build --target base -t mercatoria:base .
+
+# 2) 用同一份 .env 建索引：索引的 embedding space 由 base/model/dim 决定，
+#    换端点或模型必须重建
+mkdir -p data/documents data/uploads
+docker run --rm --env-file .env -v "$PWD/data:/app/data" \
+  -v "$PWD/corpus:/app/corpus:ro" -v "$PWD/config.example.json:/app/config.json:ro" \
+  mercatoria:base python -m mercatoria --config config.json rebuild
+
+# 3) 把刚建好的索引烘进运行镜像并启动
+docker compose -f docker-compose.prod.yml up -d --build
+curl -s localhost:8080/health
+```
+
+首次启动把镜像里的索引 seed 进空卷；已有旧卷要重建时设 `MERCATORIA_FORCE_REBUILD=1`。
+网关按 token 限流时把 `embedding.concurrency` 设为 1、`batch_size` 设为 8：每个完成的
+批次都会写入 `data/embedding-cache.db`，中断后重跑只补缺失的向量，已付过的调用不重复计费。
+
 ### 7. 反向代理与安全
 
 - 服务**无内建鉴权**：放在 Nginx/Ingress/API Gateway 之后，启用鉴权与限流。
@@ -290,6 +313,31 @@ docker compose -f docker-compose.test.yml up -d --build && curl -s localhost:808
 ```
 
 One worker is enough at this scale; each extra worker loads its own index copy.
+
+A remote host without a local model gateway uses `docker-compose.prod.yml`:
+`env_file: .env` supplies the MaaS endpoint and key (keep `.env` at `600`), and the data
+directory lives in the `mercatoria-data` volume.
+
+```bash
+# 1) dependency image; add --build-arg PIP_INDEX_URL=<mirror>/simple/ if pypi is unreachable
+docker build --target base -t mercatoria:base .
+
+# 2) build the index with the same .env: its embedding space is base/model/dim,
+#    so a different endpoint or model requires a rebuild
+mkdir -p data/documents data/uploads
+docker run --rm --env-file .env -v "$PWD/data:/app/data" \
+  -v "$PWD/corpus:/app/corpus:ro" -v "$PWD/config.example.json:/app/config.json:ro" \
+  mercatoria:base python -m mercatoria --config config.json rebuild
+
+# 3) bake the index into the runtime image and start
+docker compose -f docker-compose.prod.yml up -d --build
+curl -s localhost:8080/health
+```
+
+The first start seeds an empty volume from the index baked into the image; set
+`MERCATORIA_FORCE_REBUILD=1` to rebuild over an existing volume. On a token-rate-limited
+gateway set `embedding.concurrency` to 1 and `batch_size` to 8: every completed batch is
+written to `data/embedding-cache.db`, so a resumed build only embeds what is missing.
 
 ### 7. Proxy and security
 
