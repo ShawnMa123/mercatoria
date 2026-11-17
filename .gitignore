@@ -263,3 +263,7 @@ docs/
 # 5) 本地索引与运行配置（可重建）
 data/
 config.json
+
+# 6) 影片与演示产物（不公开）
+film/
+postman/
